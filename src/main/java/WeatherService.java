@@ -1,6 +1,10 @@
 
 import java.io.IOException;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import io.github.cdimascio.dotenv.Dotenv;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -48,7 +52,7 @@ public class WeatherService {
             if (!response.isSuccessful()) {
                 throw new RuntimeException("HTTP Error: " + response.code());
             }
-
+            
             return response.body().string();
 
         } catch (IOException e) {
@@ -57,6 +61,64 @@ public class WeatherService {
             throw new RuntimeException("Failed to fetch weather data.", e);
         }
     }
+
+    public WeatherData parseWeather (String json) {
+        
+        // parse root json object
+        
+        JsonObject root = 
+            JsonParser.parseString(json).getAsJsonObject();
+
+        // extract nested objects
+        JsonObject main =
+            root.getAsJsonObject("main");
+
+        JsonObject wind =
+            root.getAsJsonObject("wind");
+            
+        JsonArray weatherArray =
+            root.getAsJsonArray("weather");
+
+        JsonObject weather =
+            weatherArray.get(0).getAsJsonObject(); 
+ 
+            ///extract fields
+
+            String city =
+                    root.get("name").getAsString();
+
+            Double temperature =
+                    main.get("temp").getAsDouble();
+            
+            Double feelsLike =
+                    main.get("feels_like").getAsDouble();
+
+            int humidity =
+                    main.get("humidity").getAsInt();
+
+            String condition =
+                    weather.get("description").getAsString();
+
+            Double windSpeed =
+                    wind.get("speed").getAsDouble();
+
+            String weatherCode =
+                    weather.get("icon").getAsString();
+                
+
+        return new WeatherData(
+            city,
+            temperature,
+            feelsLike,
+            humidity,
+            condition,
+            windSpeed,
+            weatherCode
+        );
+    }
+
+
+
 
     public static void main(String[] args) {
 
