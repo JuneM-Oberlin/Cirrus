@@ -1,3 +1,4 @@
+
 public class WeatherData {
 
     // instance variables
@@ -10,23 +11,80 @@ public class WeatherData {
     private String weatherCode;
 
     public WeatherData(String city,
-                        double temperature,
-                        double feelsLike,
-                        int humidity,
-                        String condition,
-                        double windSpeed,
-                        String weatherCode){
-     
-     this.city = city;
-     this.temperature = temperature;
-     this.feelsLike = feelsLike;
-     this.humidity = humidity;
-     this.condition = condition;
-     this.windSpeed = windSpeed;
-     this.weatherCode = weatherCode;
+            double temperature,
+            double feelsLike,
+            int humidity,
+            String condition,
+            double windSpeed,
+            String weatherCode) {
+
+        this.city = city;
+        this.temperature = temperature;
+        this.feelsLike = feelsLike;
+        this.humidity = humidity;
+        this.condition = condition;
+        this.windSpeed = windSpeed;
+        this.weatherCode = weatherCode;
     }
 
     // getter methods
+    public String getCity() {
+        return city;
+    }
 
-    
+    public double getTemperature() {
+        return temperature;
+    }
+
+    public double getFeelsLike() {
+        return feelsLike;
+    }
+
+    public int getHumidity() {
+        return humidity;
+    }
+
+    public String getCondition() {
+        return condition;
+    }
+
+    public double getWindSpeed() {
+        return windSpeed;
+    }
+
+    public String getWeatherCode() {
+        return weatherCode;
+    }
+
+    public String toString() {
+        return String.format(
+                "City:      %s%n"
+                + "Temperature: %.1f F  (Feels like %.1f F)%n"
+                + "Humidity:  %d%%%n"
+                + "Condition: %s%n"
+                + "Wind:      %.1f mph",
+                city,
+                temperature,
+                feelsLike,
+                humidity,
+                condition,
+                windSpeed
+        );
+
+    }
+
+    public static void main(String[] args) {
+        WeatherData test = new WeatherData(
+                "London",
+                72.3,
+                68.5,
+                60,
+                "light rain",
+                8.2,
+                "rain"
+        );
+
+        System.out.println(test);
+    }
+
 }

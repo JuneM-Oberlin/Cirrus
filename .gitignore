@@ -1,2 +1,5 @@
 touch.env
-touch.env
+
+# Maven build outputs
+dependency-reduced-pom.xml
+target/
