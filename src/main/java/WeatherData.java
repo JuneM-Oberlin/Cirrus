@@ -56,6 +56,7 @@ public class WeatherData {
         return weatherCode;
     }
 
+    @Override
     public String toString() {
         return String.format(
                 "City:      %s%n"
