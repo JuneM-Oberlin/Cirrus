@@ -117,15 +117,22 @@ public class WeatherService {
         );
     }
 
+    public WeatherData getWeather (String city) {
+        String json = getWeatherJSON(city);
+
+        return parseWeather(json);
+    }
 
 
 
-    public static void main(String[] args) {
 
-        WeatherService service = new WeatherService();
+   public static void main(String[] args) {
+    WeatherService service = new WeatherService();
 
-        String json = service.getWeatherJSON("Oberlin");
+    WeatherData weather =
+            service.getWeather("King George");
 
-        System.out.println(json);
+    System.out.println(weather);
+
     }
 }
