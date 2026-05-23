@@ -223,7 +223,7 @@ async function getWeather() {
 
     } catch (err) {
         //handle network failures
-
+        console.log("Caught error:", err);
         set("errorMsg", "Could not reach the server. Is your Java backend running?")
         show("errorMsg");
         hide("loading");
