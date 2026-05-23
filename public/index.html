@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="page">
+
+    <!-- green header bar -->
+    <div class="header">
+      <div class="header-today">TODAY</div>
+      <div class="header-city" id="cityName">--</div>
+    </div>
+
+    <!-- loading state (hidden by default) -->
+    <div id="loading" class="hidden">Fetching weather...</div>
+
+    <!-- eror state (hidden by default) -->
+    <div id="errorMsg" class="error hidden"></div>
+
+    <!-- SEARCH ROW -->
+    <div class="search-row">
+      <input  id="cityInput"
+              type="text"
+              placeholder="Enter city..."
+              onkeydown="if(event.key === 'Enter') getWeather()">
+      <button onclick="getWeather()">Search</button>
+    </div>
+
+    <!-- history chip (populated by script.js) -->
+    <div id="historyList" class="history"></div>
+
+    <!-- weather card (hidden by default) -->
+    <div id="weatherDisplay" class="weather-card hidden">
+
+      <!-- left: temperature + condition -->
+      <div class="card-left">
+        <div id="tempMain" class="temp">--°</div>
+        <div id="condition" class="condition">--</div>
+      </div>
+
+      <!-- right: weather icon -->
+      <div id="weatherIcon" class="icon"></div>
+
+      <!-- bottom: detail strip -->
+      <div class="details-row">
+        <div class="detail">
+          <span class="detail-label">Feels Like</span>
+          <span class="detail-val" id="feelsLike">--</span>
+        </div>
+        <div class="detail">
+          <span class="detail-label">Humidity</span>
+          <span class="detail-val" id="humidity">--</span>
+        </div>
+        <div class="detail">
+          <span class="detail-label">Wind</span>
+          <span class="detail-val" id="wind">--</span>
+        </div>
+      </div>
+
+      <!-- wind timestamp bar -->
+      <div class="wind-bar">
+        <span class="wind-dir" id="windDir">--</span>
+        <span class="timestamp" id="timestamp">--</span>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
