@@ -186,7 +186,7 @@ async function getWeather() {
 
     set("cityName", data.city);
     set("tempMain", Math.round(data.temperature) + "°F");
-    set("condition", data.description
+    set("condition", data.condition
                     .split(" ")
                     .map(w => w[0].toUpperCase() + w.slice(1))
                     .join(" "));
@@ -202,7 +202,7 @@ async function getWeather() {
     // resolve the icon using code and day/night
 
     const conditionId = data.conditionId;
-    const isNight = data.icon.endsWith("n");
+    const isNight = data.weatherCode.endsWith("n");
    const key = isNight ? `${conditionId}n` : conditionId;
     const iconSrc = "icons/" + (iconMap[key] ?? "default.png");
 
