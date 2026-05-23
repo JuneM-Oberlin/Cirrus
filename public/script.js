@@ -147,3 +147,58 @@ const iconMap = {
 function show(id) {document.getElementById(id).classList.remove("hidden");}
 function hide(id) {document.getElementById(id).classList.add("hidden");}
 function set(id, value) {document.getElementById(id).textContent = value;} 
+
+//main
+
+async function getWeather() {
+
+    //read city imput - bail out if empty
+
+    const city = document.getElementById("cityInput").value.trim();
+    if (!city) return;
+
+    //show loading
+    
+    show("loading");
+    hide("weatherDisplay");
+    hide("errorMsg");
+
+    try {
+
+        // call java backend
+
+        const res = await fetch(
+            'http://localhost:4567/weather?city=${encodeURIComponent(city)}'
+        );
+
+        //handle errors responses
+        
+        if(!res.ok) {
+            const err = await res.json();
+            set("errorMsg", err.error || "Something went wrong.");
+            show("errorMsg");
+            hide("loading");
+            return;
+        }
+    }
+
+    // populate weather card with data
+    const data = await res.json();
+
+    set("cityName", data.city);
+    set("tempMain", Math.round(data.temperature) + "°F");
+    set("condition", data.description
+                    .split(" ")
+                    .map(w => w[0].toUpperCase() + w.slice(1))
+                    .join(" "));
+    
+    set("feelsLike", Math.round(data.feelsLike) + "°F");
+    set("humidity", data.humidity + "%");
+    set("wind", Math.round(data.windSpeed) + " mph");
+    set("timestamp", "As of " + new Date().toLocaleDateString([], {
+                        hour: "2-digit", minute: "2-digit"
+    }));
+
+
+
+}
