@@ -122,17 +122,4 @@ public class WeatherService {
 
         return parseWeather(json);
     }
-
-
-
-
-   public static void main(String[] args) {
-    WeatherService service = new WeatherService();
-
-    WeatherData weather =
-            service.getWeather("King George");
-
-    System.out.println(weather);
-
-    }
 }
