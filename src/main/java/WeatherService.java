@@ -104,6 +104,9 @@ public class WeatherService {
 
             String weatherCode =
                     weather.get("icon").getAsString();
+
+            int conditionId =
+                    weather.get("id").getAsInt();
                 
 
         return new WeatherData(
@@ -113,7 +116,8 @@ public class WeatherService {
             humidity,
             condition,
             windSpeed,
-            weatherCode
+            weatherCode,
+            conditionId
         );
     }
 
@@ -122,4 +126,5 @@ public class WeatherService {
 
         return parseWeather(json);
     }
+
 }

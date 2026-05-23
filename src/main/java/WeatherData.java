@@ -9,6 +9,7 @@ public class WeatherData {
     private String condition;
     private double windSpeed;
     private String weatherCode;
+    private int conditionId;
 
     public WeatherData(String city,
             double temperature,
@@ -16,7 +17,8 @@ public class WeatherData {
             int humidity,
             String condition,
             double windSpeed,
-            String weatherCode) {
+            String weatherCode,
+            int conditionId) {
 
         this.city = city;
         this.temperature = temperature;
@@ -25,6 +27,7 @@ public class WeatherData {
         this.condition = condition;
         this.windSpeed = windSpeed;
         this.weatherCode = weatherCode;
+        this.conditionId = conditionId;
     }
 
     // getter methods
@@ -54,6 +57,10 @@ public class WeatherData {
 
     public String getWeatherCode() {
         return weatherCode;
+    }
+
+    public int getConditionId() {
+        return conditionId;
     }
 
     @Override
