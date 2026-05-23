@@ -180,10 +180,9 @@ async function getWeather() {
             hide("loading");
             return;
         }
-    }
 
-    // populate weather card with data
-    const data = await res.json();
+        // populate weather card with data
+        const data = await res.json();
 
     set("cityName", data.city);
     set("tempMain", Math.round(data.temperature) + "°F");
@@ -200,5 +199,33 @@ async function getWeather() {
     }));
 
 
+    // resolve the icon using code and day/night
 
+    const conditionId = data.conditionId;
+    const isNight = data.icon.endsWith("n");
+    const key = isNight ? '${conditionId}n' : conditionId;
+    const iconSrc = "icons/" + (iconMap[key] ?? "default.png");
+
+    const iconEl = document.getElementById("weatherIcon");
+    iconEl.innerHTML = "";
+    const img = document.createElement("img");
+    img.src = iconSrc;
+    img.alt = data.description;
+    img.className = "weather-img";
+    inconEl.appendChild(img);
+
+    // show the card, hide loading
+    show("weatherDisplay");
+    hide("loading");
+     
+
+
+
+    } catch (err) {
+        //handle network failures
+
+        set("errorMsg", "Could not reach the server. Is your Java backend running?")
+        show("errorMsg");
+        hide("loading");
+    }
 }
