@@ -168,7 +168,7 @@ async function getWeather() {
         // call java backend
 
         const res = await fetch(
-            'http://localhost:4567/weather?city=${encodeURIComponent(city)}'
+            `http://localhost:4567/weather?city=${encodeURIComponent(city)}`
         );
 
         //handle errors responses
@@ -194,8 +194,8 @@ async function getWeather() {
     set("feelsLike", Math.round(data.feelsLike) + "°F");
     set("humidity", data.humidity + "%");
     set("wind", Math.round(data.windSpeed) + " mph");
-    set("timestamp", "As of " + new Date().toLocaleDateString([], {
-                        hour: "2-digit", minute: "2-digit"
+    set("timestamp", "As of " + new Date().toLocaleTimeString([], {
+    hour: "2-digit", minute: "2-digit"
     }));
 
 
@@ -203,7 +203,7 @@ async function getWeather() {
 
     const conditionId = data.conditionId;
     const isNight = data.icon.endsWith("n");
-    const key = isNight ? '${conditionId}n' : conditionId;
+   const key = isNight ? `${conditionId}n` : conditionId;
     const iconSrc = "icons/" + (iconMap[key] ?? "default.png");
 
     const iconEl = document.getElementById("weatherIcon");
@@ -212,7 +212,7 @@ async function getWeather() {
     img.src = iconSrc;
     img.alt = data.description;
     img.className = "weather-img";
-    inconEl.appendChild(img);
+    iconEl.appendChild(img);
 
     // show the card, hide loading
     show("weatherDisplay");
