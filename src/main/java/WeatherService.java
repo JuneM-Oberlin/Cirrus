@@ -107,6 +107,9 @@ public class WeatherService {
 
             int conditionId =
                     weather.get("id").getAsInt();
+
+            int windDeg =
+                    wind.get("deg").getAsInt();
                 
 
         return new WeatherData(
@@ -117,7 +120,8 @@ public class WeatherService {
             condition,
             windSpeed,
             weatherCode,
-            conditionId
+            conditionId,
+            windDeg
         );
     }
 
