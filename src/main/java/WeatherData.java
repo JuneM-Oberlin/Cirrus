@@ -73,19 +73,4 @@ public class WeatherData {
         );
 
     }
-
-    public static void main(String[] args) {
-        WeatherData test = new WeatherData(
-                "London",
-                72.3,
-                68.5,
-                60,
-                "light rain",
-                8.2,
-                "rain"
-        );
-
-        System.out.println(test);
-    }
-
 }
