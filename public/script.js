@@ -148,6 +148,17 @@ function show(id) {document.getElementById(id).classList.remove("hidden");}
 function hide(id) {document.getElementById(id).classList.add("hidden");}
 function set(id, value) {document.getElementById(id).textContent = value;} 
 
+
+function degreesToCompass(deg) {
+    const directions = [
+        "N", "NNE", "NE", "ENE",
+        "E", "ESE", "SE", "SSE",
+        "S", "SSW", "SW", "WSW",
+        "W", "WNW", "NW", "NNW"
+    ];
+    const index = Math.round(deg / 22.5) % 16;
+    return directions[index];
+}
 //main
 
 async function getWeather() {
@@ -194,6 +205,7 @@ async function getWeather() {
     set("feelsLike", Math.round(data.feelsLike) + "°F");
     set("humidity", data.humidity + "%");
     set("wind", Math.round(data.windSpeed) + " mph");
+    set("windDir",   degreesToCompass(data.windDeg) + " " + Math.round(data.windSpeed) + " mph");
     set("timestamp", "As of " + new Date().toLocaleTimeString([], {
     hour: "2-digit", minute: "2-digit"
     }));
