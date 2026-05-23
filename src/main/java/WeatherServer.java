@@ -42,7 +42,7 @@ public class WeatherServer {
 
 
         //GET /weather route
-        get("weather", (req, res) ->  {
+        get("/weather", (req, res) ->  {
 
             //read city query param
             String city = req.queryParams("city");
@@ -51,7 +51,7 @@ public class WeatherServer {
             if (city == null || city.isBlank()) {
 
                 res.status(400);
-                res.type("application/json");
+                res.type("application.json");
 
                 return gson.toJson(
                     new ErrorResponse(
@@ -67,7 +67,7 @@ public class WeatherServer {
                 WeatherData weather = service.getWeather(city);
 
                 // return JSON
-                res.type("application/json");
+                res.type("application.json");
 
                 return gson.toJson(weather);
                 
