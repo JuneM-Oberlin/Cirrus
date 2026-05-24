@@ -17,21 +17,18 @@
       <div class="header-city" id="cityName">--</div>
     </div>
 
-    <!-- SEARCH ROW -->
-    <div class="search-row">
-      <input id="cityInput" type="text" placeholder="Enter city..."
-             onkeydown="if(event.key === 'Enter') getWeather()">
-      <button onclick="getWeather()">Search</button>
-    </div>
-
-    <div id="historyList" class="history"></div>
-
-    <!-- loading + error — only once -->
-    <div id="loading" class="hidden">Fetching weather...</div>
-    <div id="errorMsg" class="error hidden"></div>
-
     <!-- TODAY VIEW -->
     <div id="todayView">
+      <!-- SEARCH-->
+      <div class="search-row">
+        <input id="cityInput" type="text" placeholder="Enter city..."
+          onkeydown="if(event.key === 'Enter') getWeather()">
+        <button onclick="getWeather()">Search</button>
+      </div>
+
+      <div id="historyList" class="history"></div>
+      <div id="loading" class="hidden">Fetching weather...</div>
+      <div id="errorMsg" class="error hidden"></div>
       <div id="weatherDisplay" class="weather-card hidden">
         <div class="card-left">
           <div id="tempMain" class="temp">--°</div>
@@ -60,8 +57,17 @@
       </div>
     </div>
 
-    <!-- FORECAST VIEW (hidden by default) -->
+    <!-- FORECAST VIEW -->
     <div id="forecastView" class="hidden">
+
+      <!-- SEARCH (duplicate here for consistency) -->
+   <div class="search-row">
+  <input id="cityInputForecast" type="text" placeholder="Enter city..."
+         onkeydown="if(event.key === 'Enter') getWeatherForecast()">
+  <button onclick="getWeatherForecast()">Search</button>
+</div>  
+
+      <div class="history" id="historyListForecast"></div>
       <div class="forecast-strip" id="forecastStrip"></div>
     </div>
 
