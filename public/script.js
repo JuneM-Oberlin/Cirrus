@@ -240,6 +240,32 @@ function switchTab(tab) {
     const forecastView = document.getElementById("forecastView")
     const tabToday = document.getElementById("tabToday");
     const tabForecast = document.getElementById("tabForecast");
+
+    if (tab === today) {
+        todayView.classList.remove("hidden");
+        forecastView.classList.add("hidden");
+        tabForecast.classList.add("active");
+        tabToday.classList.remove("active");
+        
+    }
+}
+
+function renderForecast(days) {
+     const strip = document.getElementById("forecastStrip");
+  strip.innerHTML = days.map((day, i) => `
+    <div class="forecast-day">
+      <div class="forecast-label ${i === 0 ? 'today' : ''}">${day.day}</div>
+      <img class="forecast-icon"
+           src="icons/${iconMap[day.conditionId] ?? "default.png"}"
+           alt="${day.condition}">
+      <div class="forecast-high">${Math.round(day.high)}°</div>
+      <div class="forecast-low">${Math.round(day.low)}°</div>
+      <div class="forecast-rain">
+        <img class="rain-icon" src="icons/partly-cloudy-with-rain-day.png" alt="rain">
+        ${day.rainChance}%
+      </div>
+    </div>
+  `).join(""); 
 }
 //main
 
