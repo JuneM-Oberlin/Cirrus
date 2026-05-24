@@ -241,12 +241,25 @@ function switchTab(tab) {
     const tabToday = document.getElementById("tabToday");
     const tabForecast = document.getElementById("tabForecast");
 
-    if (tab === today) {
+    if (tab === "today") {
         todayView.classList.remove("hidden");
         forecastView.classList.add("hidden");
+        tabToday.classList.add("active");
+        tabForecast.classList.remove("active");
+    } else {
+        forecastView.classList.remove("hidden");
+        todayView.classList.add("hidden");
         tabForecast.classList.add("active");
         tabToday.classList.remove("active");
-        
+
+        // fetch forecast if not loaded
+        const city = document.getElementById("cityInput").value.trim();
+        if (city) {
+            fetch(`https://weatherapp-project-6rms.onrender.com/forecast?city=${encodeURIComponent(city)}`)
+                .then(res => res.json())
+                .then(data => renderForecast(data))
+                .catch(err => console.log("Forecast error:", err));
+        } 
     }
 }
 
@@ -266,6 +279,21 @@ function renderForecast(days) {
       </div>
     </div>
   `).join(""); 
+}
+
+function getWeatherForecast() {
+    const city = document.getElementById("cityInputForecast").value.trim();
+    if (!city) return;
+    // sync to main input
+    document.getElementById("cityInput").value = city;
+    getWeather();
+    // also fetch forecast
+    const strip = document.getElementById("forecastStrip");
+    strip.innerHTML = "";
+    fetch(`https://weatherapp-project-6rms.onrender.com/forecast?city=${encodeURIComponent(city)}`)
+        .then(res => res.json())
+        .then(data => renderForecast(data))
+        .catch(err => console.log("Forecast error:", err));
 }
 //main
 

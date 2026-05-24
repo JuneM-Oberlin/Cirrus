@@ -6,15 +6,27 @@
 }
 
 /* ── PAGE ─────────────────────────────────────────────────── */
+html, body {
+  height: 100%;
+}
+
 body {
   font-family: Helvetica, Arial, sans-serif;
   min-height: 100vh;
-  background: radial-gradient(ellipse 180% 120% at 65% 60%,
-      #1a4db5 0%,
-      #0f2e8a 35%,
-      #071a60 65%,
-      #020a2e 100%);
+  background: linear-gradient(to bottom,
+      #2258cc 0%,
+      #1640a8 20%,
+      #0e2578 45%,
+      #050f48 75%,
+      #010820 100%);
   transition: background 1.2s ease;
+}
+
+.page {
+  background: transparent;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── GREEN HEADER BAR ─────────────────────────────────── */
@@ -94,7 +106,7 @@ body {
   color: rgba(255, 255, 255, 0.4);
 }
 
-/* iOS 6 gloss button */
+/*gloss button */
 .search-row button {
   border-radius: 14px;
   border: 1px solid #1a5aaa;
@@ -160,6 +172,11 @@ body {
   margin: 20px 80px 0;
   font-size: 15px;
   width: fit-content;
+}
+
+#todayView {
+   background: transparent;
+  flex: 1;
 }
 
 /* ── MAIN WEATHER CARD ────────────────────────────────────── */
@@ -296,11 +313,20 @@ body {
 }
 
 /* ── FORECAST STRIP ───────────────────────────────────────── */
+#forecastView {
+  min-height: calc(100vh - 55px);
+  background: linear-gradient(to bottom,
+      #2258cc 0%,
+      #0e2578 30%,
+      #050f48 60%,
+      #010820 100%);
+}
 .forecast-strip {
   display: flex;
   padding: 0;
   margin: 0;
   height: calc(100vh - 55px);  /* fills the screen below the header */
+  background: transparent;
 }
 
 .forecast-day {
@@ -310,7 +336,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  background: rgba(10, 20, 80, 0.4);
+  background: rgba(10, 20, 80, 0.2);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   transition: background 0.2s ease;
 }
@@ -320,7 +346,7 @@ body {
 }
 
 .forecast-day:hover {
-  background: rgba(20, 40, 120, 0.5);
+  background: rgba(20, 40, 120, 0.3);
 }
 
 .forecast-label {
