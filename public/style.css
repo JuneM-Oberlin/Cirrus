@@ -250,7 +250,7 @@ body {
 .wind-bar {
   display: flex;
   align-items: center;
-  gap: 40px;
+  gap: 16px;
   background: linear-gradient(to right,
       rgba(10, 20, 80, 0.9),
       rgba(5, 10, 50, 0.95));
@@ -269,8 +269,8 @@ body {
 }
 
 .wind-val {
-  color: #fff;
-  font-size: 20px;
+  color: #e8e8e8;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -280,8 +280,6 @@ body {
   font-size: 12px;
   padding: 5px 14px;
   border-radius: 8px;
-  width: fit-content;
-  margin: 10px 80px 40px;
 }
 
 /* ── HIDDEN UTILITY ───────────────────────────────────────── */
