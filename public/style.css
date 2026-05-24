@@ -17,7 +17,7 @@ body {
   transition: background 1.2s ease;
 }
 
-/* ── GREEN WII HEADER BAR ─────────────────────────────────── */
+/* ── GREEN HEADER BAR ─────────────────────────────────── */
 .header {
   display: flex;
   align-items: stretch;
@@ -26,17 +26,31 @@ body {
   flex-shrink: 0;
 }
 
-.header-today {
-  background: linear-gradient(to bottom, #3ec832, #1a7a12);
-  color: #fff;
-  font-size: 22px;
+.header-tab {
+  background: linear-gradient(to bottom, #2a9a1e, #155e0e);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 18px;
   font-weight: 700;
   padding: 0 28px;
   display: flex;
   align-items: center;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  flex-shrink: 0;
+  transition: background 0.2s ease, color 0.2s ease;
+  user-select: none;
+}
+
+/* active tab is brighter */
+.header-tab.active {
+  background: linear-gradient(to bottom, #3ec832, #1a7a12);
+  color: #fff;
+}
+
+.header-tab:hover:not(.active) {
+  background: linear-gradient(to bottom, #33b828, #167010);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .header-city {
@@ -52,7 +66,6 @@ body {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   border-left: 1px solid rgba(255, 255, 255, 0.2);
 }
-
 /* ── SEARCH ROW ───────────────────────────────────────────── */
 .search-row {
   display: flex;
@@ -280,6 +293,76 @@ body {
   font-size: 12px;
   padding: 5px 14px;
   border-radius: 8px;
+}
+
+/* ── FORECAST STRIP ───────────────────────────────────────── */
+.forecast-strip {
+  display: flex;
+  padding: 0;
+  margin: 0;
+  height: calc(100vh - 55px);  /* fills the screen below the header */
+}
+
+.forecast-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(10, 20, 80, 0.4);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background 0.2s ease;
+}
+
+.forecast-day:last-child {
+  border-right: none;
+}
+
+.forecast-day:hover {
+  background: rgba(20, 40, 120, 0.5);
+}
+
+.forecast-label {
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* active day label in yellow like the Wii */
+.forecast-label.today {
+  color: #f0c000;
+}
+
+.forecast-icon {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
+}
+
+.forecast-high {
+  color: #f0c000;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 2px 0 #a07800, 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.forecast-low {
+  color: #00e5ff;   /* cyan like the Wii low temps */
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.forecast-rain {
+  color: #88bbff;
+  font-size: 15px;
+  font-weight: 500;
 }
 
 /* ── HIDDEN UTILITY ───────────────────────────────────────── */

@@ -235,6 +235,7 @@ async function fetchWeatherData(city) {
     return normalizeBackendWeatherData(await response.json());
 
 }
+
 //main
 
 async function getWeather() {
