@@ -159,6 +159,84 @@ function degreesToCompass(deg) {
     const index = Math.round(deg / 22.5) % 16;
     return directions[index];
 }
+
+function getWeatherApiKey() {
+    if (typeof window === "undefined") {
+        return "";
+    }
+
+    return (window.WEATHER_API_KEY || "").trim();
+}
+
+function normalizeBackendWeatherData(data) {
+    return {
+        city: data.city,
+        temperature: data.temperature,
+        feelsLike: data.feelsLike,
+        humidity: data.humidity,
+        condition: data.condition,
+        windSpeed: data.windSpeed,
+        weatherCode: data.weatherCode,
+        conditionId: data.conditionId,
+        windDeg: data.windDeg,
+        description: data.description || data.condition,
+    };
+}
+
+function normalizeOpenWeatherData(data) {
+    const weather = data.weather?.[0] || {};
+
+    return {
+        city: data.name,
+        temperature: data.main?.temp,
+        feelsLike: data.main?.feels_like,
+        humidity: data.main?.humidity,
+        condition: weather.description || "Unknown",
+        windSpeed: data.wind?.speed || 0,
+        weatherCode: weather.icon || "",
+        conditionId: weather.id || 800,
+        windDeg: data.wind?.deg || 0,
+        description: weather.description || "Weather conditions",
+    };
+}
+
+async function fetchWeatherData(city) {
+    const apiKey = getWeatherApiKey();
+
+    if (apiKey) {
+        const url = new URL("https://api.openweathermap.org/data/2.5/weather");
+        url.searchParams.set("q", city);
+        url.searchParams.set("appid", apiKey);
+        url.searchParams.set("units", "imperial");
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`OpenWeatherMap request failed with status ${response.status}.`);
+        }
+
+        return normalizeOpenWeatherData(await response.json());
+    }
+
+    const response = await fetch(
+        `http://localhost:4567/weather?city=${encodeURIComponent(city)}`
+    );
+
+    if (!response.ok) {
+        let errorMessage = "Something went wrong.";
+
+        try {
+            const err = await response.json();
+            errorMessage = err.error || errorMessage;
+        } catch (parseError) {
+            console.log("Could not parse backend error response:", parseError);
+        }
+
+        throw new Error(errorMessage);
+    }
+
+    return normalizeBackendWeatherData(await response.json());
+}
 //main
 
 async function getWeather() {
@@ -175,25 +253,7 @@ async function getWeather() {
     hide("errorMsg");
 
     try {
-
-        // call java backend
-
-        const res = await fetch(
-            `http://localhost:4567/weather?city=${encodeURIComponent(city)}`
-        );
-
-        //handle errors responses
-        
-        if(!res.ok) {
-            const err = await res.json();
-            set("errorMsg", err.error || "Something went wrong.");
-            show("errorMsg");
-            hide("loading");
-            return;
-        }
-
-        // populate weather card with data
-        const data = await res.json();
+        const data = await fetchWeatherData(city);
 
     set("cityName", data.city);
     set("tempMain", Math.round(data.temperature) + "°F");
@@ -236,7 +296,7 @@ async function getWeather() {
     } catch (err) {
         //handle network failures
         console.log("Caught error:", err);
-        set("errorMsg", "Could not reach the server. Is your Java backend running?")
+        set("errorMsg", err.message || "Could not load weather data.")
         show("errorMsg");
         hide("loading");
     }
