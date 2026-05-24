@@ -235,7 +235,12 @@ async function fetchWeatherData(city) {
     return normalizeBackendWeatherData(await response.json());
 
 }
-
+function switchTab(tab) {
+    const todayView = document.getElementById("todayView");
+    const forecastView = document.getElementById("forecastView")
+    const tabToday = document.getElementById("tabToday");
+    const tabForecast = document.getElementById("tabForecast");
+}
 //main
 
 async function getWeather() {
