@@ -211,7 +211,7 @@ function normalizeOpenWeatherData(data) {
 async function fetchWeatherData(city) {
 
     const BACKEND_URL =
-        "https://weatherapp-project.onrender.com";
+        "https://weatherapp-project-6rms.onrender.com";
 
     const response = await fetch(
         `${BACKEND_URL}/weather?city=${encodeURIComponent(city)}`
