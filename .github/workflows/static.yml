@@ -33,6 +33,10 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Inject weather API key
+        run: printf 'window.WEATHER_API_KEY = "%s";\n' "${WEATHER_API_KEY:-}" > public/config.js
+        env:
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
