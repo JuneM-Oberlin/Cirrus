@@ -160,6 +160,14 @@ function degreesToCompass(deg) {
     return directions[index];
 }
 
+function isLocalDevelopment() {
+    if (typeof window === "undefined" || !window.location) {
+        return false;
+    }
+
+    return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+}
+
 function getWeatherApiKey() {
     if (typeof window === "undefined") {
         return "";
@@ -216,6 +224,10 @@ async function fetchWeatherData(city) {
         }
 
         return normalizeOpenWeatherData(await response.json());
+    }
+
+    if (!isLocalDevelopment()) {
+        throw new Error("Weather API key is not configured for the live site.");
     }
 
     const response = await fetch(
