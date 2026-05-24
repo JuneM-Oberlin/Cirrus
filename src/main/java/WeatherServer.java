@@ -1,3 +1,5 @@
+import java.util.List;
+
 import com.google.gson.Gson;
 
 import static spark.Spark.before;
@@ -51,7 +53,7 @@ public class WeatherServer {
             if (city == null || city.isBlank()) {
 
                 res.status(400);
-                res.type("application.json");
+                res.type("application/json");
 
                 return gson.toJson(
                     new ErrorResponse(
@@ -67,7 +69,7 @@ public class WeatherServer {
                 WeatherData weather = service.getWeather(city);
 
                 // return JSON
-                res.type("application.json");
+                res.type("application/json");
 
                 return gson.toJson(weather);
                 
@@ -75,10 +77,36 @@ public class WeatherServer {
 
                 //if city not found
                 res.status(404);
-                res.type("application.json");
+                res.type("application/json");
 
                 return gson.toJson(
                         new ErrorResponse("City not found.")   
+                );
+            }
+        });
+
+        //GET /forecast route
+        get("/forecast", (req, res) -> {
+
+            String city = req.queryParams("city");
+
+            if (city == null || city.isBlank()) {
+                res.status(400);
+                res.type("application/json");
+                return gson.toJson(
+                        new ErrorResponse("city parameter is required.")   
+                );
+            }
+
+            try {
+                List<ForecastDay> forecast = service.getForecast(city);
+                res.type("application/json");
+                return gson.toJson(forecast);
+            } catch (Exception e) {
+                res.status(404);
+                res.type("application/json");
+                return gson.toJson(
+                    new ErrorResponse("Forecast not found.")
                 );
             }
         });
