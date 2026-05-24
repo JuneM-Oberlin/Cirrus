@@ -209,45 +209,31 @@ function normalizeOpenWeatherData(data) {
 }
 
 async function fetchWeatherData(city) {
-    const apiKey = getWeatherApiKey();
 
-    if (apiKey) {
-        const url = new URL("https://api.openweathermap.org/data/2.5/weather");
-        url.searchParams.set("q", city);
-        url.searchParams.set("appid", apiKey);
-        url.searchParams.set("units", "imperial");
-
-        const response = await fetch(url);
-
-        if (!response.ok) {
-            throw new Error(`OpenWeatherMap request failed with status ${response.status}.`);
-        }
-
-        return normalizeOpenWeatherData(await response.json());
-    }
-
-    if (!isLocalDevelopment()) {
-        throw new Error("Weather API key is not configured for the live site.");
-    }
+    const BACKEND_URL =
+        "https://weatherapp-project.onrender.com";
 
     const response = await fetch(
-        `http://localhost:4567/weather?city=${encodeURIComponent(city)}`
+        `${BACKEND_URL}/weather?city=${encodeURIComponent(city)}`
+
     );
 
     if (!response.ok) {
         let errorMessage = "Something went wrong.";
 
         try {
+
             const err = await response.json();
             errorMessage = err.error || errorMessage;
+
         } catch (parseError) {
             console.log("Could not parse backend error response:", parseError);
-        }
 
+        }
         throw new Error(errorMessage);
     }
-
     return normalizeBackendWeatherData(await response.json());
+
 }
 //main
 
