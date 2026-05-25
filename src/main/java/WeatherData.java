@@ -11,6 +11,11 @@ public class WeatherData {
     private String weatherCode;
     private int conditionId;
     private int windDeg;
+    private int visibility; // gotta convert to miles in JS
+    private int cloudCover;
+    private long sunrise;
+    private long sunset;
+    private double pressure;
 
     public WeatherData(String city,
             double temperature,
@@ -20,7 +25,12 @@ public class WeatherData {
             double windSpeed,
             String weatherCode,
             int conditionId,
-            int windDeg) {
+            int windDeg,
+            int visibility,
+            int cloudCover,
+            long sunrise,
+            long sunset,
+            double pressure) {
 
         this.city = city;
         this.temperature = temperature;
@@ -31,6 +41,11 @@ public class WeatherData {
         this.weatherCode = weatherCode;
         this.conditionId = conditionId;
         this.windDeg = windDeg;
+        this.visibility = visibility;
+        this.cloudCover = cloudCover;
+        this.sunrise = sunrise;
+        this.sunset = sunset;
+        this.pressure = pressure;
     }
 
     // getter methods
@@ -68,6 +83,26 @@ public class WeatherData {
 
     public int getwindDeg() {
         return windDeg;
+    }
+
+    public int getVisibility() {
+        return visibility;
+    }
+    
+    public int getCloudCover() {
+        return cloudCover;
+    }
+
+    public long getSunrise() {
+        return sunrise;
+    }
+
+    public long getSunset() {
+        return sunset;
+    }
+
+    public double getPressure() {
+        return pressure;
     }
 
 
