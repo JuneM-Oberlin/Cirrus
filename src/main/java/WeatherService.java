@@ -113,6 +113,23 @@ public class WeatherService {
         int windDeg
                 = wind.get("deg").getAsInt();
 
+        int visibility = root.has("visibility")
+            ? root.get("visibility").getAsInt()
+            : 0;
+        
+        JsonObject clouds = root.getAsJsonObject("clouds");
+            int cloudCover = clouds != null
+            ? clouds.get("all").getAsInt()
+            : 0;
+
+            JsonObject sys = root.getAsJsonObject("sys");
+            long sunrise = sys.get("sunrise").getAsLong();
+            long sunset = sys.get("sunset").getAsLong();
+
+            double pressure = main.get("pressure").getAsDouble();
+
+                
+
         return new WeatherData(
                 city,
                 temperature,
@@ -122,7 +139,12 @@ public class WeatherService {
                 windSpeed,
                 weatherCode,
                 conditionId,
-                windDeg
+                windDeg,
+                visibility,
+                cloudCover,
+                sunrise,
+                sunset,
+                pressure      
         );
     }
 
