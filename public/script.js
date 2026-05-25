@@ -188,6 +188,11 @@ function normalizeBackendWeatherData(data) {
         conditionId: data.conditionId,
         windDeg: data.windDeg,
         description: data.description || data.condition,
+        visibility: data.visibility,
+        cloudCover: data.cloudCover,
+        pressure: data.pressure,
+        sunrise: data.sunrise,
+        sunset: data.sunset, 
     };
 }
 
@@ -294,24 +299,6 @@ function getWeatherForecast() {
         .then(res => res.json())
         .then(data => renderForecast(data))
         .catch(err => console.log("Forecast error:", err));
-
-        //visibility
-        const visibilityMiles = (data.visibility / 1609.34).toFixed(1);
-        set("visibility",  visibilityMiles + " mi");
-        set("cloudCover",  data.cloudCover + "%");
-        set("pressure",    data.pressure + " hPa");
-
-        // sunrise + sunset — convert unix timestamp to local time
-        const sunriseTime = new Date(data.sunrise * 1000).toLocaleTimeString([], {
-            hour: "2-digit", minute: "2-digit"
-        });
-
-        const sunsetTime = new Date(data.sunset * 1000).toLocaleTimeString([], {
-            hour: "2-digit", minute: "2-digit"
-        });
-        
-        set("sunrise", sunriseTime);
-        set("sunset",  sunsetTime);
 }
 //main
 
@@ -345,6 +332,21 @@ async function getWeather() {
     set("timestamp", "As of " + new Date().toLocaleTimeString([], {
     hour: "2-digit", minute: "2-digit"
     }));
+
+    // new fields
+    const visibilityMiles = (data.visibility / 1609.34).toFixed(1);
+    set("visibility", visibilityMiles + " mi");
+    set("cloudCover", data.cloudCover + "%");
+    set("pressure",   data.pressure + " hPa");
+
+    const sunriseTime = new Date(data.sunrise * 1000).toLocaleTimeString([], {
+        hour: "2-digit", minute: "2-digit"
+    });
+    const sunsetTime = new Date(data.sunset * 1000).toLocaleTimeString([], {
+        hour: "2-digit", minute: "2-digit"
+    });
+    set("sunrise", sunriseTime);
+    set("sunset",  sunsetTime);
 
 
     // resolve the icon using code and day/night
