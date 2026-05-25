@@ -110,8 +110,9 @@ public class WeatherService {
         int conditionId
                 = weather.get("id").getAsInt();
 
-        int windDeg
-                = wind.get("deg").getAsInt();
+        int windDeg = wind.has("deg")
+            ? wind.get("deg").getAsInt()
+            : 0;
 
         int visibility = root.has("visibility")
             ? root.get("visibility").getAsInt()
@@ -127,6 +128,26 @@ public class WeatherService {
             long sunset = sys.get("sunset").getAsLong();
 
             double pressure = main.get("pressure").getAsDouble();
+
+            double tempMin = main.get("temp_min").getAsDouble();
+            double tempMax = main.get("temp_max").getAsDouble();
+
+            double precipitation = 0.0;
+            if (root.has("rain")) {
+                JsonObject rain = root.getAsJsonObject("rain");
+                if (rain.has("1h")) {
+                    precipitation = rain.get("1h").getAsDouble();
+                } else if (rain.has("3h")) {
+                    precipitation = rain.get("3h").getAsDouble();
+                }
+            } else if (root.has("snow")) {
+                JsonObject snow = root.getAsJsonObject("snow");
+                if (snow.has("1h")) {
+                    precipitation = snow.get("1h").getAsDouble();
+                } else if (snow.has("3h")) {
+                    precipitation = snow.get("3h").getAsDouble();
+                }
+            }
 
                 
 
@@ -144,7 +165,10 @@ public class WeatherService {
                 cloudCover,
                 sunrise,
                 sunset,
-                pressure      
+                pressure,
+                precipitation,
+                tempMin,
+                tempMax      
         );
     }
 
