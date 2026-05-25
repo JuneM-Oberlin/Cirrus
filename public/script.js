@@ -300,6 +300,22 @@ function getWeatherForecast() {
         .then(data => renderForecast(data))
         .catch(err => console.log("Forecast error:", err));
 }
+
+function getFeelsLikeExplanation(temp, feelsLike, windSpeed, humidity) {
+    const diff = temp - feelsLike;
+
+    if (diff >= 5 && windSpeed > 10) {
+        return "Feels colder due to wind";
+    } else if (diff >= 3) {
+        return "Feels cooler than actual temp";
+    } else if (diff <= -3 && humidity > 70) {
+        return "Feels warmer due to humidity";
+    } else if (diff <= -5) {
+        return "Feels hotter than actual temp";
+    } else {
+        return "Feels about the same";
+    }
+}
 //main
 
 async function getWeather() {

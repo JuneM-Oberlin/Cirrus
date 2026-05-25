@@ -16,6 +16,9 @@ public class WeatherData {
     private long sunrise;
     private long sunset;
     private double pressure;
+    private double precipitation;
+    private double tempMax;
+    private double tempMin;
 
     public WeatherData(String city,
             double temperature,
@@ -30,7 +33,10 @@ public class WeatherData {
             int cloudCover,
             long sunrise,
             long sunset,
-            double pressure) {
+            double pressure,
+            double precipitation,
+            double tempMin,
+            double tempMax) {
 
         this.city = city;
         this.temperature = temperature;
@@ -46,6 +52,9 @@ public class WeatherData {
         this.sunrise = sunrise;
         this.sunset = sunset;
         this.pressure = pressure;
+        this.precipitation = precipitation;
+        this.tempMin = tempMin;
+        this.tempMax = tempMax;
     }
 
     // getter methods
@@ -104,6 +113,20 @@ public class WeatherData {
     public double getPressure() {
         return pressure;
     }
+
+    public double precipitation() {
+        return precipitation;
+    }
+
+    public double tempMin() {
+        return tempMin;
+    }
+
+    public double tempMax() {
+        return tempMax;
+    }
+
+
 
 
     @Override
