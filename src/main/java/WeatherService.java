@@ -164,36 +164,62 @@ public class WeatherService {
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
         JsonArray list = root.getAsJsonArray("list");
 
-        // group by date, prefer noon reading
-        Map<String, JsonObject> dailyMap = new LinkedHashMap<>();
+// group by date
+        Map<String, List<JsonObject>> dailyMap = new LinkedHashMap<>();
 
         for (int i = 0; i < list.size(); i++) {
             JsonObject entry = list.get(i).getAsJsonObject();
             String dtTxt = entry.get("dt_txt").getAsString();
             String date = dtTxt.substring(0, 10);
-            String hour = dtTxt.substring(11, 13);
 
-            if (!dailyMap.containsKey(date) || hour.equals("12")) {
-                dailyMap.put(date, entry);
-            }
+            dailyMap.putIfAbsent(date, new ArrayList<>());
+            dailyMap.get(date).add(entry);
         }
 
         List<ForecastDay> days = new ArrayList<>();
 
-        for (Map.Entry<String, JsonObject> entry : dailyMap.entrySet()) {
+        for (Map.Entry<String, List<JsonObject>> entry : dailyMap.entrySet()) {
             if (days.size() >= 5) {
                 break;
             }
 
-            JsonObject e = entry.getValue();
-            JsonObject main = e.getAsJsonObject("main");
-            JsonObject weather = e.getAsJsonArray("weather")
+            List<JsonObject> dayEntries = entry.getValue();
+            double maxTemp = Double.NEGATIVE_INFINITY;
+            double minTemp = Double.POSITIVE_INFINITY;
+
+            // default to first entry, but prefer noon
+            JsonObject chosenEntry = dayEntries.get(0);
+            for (JsonObject e : dayEntries) {
+                JsonObject main = e.getAsJsonObject("main");
+
+                double tempMax = main.get("temp_max").getAsDouble();
+                double tempMin = main.get("temp_min").getAsDouble();
+
+                if (tempMax > maxTemp) {
+                    maxTemp = tempMax;
+                }
+
+                if (tempMin < minTemp) {
+                    minTemp = tempMin;
+                }
+
+                // prefer noon for visuals
+                String dtTxt = e.get("dt_txt").getAsString();
+                if (dtTxt.contains("12:00:00")) {
+                    chosenEntry = e;
+
+                }
+
+            }
+
+            JsonObject main = chosenEntry.getAsJsonObject("main");
+            JsonObject weather = chosenEntry.getAsJsonArray("weather")
                     .get(0).getAsJsonObject();
 
             int rainChance = 0;
-            if (e.has("pop")) {
+            if (chosenEntry.has("pop")) {
                 rainChance = (int) Math.round(
-                        e.get("pop").getAsDouble() * 100
+                        chosenEntry.get("pop").getAsDouble() * 100
                 );
             }
 
@@ -206,8 +232,8 @@ public class WeatherService {
 
             days.add(new ForecastDay(
                     dayName,
-                    main.get("temp_max").getAsDouble(),
-                    main.get("temp_min").getAsDouble(),
+                    maxTemp,
+                    minTemp,
                     rainChance,
                     weather.get("description").getAsString(),
                     weather.get("icon").getAsString(),
