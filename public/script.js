@@ -270,6 +270,21 @@ function switchTab(tab) {
 
 function renderForecast(days) {
      const strip = document.getElementById("forecastStrip");
+    const footer = document.getElementById("forecastFooter");
+    const now = new Date();
+    const timeText = now.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+    const dateText = now.toLocaleDateString([], {
+        month: "2-digit",
+        day: "2-digit"
+    });
+
+    if (footer) {
+        footer.textContent = `AS OF ${timeText}, ${dateText}`;
+    }
+
   strip.innerHTML = days.map((day, i) => `
     <div class="forecast-day">
       <div class="forecast-label ${i === 0 ? 'today' : ''}">${day.day}</div>
@@ -284,6 +299,50 @@ function renderForecast(days) {
       </div>
     </div>
   `).join(""); 
+
+    // attach click handlers to each day to show details below
+    const detailPanel = document.getElementById("forecastDetails");
+    const dayEls = strip.querySelectorAll('.forecast-day');
+    dayEls.forEach((el, idx) => {
+        el.setAttribute('data-idx', idx);
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', () => {
+            // visual active state
+            dayEls.forEach(d => d.classList.remove('active'));
+            el.classList.add('active');
+            // show details
+            showForecastDetails(days[idx]);
+        });
+    });
+}
+
+function showForecastDetails(day) {
+    const panel = document.getElementById('forecastDetails');
+    if (!panel) return;
+
+    const description = day.description || day.condition || '';
+    const rain = (day.rainChance !== undefined) ? `${day.rainChance}%` : '—';
+    const precip = day.precipitation || day.precip || '—';
+    const wind = day.windSpeed ? `${Math.round(day.windSpeed)} mph` : '—';
+
+    panel.innerHTML = `
+        <div class="details-card">
+            <div class="details-left">
+                <div class="details-day">${day.day}</div>
+                <div class="details-desc">${description}</div>
+            </div>
+            <div class="details-right">
+                <div class="details-row"><span class="k">High:</span> <span class="v">${Math.round(day.high)}°</span></div>
+                <div class="details-row"><span class="k">Low:</span> <span class="v">${Math.round(day.low)}°</span></div>
+                <div class="details-row"><span class="k">Precip:</span> <span class="v">${precip}</span></div>
+                <div class="details-row"><span class="k">Rain:</span> <span class="v">${rain}</span></div>
+                <div class="details-row"><span class="k">Wind:</span> <span class="v">${wind}</span></div>
+            </div>
+        </div>
+    `;
+    panel.classList.remove('hidden');
+    // scroll into view so user sees the details below the strip
+    panel.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
 function getWeatherForecast() {

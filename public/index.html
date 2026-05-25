@@ -71,25 +71,27 @@
           </div>
         </div>
 
-        <!-- WIND + TIMESTAMP BAR -->
-        <div class="wind-bar">
-          <span class="wind-label">Wind Direction</span>
-          <span class="wind-val" id="windDir">--</span>
-          <span class="timestamp" id="timestamp">--</span>
-        </div>
-
-        <!-- SUNRISE / SUNSET BAR -->
-        <div class="sun-bar">
-          <div class="sun-item">
-            <img src="icons/clear-day.png" alt="Sunrise" class="sun-icon">
-            <span class="sun-label">Sunrise</span>
-            <span class="sun-val" id="sunrise">--</span>
+        <div class="aux-grid">
+          <!-- WIND + TIMESTAMP BAR -->
+          <div class="wind-bar">
+            <span class="wind-label">Wind Direction</span>
+            <span class="wind-val" id="windDir">--</span>
+            <span class="timestamp" id="timestamp">--</span>
           </div>
-          <div class="sun-divider"></div>
-          <div class="sun-item">
-            <img src="icons/clear-night.png" alt="Sunset" class="sun-icon">
-            <span class="sun-label">Sunset</span>
-            <span class="sun-val" id="sunset">--</span>
+
+          <!-- SUNRISE / SUNSET BAR -->
+          <div class="sun-bar">
+            <div class="sun-item">
+              <img src="icons/clear-day.png" alt="Sunrise" class="sun-icon">
+              <span class="sun-label">Sunrise</span>
+              <span class="sun-val" id="sunrise">--</span>
+            </div>
+            <div class="sun-divider"></div>
+            <div class="sun-item">
+              <img src="icons/clear-night.png" alt="Sunset" class="sun-icon">
+              <span class="sun-label">Sunset</span>
+              <span class="sun-val" id="sunset">--</span>
+            </div>
           </div>
         </div>
 
@@ -108,6 +110,11 @@
 
       <div class="history" id="historyListForecast"></div>
       <div class="forecast-strip" id="forecastStrip"></div>
+
+      <!-- Selected day details (hidden until a day is clicked) -->
+      <div id="forecastDetails" class="forecast-details hidden"></div>
+
+      <div class="forecast-footer" id="forecastFooter">AS OF --:-- --, --/--</div>
     </div>
 
   </div>
