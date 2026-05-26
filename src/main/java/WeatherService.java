@@ -1,8 +1,11 @@
+
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -19,6 +22,26 @@ public class WeatherService {
             .filename("touch.env")
             .ignoreIfMissing()
             .load();
+
+    // caching to make app faster
+    private static class CacheEntry<T> {
+
+        final T data;
+        final Instant expiry;
+
+        CacheEntry(T data, int ttlSeconds) {
+            this.data = data;
+            this.expiry = Instant.now().plusSeconds(ttlSeconds);
+        }
+
+        boolean isExpired() {
+            return Instant.now().isAfter(expiry);
+        }
+    }
+
+    private static final int CACHE_TTL_SECONDS = 600; // 10 minutes
+    private final ConcurrentHashMap<String, CacheEntry<WeatherData>> weatherCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CacheEntry<List<ForecastDay>>> forecastCache = new ConcurrentHashMap<>();
 
     public String getWeatherJSON(String city) {
         String apiKey = System.getenv("WEATHER_API_KEY");
@@ -111,45 +134,43 @@ public class WeatherService {
                 = weather.get("id").getAsInt();
 
         int windDeg = wind.has("deg")
-            ? wind.get("deg").getAsInt()
-            : 0;
+                ? wind.get("deg").getAsInt()
+                : 0;
 
         int visibility = root.has("visibility")
-            ? root.get("visibility").getAsInt()
-            : 0;
-        
+                ? root.get("visibility").getAsInt()
+                : 0;
+
         JsonObject clouds = root.getAsJsonObject("clouds");
-            int cloudCover = clouds != null
-            ? clouds.get("all").getAsInt()
-            : 0;
+        int cloudCover = clouds != null
+                ? clouds.get("all").getAsInt()
+                : 0;
 
-            JsonObject sys = root.getAsJsonObject("sys");
-            long sunrise = sys.get("sunrise").getAsLong();
-            long sunset = sys.get("sunset").getAsLong();
+        JsonObject sys = root.getAsJsonObject("sys");
+        long sunrise = sys.get("sunrise").getAsLong();
+        long sunset = sys.get("sunset").getAsLong();
 
-            double pressure = main.get("pressure").getAsDouble();
+        double pressure = main.get("pressure").getAsDouble();
 
-            double tempMin = main.get("temp_min").getAsDouble();
-            double tempMax = main.get("temp_max").getAsDouble();
+        double tempMin = main.get("temp_min").getAsDouble();
+        double tempMax = main.get("temp_max").getAsDouble();
 
-            double precipitation = 0.0;
-            if (root.has("rain")) {
-                JsonObject rain = root.getAsJsonObject("rain");
-                if (rain.has("1h")) {
-                    precipitation = rain.get("1h").getAsDouble();
-                } else if (rain.has("3h")) {
-                    precipitation = rain.get("3h").getAsDouble();
-                }
-            } else if (root.has("snow")) {
-                JsonObject snow = root.getAsJsonObject("snow");
-                if (snow.has("1h")) {
-                    precipitation = snow.get("1h").getAsDouble();
-                } else if (snow.has("3h")) {
-                    precipitation = snow.get("3h").getAsDouble();
-                }
+        double precipitation = 0.0;
+        if (root.has("rain")) {
+            JsonObject rain = root.getAsJsonObject("rain");
+            if (rain.has("1h")) {
+                precipitation = rain.get("1h").getAsDouble();
+            } else if (rain.has("3h")) {
+                precipitation = rain.get("3h").getAsDouble();
             }
-
-                
+        } else if (root.has("snow")) {
+            JsonObject snow = root.getAsJsonObject("snow");
+            if (snow.has("1h")) {
+                precipitation = snow.get("1h").getAsDouble();
+            } else if (snow.has("3h")) {
+                precipitation = snow.get("3h").getAsDouble();
+            }
+        }
 
         return new WeatherData(
                 city,
@@ -168,17 +189,36 @@ public class WeatherService {
                 pressure,
                 precipitation,
                 tempMin,
-                tempMax      
+                tempMax
         );
     }
 
     public WeatherData getWeather(String city) {
-        String json = getWeatherJSON(city);
+        String key = city.toLowerCase().trim();
 
-        return parseWeather(json);
+        // return cached result if still fresh
+        CacheEntry<WeatherData> cached = weatherCache.get(key);
+        if (cached != null && !cached.isExpired()) {
+            System.out.println("Cache hit: weather/" + key);
+            return cached.data;
+        }
+
+        String json = getWeatherJSON(city);
+        WeatherData data = parseWeather(json);
+
+        // store in cache
+        weatherCache.put(key, new CacheEntry<>(data, CACHE_TTL_SECONDS));
+        return data;
     }
 
     public List<ForecastDay> getForecast(String city) throws Exception {
+        String key = city.toLowerCase().trim();
+
+        CacheEntry<List<ForecastDay>> cached = forecastCache.get(key);
+        if (cached != null && !cached.isExpired()) {
+            System.out.println("Cache hit: forecast/" + key);
+            return cached.data;
+        }
 
         String apiKey = System.getenv("WEATHER_API_KEY");
         if (apiKey == null || apiKey.isEmpty()) {
@@ -201,7 +241,9 @@ public class WeatherService {
             if (!response.isSuccessful()) {
                 throw new RuntimeException("Forecast error: " + response.code());
             }
-            return parseForecast(response.body().string());
+            List<ForecastDay> data = parseForecast(response.body().string());
+            forecastCache.put(key, new CacheEntry<>(data, CACHE_TTL_SECONDS));
+            return data;
         }
     }
 
