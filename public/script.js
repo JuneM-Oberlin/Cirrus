@@ -286,7 +286,7 @@ function renderForecast(days) {
     });
 
     if (footer) {
-        footer.textContent = `AS OF ${timeText}, ${dateText}`;
+        footer.textContent = `As of ${timeText}, ${dateText}`;
     }
 
   strip.innerHTML = days.map((day, i) => `
