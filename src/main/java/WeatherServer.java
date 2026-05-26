@@ -1,4 +1,8 @@
+
+import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.gson.Gson;
 
@@ -11,7 +15,6 @@ import static spark.Spark.staticFiles;
 public class WeatherServer {
 
     // error response helper
-
     static class ErrorResponse {
 
         String error;
@@ -21,8 +24,35 @@ public class WeatherServer {
         }
     }
 
+    // rate limiter
+    static class RateLimiter {
+
+        private static final int MAX_REQUESTS = 30;   // per window
+        private static final int WINDOW_SECONDS = 60;  // 1 minute
+
+        private static class Window {
+
+            AtomicInteger count = new AtomicInteger(0);
+            Instant resetAt = Instant.now().plusSeconds(WINDOW_SECONDS);
+        }
+
+        private final ConcurrentHashMap<String, Window> windows = new ConcurrentHashMap<>();
+
+        boolean isAllowed(String ip) {
+            Window window = windows.compute(ip, (key, existing) -> {
+                if (existing == null || Instant.now().isAfter(existing.resetAt)) {
+                    return new Window(); // new window
+                }
+                return existing;
+            });
+            return window.count.incrementAndGet() <= MAX_REQUESTS;
+        }
+    }
+
+    private static final RateLimiter rateLimiter = new RateLimiter();
+
     public static void main(String[] args) {
-        
+
         //Port
         String portStr = System.getenv("PORT");
 
@@ -42,12 +72,19 @@ public class WeatherServer {
 
         Gson gson = new Gson();
 
-
         //GET /weather route
-        get("/weather", (req, res) ->  {
+        get("/weather", (req, res) -> {
 
             //read city query param
             String city = req.queryParams("city");
+
+            // rate limiting
+            String ip = req.ip();
+            if (!rateLimiter.isAllowed(ip)) {
+                res.status(429);
+                res.type("application/json");
+                return gson.toJson(new ErrorResponse("Too many requests. Please wait a minute."));
+            }
 
             //if missing
             if (city == null || city.isBlank()) {
@@ -56,10 +93,9 @@ public class WeatherServer {
                 res.type("application/json");
 
                 return gson.toJson(
-                    new ErrorResponse(
-                        "city parameter is required."
-                    )
-
+                        new ErrorResponse(
+                                "city parameter is required."
+                        )
                 );
 
             }
@@ -72,7 +108,7 @@ public class WeatherServer {
                 res.type("application/json");
 
                 return gson.toJson(weather);
-                
+
             } catch (Exception e) {
 
                 //if city not found
@@ -80,7 +116,7 @@ public class WeatherServer {
                 res.type("application/json");
 
                 return gson.toJson(
-                        new ErrorResponse("City not found.")   
+                        new ErrorResponse("City not found.")
                 );
             }
         });
@@ -90,11 +126,18 @@ public class WeatherServer {
 
             String city = req.queryParams("city");
 
+            String ip = req.ip();
+            if (!rateLimiter.isAllowed(ip)) {
+                res.status(429);
+                res.type("application/json");
+                return gson.toJson(new ErrorResponse("Too many requests. Please wait a minute."));
+            }
+
             if (city == null || city.isBlank()) {
                 res.status(400);
                 res.type("application/json");
                 return gson.toJson(
-                        new ErrorResponse("city parameter is required.")   
+                        new ErrorResponse("city parameter is required.")
                 );
             }
 
@@ -106,34 +149,33 @@ public class WeatherServer {
                 res.status(404);
                 res.type("application/json");
                 return gson.toJson(
-                    new ErrorResponse("Forecast not found.")
+                        new ErrorResponse("Forecast not found.")
                 );
             }
         });
     }
-        
 
     private static void enableCORS() {
 
         options("/*", (request, response) -> {
 
-            String accessControlRequestHeaders =
-                    request.headers(
-                        "Access-Control-Request-Headers"
+            String accessControlRequestHeaders
+                    = request.headers(
+                            "Access-Control-Request-Headers"
                     );
 
             if (accessControlRequestHeaders != null) {
                 response.header(
-                    "Access-Control-Allow-Headers",
-                    accessControlRequestHeaders
+                        "Access-Control-Allow-Headers",
+                        accessControlRequestHeaders
                 );
             }
 
-            String accessControlRequestMethod =
-                    request.headers(
+            String accessControlRequestMethod
+                    = request.headers(
                             "Access-Control-Request-Method"
                     );
-            
+
             if (accessControlRequestMethod != null) {
                 response.header(
                         "Access-Control-Allow-Methods",
@@ -144,13 +186,12 @@ public class WeatherServer {
             return "OK";
         });
 
-        before((request, response) ->
-                response.header(
-                    "Access-Control-Allow-Origin",
-                    "*"
+        before((request, response)
+                -> response.header(
+                        "Access-Control-Allow-Origin",
+                        "*"
                 )
         );
 
     }
 }
-   

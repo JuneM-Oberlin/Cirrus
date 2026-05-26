@@ -4,3 +4,11 @@ touch.env
 # Maven build outputs
 dependency-reduced-pom.xml
 target/
+
+# Graphify 
+graphify-out/
+graphify-out/**
+.graphify_*
+graphify.log
+graphify.lock
+.DS_Store

@@ -235,6 +235,10 @@ async function fetchWeatherData(city) {
             console.log("Could not parse backend error response:", parseError);
 
         }
+        //  message if rate limit
+        if (response.status === 429) {
+            errorMessage = "Too many searches — please wait a minute.";
+        }
         throw new Error(errorMessage);
     }
     return normalizeBackendWeatherData(await response.json());
@@ -379,7 +383,7 @@ function getFeelsLikeExplanation(temp, feelsLike, windSpeed, humidity) {
 
 async function getWeather() {
 
-    //read city imput - bail out if empty
+    //read city imput bail out if empty
 
     const city = document.getElementById("cityInput").value.trim();
     if (!city) return;
@@ -395,10 +399,18 @@ async function getWeather() {
 
     set("cityName", data.city);
     set("tempMain", Math.round(data.temperature) + "°F");
-    set("condition", data.condition
+    // set condition text add feelslike explanation
+    const conditionFormatted = data.condition
                     .split(" ")
                     .map(w => w[0].toUpperCase() + w.slice(1))
-                    .join(" "));
+                    .join(" ");
+    const conditionEl = document.getElementById('conditionText');
+    const feelsEl = document.getElementById('feelsExplanation');
+    if (conditionEl) conditionEl.textContent = conditionFormatted;
+    if (feelsEl) {
+        const expl = getFeelsLikeExplanation(data.temperature, data.feelsLike, data.windSpeed, data.humidity);
+        feelsEl.textContent = ` — ${expl}`;
+    }
     
     set("feelsLike", Math.round(data.feelsLike) + "°F");
     set("humidity", data.humidity + "%");
