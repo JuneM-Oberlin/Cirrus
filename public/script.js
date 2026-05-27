@@ -176,6 +176,38 @@ function getWeatherApiKey() {
     return (window.WEATHER_API_KEY || "").trim();
 }
 
+const clientCache = {
+    weather: new Map(),
+    forecast: new Map(),
+};
+
+const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function normalizeCityKey(city) {
+    return (city || "").trim().toLowerCase();
+}
+
+function getCachedEntry(cache, key) {
+    const entry = cache.get(key);
+    if (!entry) {
+        return null;
+    }
+
+    if (Date.now() > entry.expiry) {
+        cache.delete(key);
+        return null;
+    }
+
+    return entry.value;
+}
+
+function setCachedEntry(cache, key, value) {
+    cache.set(key, {
+        value,
+        expiry: Date.now() + CLIENT_CACHE_TTL_MS,
+    });
+}
+
 function normalizeBackendWeatherData(data) {
     return {
         city: data.city,
@@ -214,6 +246,11 @@ function normalizeOpenWeatherData(data) {
 }
 
 async function fetchWeatherData(city) {
+    const key = normalizeCityKey(city);
+    const cached = getCachedEntry(clientCache.weather, key);
+    if (cached) {
+        return cached;
+    }
 
     const BACKEND_URL =
         "https://weatherapp-project-6rms.onrender.com";
@@ -241,7 +278,40 @@ async function fetchWeatherData(city) {
         }
         throw new Error(errorMessage);
     }
-    return normalizeBackendWeatherData(await response.json());
+    const data = normalizeBackendWeatherData(await response.json());
+    setCachedEntry(clientCache.weather, key, data);
+    return data;
+
+}
+
+async function fetchForecastData(city) {
+    const key = normalizeCityKey(city);
+    const cached = getCachedEntry(clientCache.forecast, key);
+    if (cached) {
+        return cached;
+    }
+
+    const response = await fetch(`https://weatherapp-project-6rms.onrender.com/forecast?city=${encodeURIComponent(city)}`);
+
+    if (!response.ok) {
+        let errorMessage = "Something went wrong.";
+        try {
+            const err = await response.json();
+            errorMessage = err.error || errorMessage;
+        } catch (parseError) {
+            console.log("Could not parse backend error response:", parseError);
+        }
+
+        if (response.status === 429) {
+            errorMessage = "Too many searches — please wait a minute.";
+        }
+
+        throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    setCachedEntry(clientCache.forecast, key, data);
+    return data;
 
 }
 function switchTab(tab) {
@@ -264,8 +334,7 @@ function switchTab(tab) {
         // fetch forecast if not loaded
         const city = document.getElementById("cityInput").value.trim();
         if (city) {
-            fetch(`https://weatherapp-project-6rms.onrender.com/forecast?city=${encodeURIComponent(city)}`)
-                .then(res => res.json())
+            fetchForecastData(city)
                 .then(data => renderForecast(data))
                 .catch(err => console.log("Forecast error:", err));
         } 
@@ -352,16 +421,78 @@ function showForecastDetails(day) {
 function getWeatherForecast() {
     const city = document.getElementById("cityInputForecast").value.trim();
     if (!city) return;
+
     // sync to main input
     document.getElementById("cityInput").value = city;
-    getWeather();
-    // also fetch forecast
+    show("loading");
+    hide("weatherDisplay");
+    hide("errorMsg");
+
     const strip = document.getElementById("forecastStrip");
     strip.innerHTML = "";
-    fetch(`https://weatherapp-project-6rms.onrender.com/forecast?city=${encodeURIComponent(city)}`)
-        .then(res => res.json())
-        .then(data => renderForecast(data))
-        .catch(err => console.log("Forecast error:", err));
+
+    Promise.all([fetchWeatherData(city), fetchForecastData(city)])
+        .then(([weatherData, forecastData]) => {
+            set("cityName", weatherData.city);
+            set("tempMain", Math.round(weatherData.temperature) + "°F");
+
+            const conditionFormatted = weatherData.condition
+                .split(" ")
+                .map(w => w[0].toUpperCase() + w.slice(1))
+                .join(" ");
+            const conditionEl = document.getElementById('conditionText');
+            const feelsEl = document.getElementById('feelsExplanation');
+            if (conditionEl) conditionEl.textContent = conditionFormatted;
+            if (feelsEl) {
+                const expl = getFeelsLikeExplanation(weatherData.temperature, weatherData.feelsLike, weatherData.windSpeed, weatherData.humidity);
+                feelsEl.textContent = ` — ${expl}`;
+            }
+
+            set("feelsLike", Math.round(weatherData.feelsLike) + "°F");
+            set("humidity", weatherData.humidity + "%");
+            set("wind", Math.round(weatherData.windSpeed) + " mph");
+            set("windDir", degreesToCompass(weatherData.windDeg) + " " + Math.round(weatherData.windSpeed) + " mph");
+            set("timestamp", "As of " + new Date().toLocaleTimeString([], {
+                hour: "2-digit", minute: "2-digit"
+            }));
+
+            const visibilityMiles = (weatherData.visibility / 1609.34).toFixed(1);
+            set("visibility", visibilityMiles + " mi");
+            set("cloudCover", weatherData.cloudCover + "%");
+            set("pressure", weatherData.pressure + " hPa");
+
+            const sunriseTime = new Date(weatherData.sunrise * 1000).toLocaleTimeString([], {
+                hour: "2-digit", minute: "2-digit"
+            });
+            const sunsetTime = new Date(weatherData.sunset * 1000).toLocaleTimeString([], {
+                hour: "2-digit", minute: "2-digit"
+            });
+            set("sunrise", sunriseTime);
+            set("sunset", sunsetTime);
+
+            const conditionId = weatherData.conditionId;
+            const isNight = weatherData.weatherCode.endsWith("n");
+            const key = isNight ? `${conditionId}n` : conditionId;
+            const iconSrc = "icons/" + (iconMap[key] ?? "default.png");
+
+            const iconEl = document.getElementById("weatherIcon");
+            iconEl.innerHTML = "";
+            const img = document.createElement("img");
+            img.src = iconSrc;
+            img.alt = weatherData.description;
+            img.className = "weather-img";
+            iconEl.appendChild(img);
+
+            show("weatherDisplay");
+            renderForecast(forecastData);
+            hide("loading");
+        })
+        .catch(err => {
+            console.log("Search error:", err);
+            set("errorMsg", err.message || "Could not load weather data.");
+            show("errorMsg");
+            hide("loading");
+        });
 }
 
 function getFeelsLikeExplanation(temp, feelsLike, windSpeed, humidity) {
