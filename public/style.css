@@ -20,11 +20,20 @@ body {
       #0e2578 45%,
       #050f48 75%,
       #010820 100%);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+  background-color: #010820;
   transition: background 1.2s ease;
 }
 
 .page {
-  background: transparent;
+  background: linear-gradient(to bottom,
+      #2258cc 0%,
+      #1640a8 20%,
+      #0e2578 45%,
+      #050f48 75%,
+      #010820 100%);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -194,7 +203,7 @@ body {
   grid-template-columns: minmax(320px, 1.15fr) minmax(180px, 0.75fr) minmax(300px, 1fr);
   grid-template-areas:
     "summary icon details"
-    "wind sun details";
+    "aux aux aux";
   gap: 18px 22px;
   align-items: start;
   width: min(1220px, calc(100% - 48px));
@@ -312,31 +321,39 @@ body {
   font-weight: 600;
 }
 
+.aux-grid {
+  grid-area: aux;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
 /* ── WIND + TIMESTAMP BAR ─────────────────────────────────── */
 .wind-bar {
-  grid-area: wind;
   display: flex;
   align-items: center;
-  gap: 16px;
-  min-height: 66px;
-  background: linear-gradient(to right,
-      rgba(10, 20, 80, 0.9),
-      rgba(5, 10, 50, 0.95));
+  gap: 14px;
+  justify-content: flex-start;
+  min-height: 72px;
+  padding: 12px 16px;
+  background: linear-gradient(to bottom,
+      rgba(13, 25, 96, 0.96),
+      rgba(5, 10, 50, 0.96));
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 10px 18px;
   width: 100%;
 }
 /* ── SUNRISE / SUNSET BAR ─────────────────────────────────── */
 .sun-bar {
-  grid-area: sun;
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+  align-items: stretch;
   gap: 0;
-  min-height: 66px;
-  background: linear-gradient(to right,
-      rgba(10, 20, 80, 0.9),
-      rgba(5, 10, 50, 0.95));
+  min-height: 72px;
+  background: linear-gradient(to bottom,
+      rgba(13, 25, 96, 0.96),
+      rgba(5, 10, 50, 0.96));
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%;
@@ -347,15 +364,24 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 10px 22px;
-  flex: 1;
+  justify-content: center;
+  gap: 2px;
+  padding: 12px 16px;
+  min-height: 100%;
 }
 
 .sun-divider {
   width: 1px;
-  height: 36px;
+  height: auto;
   background: rgba(255, 255, 255, 0.1);
+}
+
+.sun-icon {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
 }
 
 .sun-label {
@@ -385,11 +411,15 @@ body {
 }
 
 .timestamp {
-  background: linear-gradient(to right, #8a1a3a, #5a0a22);
-  color: rgba(255, 255, 255, 0.85);
+  margin-left: auto;
+  background: linear-gradient(to right, #a63a50, #6d0f26);
+  color: rgba(255, 255, 255, 0.95);
   font-size: 12px;
-  padding: 5px 14px;
-  border-radius: 8px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
 }
 
 /* ── FORECAST STRIP ───────────────────────────────────────── */
@@ -555,6 +585,28 @@ body {
 
 /* ── RESPONSIVE ───────────────────────────────────────────── */
 @media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .header {
+    height: 40px;
+  }
+
+  .header-tab {
+    font-size: 12px;
+    padding: 0 11px;
+    letter-spacing: 0.6px;
+  }
+
+  .header-city {
+    width: min(38vw, 180px);
+    min-width: 0;
+    font-size: 12px;
+    margin: 4px 0 4px auto;
+    padding: 0 12px 0 10px;
+  }
+
   .search-row,
   .history,
   .details-row,
@@ -568,41 +620,121 @@ body {
     margin-right: 0;
   }
 
+  .search-row {
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 10px;
+  }
+
+  .search-row input,
+  .search-row button {
+    width: 100%;
+  }
+
+  .search-row input {
+    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 14px;
+  }
+
+  .search-row button {
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 12px;
+  }
+
+  .history {
+    padding-top: 8px;
+    gap: 6px;
+  }
+
+  .history span {
+    font-size: 11px;
+    padding: 4px 9px;
+  }
+
+  #loading {
+    padding-top: 18px;
+    padding-bottom: 8px;
+    font-size: 14px;
+  }
+
+  .error {
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
   .weather-card {
     width: calc(100% - 24px);
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
     grid-template-areas:
-      "summary"
-      "icon"
-      "details"
-      "wind"
-      "sun";
-    padding: 22px;
-    gap: 16px;
-    border-radius: 22px;
+      "summary icon"
+      "details details"
+      "aux aux";
+    padding: 16px;
+    gap: 12px;
+    border-radius: 18px;
+  }
+
+  .weather-card,
+  .details-card,
+  .forecast-day {
+    backdrop-filter: blur(4px) saturate(115%);
+    -webkit-backdrop-filter: blur(4px) saturate(115%);
+  }
+
+  .card-left {
+    gap: 6px;
+    align-items: flex-start;
+    text-align: left;
   }
 
   .temp {
-    font-size: 96px;
+    font-size: 64px;
+    letter-spacing: -1px;
   }
 
   .condition {
-    font-size: 22px;
+    font-size: 16px;
+    line-height: 1.25;
   }
 
-  .feels-expl { font-size: 13px; margin-left: 8px; font-style: italic }
+  .feels-expl {
+    display: inline;
+    margin: 0 0 0 8px;
+    font-size: 12px;
+    font-style: normal;
+  }
 
   .icon {
     justify-content: center;
   }
 
   .details-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
+  }
+
+  .detail {
+    min-height: auto;
+    padding: 12px 14px;
+  }
+
+  .detail-label {
+    font-size: 10px;
+  }
+
+  .detail-val {
+    font-size: 16px;
   }
 
   .weather-img {
-    width: 120px;
-    height: 120px;
+    width: 84px;
+    height: 84px;
+  }
+
+  .aux-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .header-today {
@@ -616,28 +748,119 @@ body {
   }
 
   .forecast-footer {
-    padding: 6px 24px;
+    padding: 8px 18px;
     justify-content: center;
-  }
-  /* Compact forecast adjustments for small screens */
-  .forecast-strip { 
-    padding: 8px 16px;
-    gap: 8px;
-    max-height: none;
+    font-size: 11px;
   }
 
-  .forecast-day {
-    min-width: 80px;
-    max-width: 140px;
-    padding: 8px 8px;
+  .forecast-details {
+    padding: 10px 12px 14px;
+  }
+
+  .details-card {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px;
+    gap: 10px;
+    min-height: auto;
+  }
+
+  .details-day {
+    font-size: 20px;
+  }
+
+  .details-desc {
+    font-size: 14px;
+  }
+
+  .details-right {
+    width: 100%;
     gap: 6px;
   }
 
-  .forecast-icon {
-    width: 90px;
-    height: 90px;
+  .details-row {
+    font-size: 15px;
   }
 
-  .forecast-high { font-size: 44px; }
-  .forecast-low { font-size: 32px; }
+  /* Compact forecast tiles for phones */
+  .forecast-strip {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 12px 8px;
+    gap: 10px;
+  }
+
+  .forecast-day {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    min-height: 68px;
+    padding: 8px 12px;
+    gap: 6px 10px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    border-right: none;
+    border-bottom: none;
+    border-radius: 16px;
+    background: rgba(10, 20, 80, 0.26);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .forecast-label {
+    width: auto;
+    text-align: left;
+    font-size: 12px;
+    letter-spacing: 0.8px;
+  }
+
+  .forecast-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .forecast-high {
+    font-size: 20px;
+    margin-left: auto;
+  }
+
+  .forecast-low {
+    font-size: 15px;
+  }
+
+  .forecast-rain {
+    width: auto;
+    text-align: right;
+    font-size: 11px;
+  }
+
+  .wind-bar,
+  .sun-bar {
+    min-height: 64px;
+    border-radius: 14px;
+  }
+
+  .wind-bar {
+    padding: 10px 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .timestamp {
+    margin-left: 0;
+    font-size: 11px;
+    padding: 6px 10px;
+    white-space: normal;
+  }
+
+  .sun-item {
+    padding: 10px 8px;
+  }
+
+  .sun-icon {
+    width: 28px;
+    height: 28px;
+  }
 }
