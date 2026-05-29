@@ -527,7 +527,9 @@ function updateGlobe(lat, lon) {
 
     // calculate bounding box — how much of the globe to show
     // larger spread = more zoomed out, more globe visible
-    const spread = 80;
+    const spread = 30;
+    const spreadLat = spread * 0.6 //tigher vertically
+
     const minLon = Math.max(lon - spread, -180);
     const maxLon = Math.min(lon + spread,  180);
     const minLat = Math.max(lat - spread / 2, -90);
@@ -540,15 +542,13 @@ function updateGlobe(lat, lon) {
         "?SERVICE=WMS",
         "&VERSION=1.1.1",
         "&REQUEST=GetMap",
-        "&LAYERS=VIIRS_SNPP_CorrectedReflectance_TrueColor",
+        "&LAYERS=BlueMarble_ShadedRelief_Bathymetry",
         "&FORMAT=image/jpeg",
         "&TRANSPARENT=false",
         `&WIDTH=${width}`,
         `&HEIGHT=${height}`,
         "&SRS=EPSG:4326",
         `&BBOX=${bbox}`,
-        // use yesterday's date — today's imagery may not be processed yet
-        `&TIME=${getYesterday()}`,
     ].join("");
 
     const globe = document.getElementById("globeBg");
@@ -566,11 +566,6 @@ function updateGlobe(lat, lon) {
     img.src = nasaUrl;
 }
 
-function getYesterday() {
-    const d = new Date();
-    d.setDate(d.getDate() - 2); // go back 2 days for safety — GIBS can lag
-    return d.toISOString().split("T")[0]; // "YYYY-MM-DD"
-}
 async function getWeather() {
 
     //read city imput bail out if empty
