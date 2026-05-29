@@ -224,7 +224,9 @@ function normalizeBackendWeatherData(data) {
         cloudCover: data.cloudCover,
         pressure: data.pressure,
         sunrise: data.sunrise,
-        sunset: data.sunset, 
+        sunset: data.sunset,
+        lat: data.lat,
+        lon:data.lon, 
     };
 }
 
@@ -315,29 +317,35 @@ async function fetchForecastData(city) {
 
 }
 function switchTab(tab) {
-    const todayView = document.getElementById("todayView");
-    const forecastView = document.getElementById("forecastView")
-    const tabToday = document.getElementById("tabToday");
-    const tabForecast = document.getElementById("tabForecast");
+    const todayView    = document.getElementById("todayView");
+    const forecastView = document.getElementById("forecastView");
+    const tabToday     = document.getElementById("tabToday");
+    const tabForecast  = document.getElementById("tabForecast");
+    const globe        = document.getElementById("globeBg");
 
     if (tab === "today") {
         todayView.classList.remove("hidden");
         forecastView.classList.add("hidden");
         tabToday.classList.add("active");
         tabForecast.classList.remove("active");
+        // restore globe if a city is loaded
+        if (globe.style.backgroundImage) {
+            globe.classList.remove("globe-hidden");
+        }
     } else {
         forecastView.classList.remove("hidden");
         todayView.classList.add("hidden");
         tabForecast.classList.add("active");
         tabToday.classList.remove("active");
 
-        // fetch forecast if not loaded
-        const city = document.getElementById("cityInput").value.trim();
-        if (city) {
-            fetchForecastData(city)
+        const city  = document.getElementById("cityInput").value.trim();
+        const strip = document.getElementById("forecastStrip");
+        if (city && strip.innerHTML.trim() === "") {
+            fetch(`https://weatherapp-project-6rms.onrender.com/forecast?city=${encodeURIComponent(city)}`)
+                .then(res => res.json())
                 .then(data => renderForecast(data))
                 .catch(err => console.log("Forecast error:", err));
-        } 
+        }
     }
 }
 
@@ -511,7 +519,58 @@ function getFeelsLikeExplanation(temp, feelsLike, windSpeed, humidity) {
     }
 }
 //main
+function updateGlobe(lat, lon) {
+    // NASA GIBS WMS endpoint — no API key required
+    // VIIRS_SNPP_CorrectedReflectance_TrueColor is the full-color satellite layer
+    const width  = 1024;
+    const height = 512;
 
+    // calculate bounding box — how much of the globe to show
+    // larger spread = more zoomed out, more globe visible
+    const spread = 80;
+    const minLon = Math.max(lon - spread, -180);
+    const maxLon = Math.min(lon + spread,  180);
+    const minLat = Math.max(lat - spread / 2, -90);
+    const maxLat = Math.min(lat + spread / 2,  90);
+
+    const bbox = `${minLon},${minLat},${maxLon},${maxLat}`;
+
+    const nasaUrl = [
+        "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi",
+        "?SERVICE=WMS",
+        "&VERSION=1.1.1",
+        "&REQUEST=GetMap",
+        "&LAYERS=VIIRS_SNPP_CorrectedReflectance_TrueColor",
+        "&FORMAT=image/jpeg",
+        "&TRANSPARENT=false",
+        `&WIDTH=${width}`,
+        `&HEIGHT=${height}`,
+        "&SRS=EPSG:4326",
+        `&BBOX=${bbox}`,
+        // use yesterday's date — today's imagery may not be processed yet
+        `&TIME=${getYesterday()}`,
+    ].join("");
+
+    const globe = document.getElementById("globeBg");
+
+    // preload before swapping so there's no flash
+    const img = new Image();
+    img.onload = () => {
+        globe.style.backgroundImage = `url('${nasaUrl}')`;
+        globe.classList.remove("globe-hidden");
+    };
+    img.onerror = () => {
+        // NASA tile failed — silently hide globe rather than break the UI
+        globe.classList.add("globe-hidden");
+    };
+    img.src = nasaUrl;
+}
+
+function getYesterday() {
+    const d = new Date();
+    d.setDate(d.getDate() - 2); // go back 2 days for safety — GIBS can lag
+    return d.toISOString().split("T")[0]; // "YYYY-MM-DD"
+}
 async function getWeather() {
 
     //read city imput bail out if empty
@@ -581,6 +640,8 @@ async function getWeather() {
     img.alt = data.description;
     img.className = "weather-img";
     iconEl.appendChild(img);
+
+   updateGlobe(data.lat, data.lon); 
 
     // show the card, hide loading
     show("weatherDisplay");

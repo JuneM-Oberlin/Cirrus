@@ -197,6 +197,35 @@ body {
   flex: 1;
 }
 
+/* ── NASA GLOBE BACKGROUND ────────────────────────────────── */
+.globe-bg {
+  position: fixed;
+  top: 52px;          /* sits below the header */
+  left: 0;
+  width: 100vw;
+  bottom: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  opacity: 0.18;      /* faint — atmospheric, not distracting */
+  transition: background-image 1.5s ease, opacity 0.8s ease;
+  pointer-events: none; /* clicks pass through to UI */
+}
+
+.globe-hidden {
+  opacity: 0 !important;
+}
+
+/* everything above the globe needs a z-index */
+.header        { position: relative; z-index: 10; }
+.search-row    { position: relative; z-index: 1; }
+.history       { position: relative; z-index: 1; }
+#loading       { position: relative; z-index: 1; }
+#errorMsg      { position: relative; z-index: 1; }
+.weather-card  { position: relative; z-index: 1; }
+#forecastView  { position: relative; z-index: 1; }
+
 /* ── MAIN WEATHER CARD ────────────────────────────────────── */
 .weather-card {
   display: grid;

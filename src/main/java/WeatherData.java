@@ -19,6 +19,8 @@ public class WeatherData {
     private double precipitation;
     private double tempMax;
     private double tempMin;
+    private double lat;
+    private double lon;
 
     public WeatherData(String city,
             double temperature,
@@ -36,7 +38,9 @@ public class WeatherData {
             double pressure,
             double precipitation,
             double tempMin,
-            double tempMax) {
+            double tempMax,
+            double lat,
+            double lon) {
 
         this.city = city;
         this.temperature = temperature;
@@ -55,6 +59,9 @@ public class WeatherData {
         this.precipitation = precipitation;
         this.tempMin = tempMin;
         this.tempMax = tempMax;
+        this.lat = lat;
+        this.lon = lon;
+
     }
 
     // getter methods
@@ -124,6 +131,14 @@ public class WeatherData {
 
     public double tempMax() {
         return tempMax;
+    }
+
+    public double getLat() {
+        return lat;
+    }
+
+    public double getLon() {
+        return lon;
     }
 
 

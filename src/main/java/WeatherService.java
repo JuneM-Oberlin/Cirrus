@@ -172,6 +172,10 @@ public class WeatherService {
             }
         }
 
+        JsonObject coord = root.getAsJsonObject("coord");
+        double lat = coord.get("lat").getAsDouble();
+        double lon = coord.get("lon").getAsDouble();
+
         return new WeatherData(
                 city,
                 temperature,
@@ -189,7 +193,9 @@ public class WeatherService {
                 pressure,
                 precipitation,
                 tempMin,
-                tempMax
+                tempMax,
+                lat,
+                lon
         );
     }
 
@@ -303,6 +309,7 @@ public class WeatherService {
             JsonObject main = chosenEntry.getAsJsonObject("main");
             JsonObject weather = chosenEntry.getAsJsonArray("weather")
                     .get(0).getAsJsonObject();
+
 
             int rainChance = 0;
             if (chosenEntry.has("pop")) {
