@@ -317,6 +317,7 @@ async function fetchForecastData(city) {
 
 }
 function switchTab(tab) {
+
     const todayView    = document.getElementById("todayView");
     const forecastView = document.getElementById("forecastView");
     const tabToday     = document.getElementById("tabToday");
@@ -324,11 +325,12 @@ function switchTab(tab) {
     const globe        = document.getElementById("globeBg");
 
     if (tab === "today") {
+
         todayView.classList.remove("hidden");
         forecastView.classList.add("hidden");
         tabToday.classList.add("active");
         tabForecast.classList.remove("active");
-        // restore globe if a city is loaded
+
         if (globe.style.backgroundImage) {
             globe.classList.remove("globe-hidden");
         }
@@ -338,6 +340,9 @@ function switchTab(tab) {
         tabForecast.classList.add("active");
         tabToday.classList.remove("active");
 
+        if (globe.style.backgroundImage) {
+            globe.classList.remove("globe-hidden");
+        }
         const city  = document.getElementById("cityInput").value.trim();
         const strip = document.getElementById("forecastStrip");
         if (city && strip.innerHTML.trim() === "") {

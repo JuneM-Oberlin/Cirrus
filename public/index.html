@@ -18,11 +18,12 @@
       <div class="header-city" id="cityName">--</div>
     </div>
 
+    <!-- NASA globe background (moved outside views so it can be shown for Forecast) -->
+    <div id="globeBg" class="globe-bg globe-hidden"></div>
+
     <!-- TODAY VIEW -->
     <div id="todayView">
 
-      <!-- NASA globe background -->
-<div id="globeBg" class="globe-bg globe-hidden"></div>
 
       <!-- SEARCH -->
       <div class="search-row">
@@ -116,6 +117,9 @@
 
       <div class="history" id="historyListForecast"></div>
       <div class="forecast-strip" id="forecastStrip"></div>
+
+      <!-- small globe badge overlay for forecast (falls back visually if full globe blocked) -->
+      <div id="globeBadge" class="globe-badge hidden" aria-hidden="true"></div>
 
       <!-- Selected day details (hidden until a day is clicked) -->
       <div id="forecastDetails" class="forecast-details hidden"></div>
