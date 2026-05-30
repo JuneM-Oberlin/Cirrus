@@ -458,11 +458,7 @@ body {
   /* fill remaining page space between header and footer */
   flex: 1 1 auto;
   min-height: calc(100vh - 52px);
-  background: linear-gradient(to bottom,
-      #2258cc 0%,
-      #0e2578 30%,
-      #050f48 60%,
-      #010820 100%);
+  background: transparent;
 }
 .forecast-strip {
   display: flex;
