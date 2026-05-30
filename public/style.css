@@ -208,7 +208,7 @@ body {
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
-  opacity: 0.18;      /* faint — atmospheric, not distracting */
+  opacity: 0.17;      /* faint — atmospheric, not distracting */
   transition: background-image 1.5s ease, opacity 0.8s ease;
   pointer-events: none; /* clicks pass through to UI */
 }
