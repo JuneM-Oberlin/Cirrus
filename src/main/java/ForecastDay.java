@@ -8,6 +8,8 @@ public class ForecastDay {
     private String condition;
     private String weatherCode;
     private int conditionId;
+    private double windSpeed;
+    private double precipitation; // total daily volume in mm
 
     public ForecastDay(String day,
             double high,
@@ -15,7 +17,9 @@ public class ForecastDay {
             int rainChance,
             String condition,
             String weatherCode,
-            int conditionId) {
+            int conditionId,
+            double windSpeed,
+            double precipitation) {
         this.day = day;
         this.high = high;
         this.low = low;
@@ -23,6 +27,8 @@ public class ForecastDay {
         this.condition = condition;
         this.weatherCode = weatherCode;
         this.conditionId = conditionId;
+        this.windSpeed = windSpeed;
+        this.precipitation = precipitation;
     }
 
     public String getDay() {
@@ -51,5 +57,13 @@ public class ForecastDay {
 
     public int getConditionId() {
         return conditionId;
+    }
+
+    public double getWindSpeed() {
+        return windSpeed;
+    }
+
+    public double getPrecipitation() {
+        return precipitation;
     }
 }

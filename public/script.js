@@ -71,70 +71,43 @@ function normalizeBackendWeatherData(data) {
     };
 }
 
-async function fetchWeatherData(city) {
-    const key = normalizeCityKey(city);
-    const cached = getCachedEntry(clientCache.weather, key);
-    if (cached) {
-        return cached;
+async function readBackendError(response) {
+    let errorMessage = "Something went wrong.";
+    try {
+        const err = await response.json();
+        errorMessage = err.error || errorMessage;
+    } catch (parseError) {
+        console.log("Could not parse backend error response:", parseError);
     }
-
-    const response = await fetch(
-        `${BACKEND_URL}/weather?city=${encodeURIComponent(city)}`
-    );
-
-    if (!response.ok) {
-        let errorMessage = "Something went wrong.";
-
-        try {
-
-            const err = await response.json();
-            errorMessage = err.error || errorMessage;
-
-        } catch (parseError) {
-            console.log("Could not parse backend error response:", parseError);
-
-        }
-        //  message if rate limit
-        if (response.status === 429) {
-            errorMessage = "Too many searches — please wait a minute.";
-        }
-        throw new Error(errorMessage);
+    if (response.status === 429) {
+        errorMessage = "Too many searches — please wait a minute.";
     }
-    const data = normalizeBackendWeatherData(await response.json());
-    setCachedEntry(clientCache.weather, key, data);
-    return data;
-
+    return errorMessage;
 }
 
-async function fetchForecastData(city) {
+async function fetchCached(path, city, cache, normalize = (d) => d) {
     const key = normalizeCityKey(city);
-    const cached = getCachedEntry(clientCache.forecast, key);
+    const cached = getCachedEntry(cache, key);
     if (cached) {
         return cached;
     }
 
-    const response = await fetch(`${BACKEND_URL}/forecast?city=${encodeURIComponent(city)}`);
-
+    const response = await fetch(`${BACKEND_URL}/${path}?city=${encodeURIComponent(city)}`);
     if (!response.ok) {
-        let errorMessage = "Something went wrong.";
-        try {
-            const err = await response.json();
-            errorMessage = err.error || errorMessage;
-        } catch (parseError) {
-            console.log("Could not parse backend error response:", parseError);
-        }
-
-        if (response.status === 429) {
-            errorMessage = "Too many searches — please wait a minute.";
-        }
-
-        throw new Error(errorMessage);
+        throw new Error(await readBackendError(response));
     }
 
-    const data = await response.json();
-    setCachedEntry(clientCache.forecast, key, data);
+    const data = normalize(await response.json());
+    setCachedEntry(cache, key, data);
     return data;
+}
 
+function fetchWeatherData(city) {
+    return fetchCached("weather", city, clientCache.weather, normalizeBackendWeatherData);
+}
+
+function fetchForecastData(city) {
+    return fetchCached("forecast", city, clientCache.forecast);
 }
 function switchTab(tab) {
     const todayView    = document.getElementById("todayView");
@@ -163,7 +136,7 @@ function switchTab(tab) {
         }
     }
 
-    if (globe?.style.backgroundImage) {
+    if (globe.style.backgroundImage) {
         globe.classList.remove("globe-hidden");
     }
 }
@@ -185,11 +158,14 @@ function renderForecast(days) {
         footer.textContent = `As of ${timeText}, ${dateText}`;
     }
 
-  strip.innerHTML = days.map((day, i) => `
+  strip.innerHTML = days.map((day, i) => {
+    const isNight = day.weatherCode?.endsWith("n");
+    const iconKey = isNight ? `${day.conditionId}n` : day.conditionId;
+    return `
     <div class="forecast-day">
       <div class="forecast-label ${i === 0 ? 'today' : ''}">${day.day}</div>
       <img class="forecast-icon"
-           src="icons/${iconMap[day.conditionId] ?? "default.png"}"
+           src="icons/${iconMap[iconKey] ?? "default.png"}"
            alt="${day.condition}">
       <div class="forecast-high">${Math.round(day.high)}°</div>
       <div class="forecast-low">${Math.round(day.low)}°</div>
@@ -198,7 +174,8 @@ function renderForecast(days) {
         ${day.rainChance}%
       </div>
     </div>
-  `).join(""); 
+  `;
+  }).join(""); 
 
     // attach click handlers to each day to show details below
     const detailPanel = document.getElementById("forecastDetails");
@@ -222,8 +199,10 @@ function showForecastDetails(day) {
 
     const description = day.description || day.condition || '';
     const rain = (day.rainChance !== undefined) ? `${day.rainChance}%` : '—';
-    const precip = day.precipitation || day.precip || '—';
-    const wind = day.windSpeed ? `${Math.round(day.windSpeed)} mph` : '—';
+    // backend sends daily precip volume in mm; display imperial like the rest of the app
+    const precipInches = (day.precipitation ?? 0) / 25.4;
+    const precip = precipInches > 0 ? `${precipInches.toFixed(2)} in` : '0 in';
+    const wind = (day.windSpeed !== undefined) ? `${Math.round(day.windSpeed)} mph` : '—';
 
     panel.innerHTML = `
         <div class="details-card">
@@ -245,32 +224,40 @@ function showForecastDetails(day) {
     panel.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
+// shared loading/error choreography for both search paths
+async function withLoading(task) {
+    show("loading");
+    hide("weatherDisplay");
+    hide("errorMsg");
+
+    try {
+        await task();
+        show("weatherDisplay");
+    } catch (err) {
+        console.log("Search error:", err);
+        set("errorMsg", err.message || "Could not load weather data.");
+        show("errorMsg");
+    } finally {
+        hide("loading");
+    }
+}
+
 function getWeatherForecast() {
     const city = document.getElementById("cityInputForecast").value.trim();
     if (!city) return;
 
     // sync to main input
     document.getElementById("cityInput").value = city;
-    show("loading");
-    hide("weatherDisplay");
-    hide("errorMsg");
+    document.getElementById("forecastStrip").innerHTML = "";
 
-    const strip = document.getElementById("forecastStrip");
-    strip.innerHTML = "";
-
-    Promise.all([fetchWeatherData(city), fetchForecastData(city)])
-        .then(([weatherData, forecastData]) => {
-            renderTodayView(weatherData);
-            show("weatherDisplay");
-            renderForecast(forecastData);
-            hide("loading");
-        })
-        .catch(err => {
-            console.log("Search error:", err);
-            set("errorMsg", err.message || "Could not load weather data.");
-            show("errorMsg");
-            hide("loading");
-        });
+    withLoading(async () => {
+        const [weatherData, forecastData] = await Promise.all([
+            fetchWeatherData(city),
+            fetchForecastData(city),
+        ]);
+        renderTodayView(weatherData);
+        renderForecast(forecastData);
+    });
 }
 
 function getFeelsLikeExplanation(temp, feelsLike, windSpeed, humidity) {
@@ -353,7 +340,7 @@ function renderTodayView(data) {
     set("wind", Math.round(data.windSpeed) + " mph");
     set("windDir", degreesToCompass(data.windDeg) + " " + Math.round(data.windSpeed) + " mph");
     set("timestamp", "As of " + new Date().toLocaleTimeString([], {
-        hour: "2-digit", minute: "2-digit",
+        hour: "2-digit", minute: "2-digit"
     }));
 
     const visibilityMiles = (data.visibility / 1609.34).toFixed(1);
@@ -362,10 +349,10 @@ function renderTodayView(data) {
     set("pressure", data.pressure + " hPa");
 
     const sunriseTime = new Date(data.sunrise * 1000).toLocaleTimeString([], {
-        hour: "2-digit", minute: "2-digit",
+        hour: "2-digit", minute: "2-digit"
     });
     const sunsetTime = new Date(data.sunset * 1000).toLocaleTimeString([], {
-        hour: "2-digit", minute: "2-digit",
+        hour: "2-digit", minute: "2-digit"
     });
     set("sunrise", sunriseTime);
     set("sunset", sunsetTime);
@@ -382,28 +369,14 @@ function renderTodayView(data) {
     img.className = "weather-img";
     iconEl.appendChild(img);
 
-    if (data.lat != null && data.lon != null) {
-        updateGlobe(data.lat, data.lon);
-    }
+    updateGlobe(data.lat, data.lon);
 }
 
-async function getWeather() {
+function getWeather() {
     const city = document.getElementById("cityInput").value.trim();
     if (!city) return;
 
-    show("loading");
-    hide("weatherDisplay");
-    hide("errorMsg");
-
-    try {
-        const data = await fetchWeatherData(city);
-        renderTodayView(data);
-        show("weatherDisplay");
-        hide("loading");
-    } catch (err) {
-        console.log("Caught error:", err);
-        set("errorMsg", err.message || "Could not load weather data.");
-        show("errorMsg");
-        hide("loading");
-    }
+    withLoading(async () => {
+        renderTodayView(await fetchWeatherData(city));
+    });
 }

@@ -88,6 +88,20 @@ public class WeatherService {
         }
     }
 
+    // volume (mm) from a rain/snow object, taking the first field present
+    private static double precipVolume(JsonObject entry, String key, String... fields) {
+        if (!entry.has(key)) {
+            return 0.0;
+        }
+        JsonObject obj = entry.getAsJsonObject(key);
+        for (String field : fields) {
+            if (obj.has(field)) {
+                return obj.get(field).getAsDouble();
+            }
+        }
+        return 0.0;
+    }
+
     public WeatherData parseWeather(String json) {
 
         // parse root json object
@@ -155,22 +169,8 @@ public class WeatherService {
         double tempMin = main.get("temp_min").getAsDouble();
         double tempMax = main.get("temp_max").getAsDouble();
 
-        double precipitation = 0.0;
-        if (root.has("rain")) {
-            JsonObject rain = root.getAsJsonObject("rain");
-            if (rain.has("1h")) {
-                precipitation = rain.get("1h").getAsDouble();
-            } else if (rain.has("3h")) {
-                precipitation = rain.get("3h").getAsDouble();
-            }
-        } else if (root.has("snow")) {
-            JsonObject snow = root.getAsJsonObject("snow");
-            if (snow.has("1h")) {
-                precipitation = snow.get("1h").getAsDouble();
-            } else if (snow.has("3h")) {
-                precipitation = snow.get("3h").getAsDouble();
-            }
-        }
+        double precipitation = precipVolume(root, "rain", "1h", "3h")
+                + precipVolume(root, "snow", "1h", "3h");
 
         JsonObject coord = root.getAsJsonObject("coord");
         double lat = coord.get("lat").getAsDouble();
@@ -276,66 +276,65 @@ public class WeatherService {
             if (days.size() >= 5) {
                 break;
             }
-
-            List<JsonObject> dayEntries = entry.getValue();
-            double maxTemp = Double.NEGATIVE_INFINITY;
-            double minTemp = Double.POSITIVE_INFINITY;
-
-            // default to first entry, but prefer noon
-            JsonObject chosenEntry = dayEntries.get(0);
-            for (JsonObject e : dayEntries) {
-                JsonObject main = e.getAsJsonObject("main");
-
-                double tempMax = main.get("temp_max").getAsDouble();
-                double tempMin = main.get("temp_min").getAsDouble();
-
-                if (tempMax > maxTemp) {
-                    maxTemp = tempMax;
-                }
-
-                if (tempMin < minTemp) {
-                    minTemp = tempMin;
-                }
-
-                // prefer noon for visuals
-                String dtTxt = e.get("dt_txt").getAsString();
-                if (dtTxt.contains("12:00:00")) {
-                    chosenEntry = e;
-
-                }
-
-            }
-
-            JsonObject main = chosenEntry.getAsJsonObject("main");
-            JsonObject weather = chosenEntry.getAsJsonArray("weather")
-                    .get(0).getAsJsonObject();
-
-
-            int rainChance = 0;
-            if (chosenEntry.has("pop")) {
-                rainChance = (int) Math.round(
-                        chosenEntry.get("pop").getAsDouble() * 100
-                );
-            }
-
-            java.time.LocalDate date = java.time.LocalDate.parse(entry.getKey());
-            String dayName = date.getDayOfWeek()
-                    .getDisplayName(
-                            java.time.format.TextStyle.SHORT,
-                            java.util.Locale.ENGLISH
-                    );
-
-            days.add(new ForecastDay(
-                    dayName,
-                    maxTemp,
-                    minTemp,
-                    rainChance,
-                    weather.get("description").getAsString(),
-                    weather.get("icon").getAsString(),
-                    weather.get("id").getAsInt()
-            ));
+            days.add(buildDay(entry.getKey(), entry.getValue()));
         }
 
         return days;
+    }
+
+    // reduce one date's 3-hour entries to a single forecast day
+    private ForecastDay buildDay(String dateStr, List<JsonObject> dayEntries) {
+        double maxTemp = Double.NEGATIVE_INFINITY;
+        double minTemp = Double.POSITIVE_INFINITY;
+        double precipitation = 0.0;
+
+        // default to first entry, but prefer noon for visuals
+        JsonObject chosenEntry = dayEntries.get(0);
+        for (JsonObject e : dayEntries) {
+            JsonObject main = e.getAsJsonObject("main");
+            maxTemp = Math.max(maxTemp, main.get("temp_max").getAsDouble());
+            minTemp = Math.min(minTemp, main.get("temp_min").getAsDouble());
+
+            // sum rain + snow volume (mm per 3h window) for the daily total
+            precipitation += precipVolume(e, "rain", "3h")
+                    + precipVolume(e, "snow", "3h");
+
+            if (e.get("dt_txt").getAsString().contains("12:00:00")) {
+                chosenEntry = e;
+            }
+        }
+
+        JsonObject weather = chosenEntry.getAsJsonArray("weather")
+                .get(0).getAsJsonObject();
+
+        // wind from the noon entry, consistent with condition/icon
+        double windSpeed = chosenEntry.getAsJsonObject("wind")
+                .get("speed").getAsDouble();
+
+        int rainChance = 0;
+        if (chosenEntry.has("pop")) {
+            rainChance = (int) Math.round(
+                    chosenEntry.get("pop").getAsDouble() * 100
+            );
+        }
+
+        String dayName = java.time.LocalDate.parse(dateStr)
+                .getDayOfWeek()
+                .getDisplayName(
+                        java.time.format.TextStyle.SHORT,
+                        java.util.Locale.ENGLISH
+                );
+
+        return new ForecastDay(
+                dayName,
+                maxTemp,
+                minTemp,
+                rainChance,
+                weather.get("description").getAsString(),
+                weather.get("icon").getAsString(),
+                weather.get("id").getAsInt(),
+                windSpeed,
+                precipitation
+        );
     }
 }
