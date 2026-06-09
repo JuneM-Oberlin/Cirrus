@@ -279,7 +279,7 @@ function getFeelsLikeExplanation(temp, feelsLike, windSpeed, humidity) {
 function updateGlobe(lat, lon) {
     const width  = 1024;
     const height = 512;
-    const spread = 30;
+    const spread = 12;
 
     const minLon = Math.max(lon - spread, -180);
     const maxLon = Math.min(lon + spread,  180);
