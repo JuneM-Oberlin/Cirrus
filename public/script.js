@@ -163,8 +163,8 @@ function renderForecast(days) {
     }
 
   strip.innerHTML = days.map((day, i) => {
-    const isNight = day.weatherCode?.endsWith("n");
-    const iconKey = isNight ? `${day.conditionId}n` : day.conditionId;
+    // always use the day icon variant
+    const iconKey = day.conditionId;
     return `
     <div class="forecast-day">
       <div class="forecast-label ${i === 0 ? 'today' : ''}">${day.day}</div>
