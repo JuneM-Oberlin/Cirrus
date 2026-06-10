@@ -72,6 +72,12 @@ public class WeatherServer {
 
         Gson gson = new Gson();
 
+        // warm-up endpoint no rate limiting, no external API calls
+        get("/health", (req, res) -> {
+            res.type("application/json");
+            return "{\"status\":\"ok\"}";
+        });
+
         //GET /weather route
         get("/weather", (req, res) -> {
 

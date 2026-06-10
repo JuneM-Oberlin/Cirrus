@@ -17,6 +17,10 @@ function degreesToCompass(deg) {
 
 const BACKEND_URL = "https://weatherapp-project-6rms.onrender.com";
 
+// wake the render free-tier backend
+// so the first search doesn't suffer
+fetch(`${BACKEND_URL}/health`).catch(() => {});
+
 const clientCache = {
     weather: new Map(),
     forecast: new Map(),
@@ -226,9 +230,15 @@ function showForecastDetails(day) {
 
 // shared loading/error choreography for both search paths
 async function withLoading(task) {
+    set("loading", "Fetching weather...");
     show("loading");
     hide("weatherDisplay");
     hide("errorMsg");
+
+    // if the request drags on it has to be Render cold start
+    const coldStartTimer = setTimeout(() => {
+        set("loading", "Waking up the server — the first search can take up to a minute...");
+    }, 4000);
 
     try {
         await task();
@@ -238,6 +248,7 @@ async function withLoading(task) {
         set("errorMsg", err.message || "Could not load weather data.");
         show("errorMsg");
     } finally {
+        clearTimeout(coldStartTimer);
         hide("loading");
     }
 }

@@ -1,5 +1,6 @@
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -22,6 +23,12 @@ public class WeatherService {
             .filename("touch.env")
             .ignoreIfMissing()
             .load();
+
+    // shared client reuses connections instead of paying a new TLS handshake per request
+    private static final OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .readTimeout(Duration.ofSeconds(10))
+            .build();
 
     // caching to make app faster
     private static class CacheEntry<T> {
@@ -63,16 +70,13 @@ public class WeatherService {
                 + "&appid=" + apiKey
                 + "&units=imperial";
 
-        //http client
-        OkHttpClient client = new OkHttpClient();
-
         // build request
         Request request = new Request.Builder()
                 .url(url)
                 .build();
 
         //send request and return response
-        try (Response response = client.newCall(request).execute()) {
+        try (Response response = HTTP_CLIENT.newCall(request).execute()) {
 
             // if no failed response throw exception
             if (!response.isSuccessful()) {
@@ -240,10 +244,9 @@ public class WeatherService {
                 + "&units=imperial"
                 + "&cnt=40";
 
-        OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder().url(url).build();
 
-        try (Response response = client.newCall(request).execute()) {
+        try (Response response = HTTP_CLIENT.newCall(request).execute()) {
             if (!response.isSuccessful()) {
                 throw new RuntimeException("Forecast error: " + response.code());
             }
