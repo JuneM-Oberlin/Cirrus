@@ -369,6 +369,10 @@ function renderTodayView(data) {
     set("sunset", sunsetTime);
 
     const isNight = data.weatherCode.endsWith("n");
+
+    // match the sky to the searched city's local day/night
+    document.body.classList.toggle("theme-day", !isNight);
+
     const iconKey = isNight ? `${data.conditionId}n` : data.conditionId;
     const iconSrc = "icons/" + (iconMap[iconKey] ?? "default.png");
 
