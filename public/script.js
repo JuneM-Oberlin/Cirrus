@@ -113,6 +113,34 @@ function fetchWeatherData(city) {
 function fetchForecastData(city) {
     return fetchCached("forecast", city, clientCache.forecast);
 }
+
+function presentWeather(data) {
+    const isNight = data.weatherCode.endsWith("n");
+    document.body.classList.toggle("theme-day", !isNight);
+    renderTodayView(data, isNight);
+}
+
+function activateOnEnterOrSpace(event, action) {
+    if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        action();
+    }
+}
+
+function onTabKeydown(event, tab) {
+    const otherTab = tab === "today" ? "forecast" : "today";
+    const otherEl = document.getElementById(tab === "today" ? "tabForecast" : "tabToday");
+
+    if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+        event.preventDefault();
+        switchTab(otherTab);
+        otherEl.focus();
+        return;
+    }
+
+    activateOnEnterOrSpace(event, () => switchTab(tab));
+}
+
 function switchTab(tab) {
     const todayView    = document.getElementById("todayView");
     const forecastView = document.getElementById("forecastView");
@@ -125,11 +153,15 @@ function switchTab(tab) {
         forecastView.classList.add("hidden");
         tabToday.classList.add("active");
         tabForecast.classList.remove("active");
+        tabToday.setAttribute("aria-selected", "true");
+        tabForecast.setAttribute("aria-selected", "false");
     } else {
         forecastView.classList.remove("hidden");
         todayView.classList.add("hidden");
         tabForecast.classList.add("active");
         tabToday.classList.remove("active");
+        tabToday.setAttribute("aria-selected", "false");
+        tabForecast.setAttribute("aria-selected", "true");
 
         const city  = document.getElementById("cityInput").value.trim();
         const strip = document.getElementById("forecastStrip");
@@ -139,6 +171,10 @@ function switchTab(tab) {
                 .catch(err => console.log("Forecast error:", err));
         }
     }
+
+    const isToday = tab === "today";
+    tabToday.setAttribute("tabindex", isToday ? "0" : "-1");
+    tabForecast.setAttribute("tabindex", isToday ? "-1" : "0");
 
     if (globe.style.backgroundImage) {
         globe.classList.remove("globe-hidden");
@@ -158,15 +194,13 @@ function renderForecast(days) {
         day: "2-digit"
     });
 
-    if (footer) {
-        footer.textContent = `As of ${timeText}, ${dateText}`;
-    }
+    footer.textContent = `As of ${timeText}, ${dateText}`;
 
   strip.innerHTML = days.map((day, i) => {
     // always use the day icon variant
     const iconKey = day.conditionId;
     return `
-    <div class="forecast-day">
+    <div class="forecast-day glass-panel" role="button" tabindex="0" aria-label="${day.day} forecast">
       <div class="forecast-label ${i === 0 ? 'today' : ''}">${day.day}</div>
       <img class="forecast-icon"
            src="icons/${iconMap[iconKey] ?? "default.png"}"
@@ -181,19 +215,15 @@ function renderForecast(days) {
   `;
   }).join(""); 
 
-    // attach click handlers to each day to show details below
-    const detailPanel = document.getElementById("forecastDetails");
-    const dayEls = strip.querySelectorAll('.forecast-day');
+    const dayEls = strip.querySelectorAll(".forecast-day");
     dayEls.forEach((el, idx) => {
-        el.setAttribute('data-idx', idx);
-        el.style.cursor = 'pointer';
-        el.addEventListener('click', () => {
-            // visual active state
-            dayEls.forEach(d => d.classList.remove('active'));
-            el.classList.add('active');
-            // show details
+        const selectDay = () => {
+            dayEls.forEach((d) => d.classList.remove("active"));
+            el.classList.add("active");
             showForecastDetails(days[idx]);
-        });
+        };
+        el.addEventListener("click", selectDay);
+        el.addEventListener("keydown", (event) => activateOnEnterOrSpace(event, selectDay));
     });
 }
 
@@ -209,7 +239,7 @@ function showForecastDetails(day) {
     const wind = (day.windSpeed !== undefined) ? `${Math.round(day.windSpeed)} mph` : '—';
 
     panel.innerHTML = `
-        <div class="details-card">
+        <div class="details-card glass-panel">
             <div class="details-left">
                 <div class="details-day">${day.day}</div>
                 <div class="details-desc">${description}</div>
@@ -266,7 +296,7 @@ function getWeatherForecast() {
             fetchWeatherData(city),
             fetchForecastData(city),
         ]);
-        renderTodayView(weatherData);
+        presentWeather(weatherData);
         renderForecast(forecastData);
     });
 }
@@ -322,13 +352,13 @@ function updateGlobe(lat, lon) {
         globe.classList.remove("globe-hidden");
     };
     img.onerror = () => {
-        // NASA tile failed — silently hide globe rather than break the UI
+        //if NASA tile failed  silently hide globe rather than break the UI
         globe.classList.add("globe-hidden");
     };
     img.src = nasaUrl;
 }
 
-function renderTodayView(data) {
+function renderTodayView(data, isNight) {
     set("cityName", data.city);
     set("tempMain", Math.round(data.temperature) + "°F");
 
@@ -368,11 +398,6 @@ function renderTodayView(data) {
     set("sunrise", sunriseTime);
     set("sunset", sunsetTime);
 
-    const isNight = data.weatherCode.endsWith("n");
-
-    // match the sky to the searched city's local day/night
-    document.body.classList.toggle("theme-day", !isNight);
-
     const iconKey = isNight ? `${data.conditionId}n` : data.conditionId;
     const iconSrc = "icons/" + (iconMap[iconKey] ?? "default.png");
 
@@ -392,6 +417,6 @@ function getWeather() {
     if (!city) return;
 
     withLoading(async () => {
-        renderTodayView(await fetchWeatherData(city));
+        presentWeather(await fetchWeatherData(city));
     });
 }

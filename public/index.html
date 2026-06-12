@@ -7,6 +7,7 @@
   <meta name="description" content="A Nintendo inspired weather app with current conditions and a 5-day forecast for any city.">
   <link rel="icon" href="icons/clear-day.png">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="responsive.css">
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -15,8 +16,12 @@
 
     <!-- green header bar -->
     <div class="header">
-      <div class="header-tab active" id="tabToday" onclick="switchTab('today')">TODAY</div>
-      <div class="header-tab" id="tabForecast" onclick="switchTab('forecast')">5-DAY FORECAST</div>
+      <div class="header-tabs" role="tablist" aria-label="Weather views">
+        <div class="header-tab active" id="tabToday" role="tab" tabindex="0" aria-selected="true"
+             aria-controls="todayView" onclick="switchTab('today')" onkeydown="onTabKeydown(event, 'today')">TODAY</div>
+        <div class="header-tab" id="tabForecast" role="tab" tabindex="-1" aria-selected="false"
+             aria-controls="forecastView" onclick="switchTab('forecast')" onkeydown="onTabKeydown(event, 'forecast')">5-DAY FORECAST</div>
+      </div>
       <div class="header-city" id="cityName">--</div>
     </div>
 
@@ -37,10 +42,10 @@
       </div>
 
       <div id="historyList" class="history"></div>
-      <div id="loading" class="hidden">Fetching weather...</div>
+      <div id="loading" class="glass-panel glass-panel--pill hidden">Fetching weather...</div>
       <div id="errorMsg" class="error hidden"></div>
 
-      <div id="weatherDisplay" class="weather-card hidden">
+      <div id="weatherDisplay" class="weather-card glass-panel glass-panel--card hidden">
 
         <!-- LEFT: temp + condition -->
         <div class="card-left">
@@ -84,14 +89,14 @@
 
         <div class="aux-grid">
           <!-- WIND + TIMESTAMP BAR -->
-          <div class="wind-bar">
+          <div class="wind-bar glass-panel">
             <span class="wind-label">Wind Direction</span>
             <span class="wind-val" id="windDir">--</span>
             <span class="timestamp" id="timestamp">--</span>
           </div>
 
           <!-- SUNRISE / SUNSET BAR -->
-          <div class="sun-bar">
+          <div class="sun-bar glass-panel">
             <div class="sun-item">
               <img src="icons/clear-day.png" alt="Sunrise" class="sun-icon">
               <span class="sun-label">Sunrise</span>
