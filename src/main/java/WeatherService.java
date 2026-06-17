@@ -16,6 +16,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class WeatherService {
 
@@ -24,7 +25,7 @@ public class WeatherService {
             .ignoreIfMissing()
             .load();
 
-    // shared client reuses connections instead of paying a new TLS handshake per request
+    // shared client
     private static final OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
             .connectTimeout(Duration.ofSeconds(5))
             .readTimeout(Duration.ofSeconds(10))
@@ -49,6 +50,14 @@ public class WeatherService {
     private static final int CACHE_TTL_SECONDS = 600; // 10 minutes
     private final ConcurrentHashMap<String, CacheEntry<WeatherData>> weatherCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CacheEntry<List<ForecastDay>>> forecastCache = new ConcurrentHashMap<>();
+
+    private static String readResponseBody(Response response, String context) throws IOException {
+        ResponseBody body = response.body();
+        if (body == null) {
+            throw new RuntimeException(context + ": empty response body");
+        }
+        return body.string();
+    }
 
     public String getWeatherJSON(String city) {
         String apiKey = System.getenv("WEATHER_API_KEY");
@@ -80,10 +89,13 @@ public class WeatherService {
 
             // if no failed response throw exception
             if (!response.isSuccessful()) {
+                if (response.code() == 404) {
+                    throw new CityNotFoundException(city);
+                }
                 throw new RuntimeException("HTTP Error: " + response.code());
             }
 
-            return response.body().string();
+            return readResponseBody(response, "Weather API");
 
         } catch (IOException e) {
 
@@ -113,21 +125,21 @@ public class WeatherService {
                 = JsonParser.parseString(json).getAsJsonObject();
 
         // extract nested objects
-        JsonObject main
-                = root.getAsJsonObject("main");
+        JsonObject main = root.getAsJsonObject("main");
+        if (main == null) {
+            throw new RuntimeException("Invalid weather response: missing main");
+        }
 
-        JsonObject wind
-                = root.getAsJsonObject("wind");
+        JsonObject wind = root.getAsJsonObject("wind");
 
-        JsonArray weatherArray
-                = root.getAsJsonArray("weather");
+        JsonArray weatherArray = root.getAsJsonArray("weather");
+        if (weatherArray == null || weatherArray.isEmpty()) {
+            throw new RuntimeException("Invalid weather response: missing weather");
+        }
 
-        JsonObject weather
-                = weatherArray.get(0).getAsJsonObject();
+        JsonObject weather = weatherArray.get(0).getAsJsonObject();
 
-        ///extract fields
-
-            String city
+        String city
                 = root.get("name").getAsString();
 
         Double temperature
@@ -142,8 +154,9 @@ public class WeatherService {
         String condition
                 = weather.get("description").getAsString();
 
-        Double windSpeed
-                = wind.get("speed").getAsDouble();
+        Double windSpeed = wind != null && wind.has("speed")
+                ? wind.get("speed").getAsDouble()
+                : 0.0;
 
         String weatherCode
                 = weather.get("icon").getAsString();
@@ -151,7 +164,7 @@ public class WeatherService {
         int conditionId
                 = weather.get("id").getAsInt();
 
-        int windDeg = wind.has("deg")
+        int windDeg = wind != null && wind.has("deg")
                 ? wind.get("deg").getAsInt()
                 : 0;
 
@@ -165,8 +178,12 @@ public class WeatherService {
                 : 0;
 
         JsonObject sys = root.getAsJsonObject("sys");
-        long sunrise = sys.get("sunrise").getAsLong();
-        long sunset = sys.get("sunset").getAsLong();
+        long sunrise = sys != null && sys.has("sunrise")
+                ? sys.get("sunrise").getAsLong()
+                : 0L;
+        long sunset = sys != null && sys.has("sunset")
+                ? sys.get("sunset").getAsLong()
+                : 0L;
 
         double pressure = main.get("pressure").getAsDouble();
 
@@ -177,8 +194,12 @@ public class WeatherService {
                 + precipVolume(root, "snow", "1h", "3h");
 
         JsonObject coord = root.getAsJsonObject("coord");
-        double lat = coord.get("lat").getAsDouble();
-        double lon = coord.get("lon").getAsDouble();
+        double lat = coord != null && coord.has("lat")
+                ? coord.get("lat").getAsDouble()
+                : 0.0;
+        double lon = coord != null && coord.has("lon")
+                ? coord.get("lon").getAsDouble()
+                : 0.0;
 
         return new WeatherData(
                 city,
@@ -204,7 +225,7 @@ public class WeatherService {
     }
 
     public WeatherData getWeather(String city) {
-        String key = city.toLowerCase().trim();
+        String key = normalizeCityKey(city);
 
         // return cached result if still fresh
         CacheEntry<WeatherData> cached = weatherCache.get(key);
@@ -221,8 +242,25 @@ public class WeatherService {
         return data;
     }
 
+    public boolean isWeatherCached(String city) {
+        return isCached(weatherCache, city);
+    }
+
+    public boolean isForecastCached(String city) {
+        return isCached(forecastCache, city);
+    }
+
+    private <T> boolean isCached(ConcurrentHashMap<String, CacheEntry<T>> cache, String city) {
+        CacheEntry<T> cached = cache.get(normalizeCityKey(city));
+        return cached != null && !cached.isExpired();
+    }
+
+    private static String normalizeCityKey(String city) {
+        return city.toLowerCase().trim();
+    }
+
     public List<ForecastDay> getForecast(String city) throws Exception {
-        String key = city.toLowerCase().trim();
+        String key = normalizeCityKey(city);
 
         CacheEntry<List<ForecastDay>> cached = forecastCache.get(key);
         if (cached != null && !cached.isExpired()) {
@@ -248,9 +286,12 @@ public class WeatherService {
 
         try (Response response = HTTP_CLIENT.newCall(request).execute()) {
             if (!response.isSuccessful()) {
+                if (response.code() == 404) {
+                    throw new CityNotFoundException(city);
+                }
                 throw new RuntimeException("Forecast error: " + response.code());
             }
-            List<ForecastDay> data = parseForecast(response.body().string());
+            List<ForecastDay> data = parseForecast(readResponseBody(response, "Forecast API"));
             forecastCache.put(key, new CacheEntry<>(data, CACHE_TTL_SECONDS));
             return data;
         }
@@ -295,24 +336,42 @@ public class WeatherService {
         JsonObject chosenEntry = dayEntries.get(0);
         for (JsonObject e : dayEntries) {
             JsonObject main = e.getAsJsonObject("main");
-            maxTemp = Math.max(maxTemp, main.get("temp_max").getAsDouble());
-            minTemp = Math.min(minTemp, main.get("temp_min").getAsDouble());
+            if (main != null) {
+                if (main.has("temp_max")) {
+                    maxTemp = Math.max(maxTemp, main.get("temp_max").getAsDouble());
+                }
+                if (main.has("temp_min")) {
+                    minTemp = Math.min(minTemp, main.get("temp_min").getAsDouble());
+                }
+            }
 
             // sum rain + snow volume (mm per 3h window) for the daily total
             precipitation += precipVolume(e, "rain", "3h")
                     + precipVolume(e, "snow", "3h");
 
-            if (e.get("dt_txt").getAsString().contains("12:00:00")) {
+            if (e.has("dt_txt") && e.get("dt_txt").getAsString().contains("12:00:00")) {
                 chosenEntry = e;
             }
         }
 
-        JsonObject weather = chosenEntry.getAsJsonArray("weather")
-                .get(0).getAsJsonObject();
+        if (maxTemp == Double.NEGATIVE_INFINITY) {
+            maxTemp = 0.0;
+        }
+        if (minTemp == Double.POSITIVE_INFINITY) {
+            minTemp = 0.0;
+        }
+
+        JsonArray weatherArray = chosenEntry.getAsJsonArray("weather");
+        if (weatherArray == null || weatherArray.isEmpty()) {
+            throw new RuntimeException("Invalid forecast response: missing weather");
+        }
+        JsonObject weather = weatherArray.get(0).getAsJsonObject();
 
         // wind from the noon entry, consistent with condition/icon
-        double windSpeed = chosenEntry.getAsJsonObject("wind")
-                .get("speed").getAsDouble();
+        JsonObject wind = chosenEntry.getAsJsonObject("wind");
+        double windSpeed = wind != null && wind.has("speed")
+                ? wind.get("speed").getAsDouble()
+                : 0.0;
 
         int rainChance = 0;
         if (chosenEntry.has("pop")) {
