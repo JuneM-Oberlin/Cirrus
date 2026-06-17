@@ -1,7 +1,7 @@
+package com.weatherapp.model;
 
 public class WeatherData {
 
-    // instance variables
     private String city;
     private double temperature;
     private double feelsLike;
@@ -11,7 +11,7 @@ public class WeatherData {
     private String weatherCode;
     private int conditionId;
     private int windDeg;
-    private int visibility; // gotta convert to miles in JS
+    private int visibility;
     private int cloudCover;
     private long sunrise;
     private long sunset;
@@ -61,10 +61,8 @@ public class WeatherData {
         this.tempMax = tempMax;
         this.lat = lat;
         this.lon = lon;
-
     }
 
-    // getter methods
     public String getCity() {
         return city;
     }
@@ -104,7 +102,7 @@ public class WeatherData {
     public int getVisibility() {
         return visibility;
     }
-    
+
     public int getCloudCover() {
         return cloudCover;
     }
@@ -141,9 +139,6 @@ public class WeatherData {
         return lon;
     }
 
-
-
-
     @Override
     public String toString() {
         return String.format(
@@ -159,6 +154,5 @@ public class WeatherData {
                 condition,
                 windSpeed
         );
-
     }
 }

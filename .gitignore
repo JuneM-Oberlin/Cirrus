@@ -1,5 +1,6 @@
 # API key
 touch.env
+public/config.js
 
 # Maven build outputs
 dependency-reduced-pom.xml

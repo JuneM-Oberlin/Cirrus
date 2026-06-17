@@ -1,3 +1,4 @@
+package com.weatherapp.model;
 
 public class ForecastDay {
 
@@ -9,7 +10,7 @@ public class ForecastDay {
     private String weatherCode;
     private int conditionId;
     private double windSpeed;
-    private double precipitation; // total daily volume in mm
+    private double precipitation;
 
     public ForecastDay(String day,
             double high,

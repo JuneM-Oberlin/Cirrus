@@ -27,10 +27,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -R public/. _site/
-          printf 'window.WEATHER_API_KEY = "%s";\n' "${WEATHER_API_KEY:-}" > _site/config.js
           touch _site/.nojekyll
-        env:
-          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

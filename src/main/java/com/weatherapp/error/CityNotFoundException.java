@@ -1,6 +1,8 @@
+package com.weatherapp.error;
+
 public class CityNotFoundException extends RuntimeException {
 
-    CityNotFoundException(String city) {
+    public CityNotFoundException(String city) {
         super("City not found: " + city);
     }
 }
