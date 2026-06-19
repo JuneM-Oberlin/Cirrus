@@ -29,7 +29,11 @@ class WeatherCache<T> {
 
     T get(String key) {
         CacheEntry<T> cached = cache.get(key);
-        if (cached == null || cached.isExpired()) {
+        if (cached == null) {
+            return null;
+        }
+        if (cached.isExpired()) {
+            cache.remove(key, cached);
             return null;
         }
         return cached.data;
@@ -39,4 +43,3 @@ class WeatherCache<T> {
         cache.put(key, new CacheEntry<>(value, ttlSeconds));
     }
 }
-

@@ -2,6 +2,7 @@ package com.weatherapp.service;
 
 import com.weatherapp.model.WeatherData;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -23,6 +24,27 @@ class WeatherResponseParser {
         return 0.0;
     }
 
+    private static String requireString(JsonObject obj, String field, String context) {
+        if (!obj.has(field) || obj.get(field).isJsonNull()) {
+            throw new RuntimeException("Invalid weather response: missing " + context);
+        }
+        return obj.get(field).getAsString();
+    }
+
+    private static double requireDouble(JsonObject obj, String field, String context) {
+        if (!obj.has(field) || obj.get(field).isJsonNull()) {
+            throw new RuntimeException("Invalid weather response: missing " + context);
+        }
+        return obj.get(field).getAsDouble();
+    }
+
+    private static int requireInt(JsonObject obj, String field, String context) {
+        if (!obj.has(field) || obj.get(field).isJsonNull()) {
+            throw new RuntimeException("Invalid weather response: missing " + context);
+        }
+        return obj.get(field).getAsInt();
+    }
+
     WeatherData parseWeather(String json) {
 
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
@@ -39,25 +61,25 @@ class WeatherResponseParser {
             throw new RuntimeException("Invalid weather response: missing weather");
         }
 
-        JsonObject weather = weatherArray.get(0).getAsJsonObject();
+        JsonElement weatherElement = weatherArray.get(0);
+        if (weatherElement == null || weatherElement.isJsonNull()) {
+            throw new RuntimeException("Invalid weather response: missing weather");
+        }
+        JsonObject weather = weatherElement.getAsJsonObject();
 
-        String city = root.get("name").getAsString();
+        String city = requireString(root, "name", "name");
 
-        Double temperature = main.get("temp").getAsDouble();
+        double temperature = requireDouble(main, "temp", "temp");
+        double feelsLike = requireDouble(main, "feels_like", "feels_like");
+        int humidity = requireInt(main, "humidity", "humidity");
+        String condition = requireString(weather, "description", "description");
 
-        Double feelsLike = main.get("feels_like").getAsDouble();
-
-        int humidity = main.get("humidity").getAsInt();
-
-        String condition = weather.get("description").getAsString();
-
-        Double windSpeed = wind != null && wind.has("speed")
+        double windSpeed = wind != null && wind.has("speed")
                 ? wind.get("speed").getAsDouble()
                 : 0.0;
 
-        String weatherCode = weather.get("icon").getAsString();
-
-        int conditionId = weather.get("id").getAsInt();
+        String weatherCode = requireString(weather, "icon", "icon");
+        int conditionId = requireInt(weather, "id", "id");
 
         int windDeg = wind != null && wind.has("deg")
                 ? wind.get("deg").getAsInt()
@@ -80,10 +102,9 @@ class WeatherResponseParser {
                 ? sys.get("sunset").getAsLong()
                 : 0L;
 
-        double pressure = main.get("pressure").getAsDouble();
-
-        double tempMin = main.get("temp_min").getAsDouble();
-        double tempMax = main.get("temp_max").getAsDouble();
+        double pressure = requireDouble(main, "pressure", "pressure");
+        double tempMin = requireDouble(main, "temp_min", "temp_min");
+        double tempMax = requireDouble(main, "temp_max", "temp_max");
 
         double precipitation = precipVolume(root, "rain", "1h", "3h")
                 + precipVolume(root, "snow", "1h", "3h");
@@ -119,4 +140,3 @@ class WeatherResponseParser {
         );
     }
 }
-

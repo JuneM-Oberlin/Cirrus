@@ -36,7 +36,7 @@ public class WeatherServer {
     public static void main(String[] args) {
         port(resolvePort(System.getenv("PORT")));
         staticFiles.externalLocation("public");
-        enableCORS();
+        enableCors(CorsConfig.fromEnvironment());
 
         RateLimiter rateLimiter = new RateLimiter(Clock.systemUTC());
         WeatherService service = new WeatherService(new OpenWeatherClient(), rateLimiter);
@@ -97,7 +97,7 @@ public class WeatherServer {
 
         res.type("application/json");
         try {
-            return gson.toJson(fetcher.fetch(city, req.ip()));
+            return gson.toJson(fetcher.fetch(city, ClientIpResolver.resolve(req)));
         } catch (CityNotFoundException e) {
             res.status(404);
             return gson.toJson(new ErrorResponse(notFoundMessage));
@@ -111,21 +111,12 @@ public class WeatherServer {
         }
     }
 
-    private static void enableCORS() {
+    static void enableCors(CorsConfig corsConfig) {
         options("/*", (request, response) -> {
-            String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
-            if (accessControlRequestHeaders != null) {
-                response.header("Access-Control-Allow-Headers", accessControlRequestHeaders);
-            }
-
-            String accessControlRequestMethod = request.headers("Access-Control-Request-Method");
-            if (accessControlRequestMethod != null) {
-                response.header("Access-Control-Allow-Methods", accessControlRequestMethod);
-            }
-
-            return "OK";
+            corsConfig.applyPreflight(request, response);
+            return "";
         });
 
-        before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
+        before((request, response) -> corsConfig.apply(request, response));
     }
 }

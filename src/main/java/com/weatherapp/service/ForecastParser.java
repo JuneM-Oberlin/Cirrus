@@ -2,6 +2,7 @@ package com.weatherapp.service;
 
 import com.weatherapp.model.ForecastDay;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.time.LocalDate;
@@ -41,8 +42,18 @@ class ForecastParser {
         Map<String, List<JsonObject>> dailyMap = new LinkedHashMap<>();
 
         for (int i = 0; i < list.size(); i++) {
-            JsonObject entry = list.get(i).getAsJsonObject();
+            JsonElement element = list.get(i);
+            if (element == null || element.isJsonNull()) {
+                continue;
+            }
+            JsonObject entry = element.getAsJsonObject();
+            if (entry == null || !entry.has("dt_txt")) {
+                continue;
+            }
             String dtTxt = entry.get("dt_txt").getAsString();
+            if (dtTxt.length() < 10) {
+                continue;
+            }
             String date = dtTxt.substring(0, 10);
 
             dailyMap.putIfAbsent(date, new ArrayList<>());
@@ -97,7 +108,11 @@ class ForecastParser {
         if (weatherArray == null || weatherArray.isEmpty()) {
             throw new RuntimeException("Invalid forecast response: missing weather");
         }
-        JsonObject weather = weatherArray.get(0).getAsJsonObject();
+        JsonElement weatherElement = weatherArray.get(0);
+        if (weatherElement == null || weatherElement.isJsonNull()) {
+            throw new RuntimeException("Invalid forecast response: missing weather");
+        }
+        JsonObject weather = weatherElement.getAsJsonObject();
 
         JsonObject wind = chosenEntry.getAsJsonObject("wind");
         double windSpeed = wind != null && wind.has("speed")
@@ -111,6 +126,10 @@ class ForecastParser {
             );
         }
 
+        String condition = weather.get("description").getAsString();
+        String weatherCode = weather.get("icon").getAsString();
+        int conditionId = weather.get("id").getAsInt();
+
         String dayName = LocalDate.parse(dateStr)
                 .getDayOfWeek()
                 .getDisplayName(
@@ -123,12 +142,11 @@ class ForecastParser {
                 maxTemp,
                 minTemp,
                 rainChance,
-                weather.get("description").getAsString(),
-                weather.get("icon").getAsString(),
-                weather.get("id").getAsInt(),
+                condition,
+                weatherCode,
+                conditionId,
                 windSpeed,
                 precipitation
         );
     }
 }
-
