@@ -5,45 +5,15 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import static com.weatherapp.service.OpenWeatherJson.optionalDouble;
+import static com.weatherapp.service.OpenWeatherJson.optionalInt;
+import static com.weatherapp.service.OpenWeatherJson.optionalLong;
+import static com.weatherapp.service.OpenWeatherJson.precipVolume;
+import static com.weatherapp.service.OpenWeatherJson.requireDouble;
+import static com.weatherapp.service.OpenWeatherJson.requireInt;
+import static com.weatherapp.service.OpenWeatherJson.requireString;
 
 class WeatherResponseParser {
-
-    private static double precipVolume(JsonObject entry, String key, String... fields) {
-        if (!entry.has(key)) {
-            return 0.0;
-        }
-        JsonObject obj = entry.getAsJsonObject(key);
-        if (obj == null) {
-            return 0.0;
-        }
-        for (String field : fields) {
-            if (obj.has(field)) {
-                return obj.get(field).getAsDouble();
-            }
-        }
-        return 0.0;
-    }
-
-    private static String requireString(JsonObject obj, String field, String context) {
-        if (!obj.has(field) || obj.get(field).isJsonNull()) {
-            throw new RuntimeException("Invalid weather response: missing " + context);
-        }
-        return obj.get(field).getAsString();
-    }
-
-    private static double requireDouble(JsonObject obj, String field, String context) {
-        if (!obj.has(field) || obj.get(field).isJsonNull()) {
-            throw new RuntimeException("Invalid weather response: missing " + context);
-        }
-        return obj.get(field).getAsDouble();
-    }
-
-    private static int requireInt(JsonObject obj, String field, String context) {
-        if (!obj.has(field) || obj.get(field).isJsonNull()) {
-            throw new RuntimeException("Invalid weather response: missing " + context);
-        }
-        return obj.get(field).getAsInt();
-    }
 
     WeatherData parseWeather(String json) {
 
@@ -68,39 +38,22 @@ class WeatherResponseParser {
         JsonObject weather = weatherElement.getAsJsonObject();
 
         String city = requireString(root, "name", "name");
-
         double temperature = requireDouble(main, "temp", "temp");
         double feelsLike = requireDouble(main, "feels_like", "feels_like");
         int humidity = requireInt(main, "humidity", "humidity");
         String condition = requireString(weather, "description", "description");
-
-        double windSpeed = wind != null && wind.has("speed")
-                ? wind.get("speed").getAsDouble()
-                : 0.0;
-
+        double windSpeed = optionalDouble(wind, "speed", 0.0);
         String weatherCode = requireString(weather, "icon", "icon");
         int conditionId = requireInt(weather, "id", "id");
-
-        int windDeg = wind != null && wind.has("deg")
-                ? wind.get("deg").getAsInt()
-                : 0;
-
-        int visibility = root.has("visibility")
-                ? root.get("visibility").getAsInt()
-                : 0;
+        int windDeg = optionalInt(wind, "deg", 0);
+        int visibility = optionalInt(root, "visibility", 0);
 
         JsonObject clouds = root.getAsJsonObject("clouds");
-        int cloudCover = clouds != null && clouds.has("all")
-                ? clouds.get("all").getAsInt()
-                : 0;
+        int cloudCover = optionalInt(clouds, "all", 0);
 
         JsonObject sys = root.getAsJsonObject("sys");
-        long sunrise = sys != null && sys.has("sunrise")
-                ? sys.get("sunrise").getAsLong()
-                : 0L;
-        long sunset = sys != null && sys.has("sunset")
-                ? sys.get("sunset").getAsLong()
-                : 0L;
+        long sunrise = optionalLong(sys, "sunrise", 0L);
+        long sunset = optionalLong(sys, "sunset", 0L);
 
         double pressure = requireDouble(main, "pressure", "pressure");
         double tempMin = requireDouble(main, "temp_min", "temp_min");
@@ -110,12 +63,8 @@ class WeatherResponseParser {
                 + precipVolume(root, "snow", "1h", "3h");
 
         JsonObject coord = root.getAsJsonObject("coord");
-        double lat = coord != null && coord.has("lat")
-                ? coord.get("lat").getAsDouble()
-                : 0.0;
-        double lon = coord != null && coord.has("lon")
-                ? coord.get("lon").getAsDouble()
-                : 0.0;
+        double lat = optionalDouble(coord, "lat", 0.0);
+        double lon = optionalDouble(coord, "lon", 0.0);
 
         return new WeatherData(
                 city,

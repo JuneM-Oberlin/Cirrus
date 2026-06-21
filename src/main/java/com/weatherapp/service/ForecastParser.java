@@ -1,10 +1,5 @@
 package com.weatherapp.service;
 
-import com.weatherapp.model.ForecastDay;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import java.time.LocalDate;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
@@ -13,28 +8,26 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.weatherapp.model.ForecastDay;
+import static com.weatherapp.service.OpenWeatherJson.optionalDouble;
+import static com.weatherapp.service.OpenWeatherJson.precipVolume;
+import static com.weatherapp.service.OpenWeatherJson.requireInt;
+import static com.weatherapp.service.OpenWeatherJson.requireString;
+
 class ForecastParser {
 
-    private static double precipVolume(JsonObject entry, String key, String... fields) {
-        if (!entry.has(key)) {
-            return 0.0;
-        }
-        JsonObject obj = entry.getAsJsonObject(key);
-        if (obj == null) {
-            return 0.0;
-        }
-        for (String field : fields) {
-            if (obj.has(field)) {
-                return obj.get(field).getAsDouble();
-            }
-        }
-        return 0.0;
-    }
+    private static final String RESPONSE_TYPE = "forecast";
 
     List<ForecastDay> parseForecast(String json) {
 
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
         JsonArray list = root.getAsJsonArray("list");
+        // missing list is treated as empty forecast
+        // malformed entries are skipped
         if (list == null) {
             return List.of();
         }
@@ -115,9 +108,7 @@ class ForecastParser {
         JsonObject weather = weatherElement.getAsJsonObject();
 
         JsonObject wind = chosenEntry.getAsJsonObject("wind");
-        double windSpeed = wind != null && wind.has("speed")
-                ? wind.get("speed").getAsDouble()
-                : 0.0;
+        double windSpeed = optionalDouble(wind, "speed", 0.0);
 
         int rainChance = 0;
         if (chosenEntry.has("pop")) {
@@ -126,9 +117,9 @@ class ForecastParser {
             );
         }
 
-        String condition = weather.get("description").getAsString();
-        String weatherCode = weather.get("icon").getAsString();
-        int conditionId = weather.get("id").getAsInt();
+        String condition = requireString(weather, "description", "description", RESPONSE_TYPE);
+        String weatherCode = requireString(weather, "icon", "icon", RESPONSE_TYPE);
+        int conditionId = requireInt(weather, "id", "id", RESPONSE_TYPE);
 
         String dayName = LocalDate.parse(dateStr)
                 .getDayOfWeek()

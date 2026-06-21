@@ -95,7 +95,7 @@ public class WeatherData {
         return conditionId;
     }
 
-    public int getwindDeg() {
+    public int getWindDeg() {
         return windDeg;
     }
 
@@ -119,15 +119,15 @@ public class WeatherData {
         return pressure;
     }
 
-    public double precipitation() {
+    public double getPrecipitation() {
         return precipitation;
     }
 
-    public double tempMin() {
+    public double getTempMin() {
         return tempMin;
     }
 
-    public double tempMax() {
+    public double getTempMax() {
         return tempMax;
     }
 

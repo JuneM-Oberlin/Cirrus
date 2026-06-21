@@ -39,7 +39,7 @@ public class WeatherServer {
         enableCors(CorsConfig.fromEnvironment());
 
         RateLimiter rateLimiter = new RateLimiter(Clock.systemUTC());
-        WeatherService service = new WeatherService(new OpenWeatherClient(), rateLimiter);
+        WeatherService service = new WeatherService(new OpenWeatherClient());
         Gson gson = new Gson();
 
         get("/health", (req, res) -> {
@@ -52,7 +52,8 @@ public class WeatherServer {
             if (city == null || city.isBlank()) {
                 return badRequest(res, gson, "city parameter is required.");
             }
-            return handleCityRoute(req, res, gson, city, "City not found.", service::getWeather);
+            return handleCityRoute(req, res, gson, city, "City not found.", (c, ip) ->
+                    service.getWeather(c, rateLimitCheck(rateLimiter, ip)));
         });
 
         get("/forecast", (req, res) -> {
@@ -60,7 +61,8 @@ public class WeatherServer {
             if (city == null || city.isBlank()) {
                 return badRequest(res, gson, "city parameter is required.");
             }
-            return handleCityRoute(req, res, gson, city, "Forecast not found.", service::getForecast);
+            return handleCityRoute(req, res, gson, city, "Forecast not found.", (c, ip) ->
+                    service.getForecast(c, rateLimitCheck(rateLimiter, ip)));
         });
     }
 
@@ -85,6 +87,14 @@ public class WeatherServer {
         res.status(400);
         res.type("application/json");
         return gson.toJson(new ErrorResponse(message));
+    }
+
+    static Runnable rateLimitCheck(RateLimiter limiter, String clientIp) {
+        return () -> {
+            if (!limiter.isAllowed(clientIp)) {
+                throw new RateLimitExceededException(RateLimitExceededException.DEFAULT_MESSAGE);
+            }
+        };
     }
 
     static Object handleCityRoute(

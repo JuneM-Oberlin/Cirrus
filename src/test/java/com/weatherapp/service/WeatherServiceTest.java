@@ -2,7 +2,6 @@ package com.weatherapp.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -11,7 +10,6 @@ import static org.mockito.Mockito.when;
 import com.weatherapp.error.CityNotFoundException;
 import com.weatherapp.model.ForecastDay;
 import com.weatherapp.model.WeatherData;
-import com.weatherapp.server.RateLimiter;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -60,55 +58,56 @@ class WeatherServiceTest {
     @Test
     void cacheHitSkipsRateLimit() {
         OpenWeatherClient client = mock(OpenWeatherClient.class);
-        RateLimiter limiter = mock(RateLimiter.class);
-        when(limiter.isAllowed(anyString())).thenReturn(true);
         when(client.getWeatherJSON("London")).thenReturn(VALID_WEATHER_JSON);
 
-        WeatherService service = new WeatherService(client, limiter);
+        AtomicInteger rateLimitCalls = new AtomicInteger();
+        Runnable enforceRateLimit = rateLimitCalls::incrementAndGet;
 
-        WeatherData first = service.getWeather("London", "1.1.1.1");
-        WeatherData second = service.getWeather("London", "1.1.1.1");
+        WeatherService service = new WeatherService(client);
+
+        WeatherData first = service.getWeather("London", enforceRateLimit);
+        WeatherData second = service.getWeather("London", enforceRateLimit);
 
         assertEquals("London", first.getCity());
         assertEquals(first.getCity(), second.getCity());
-        verify(limiter, times(1)).isAllowed("1.1.1.1");
+        assertEquals(1, rateLimitCalls.get());
         verify(client, times(1)).getWeatherJSON("London");
     }
 
     @Test
     void cacheMissEnforcesRateLimit() {
         OpenWeatherClient client = mock(OpenWeatherClient.class);
-        RateLimiter limiter = mock(RateLimiter.class);
-        when(limiter.isAllowed(anyString())).thenReturn(true);
         when(client.getWeatherJSON("Paris")).thenReturn(VALID_WEATHER_JSON.replace("London", "Paris"));
 
-        WeatherService service = new WeatherService(client, limiter);
-        service.getWeather("Paris", "2.2.2.2");
+        AtomicInteger rateLimitCalls = new AtomicInteger();
+        Runnable enforceRateLimit = rateLimitCalls::incrementAndGet;
 
-        verify(limiter, times(1)).isAllowed("2.2.2.2");
+        WeatherService service = new WeatherService(client);
+        service.getWeather("Paris", enforceRateLimit);
+
+        assertEquals(1, rateLimitCalls.get());
     }
 
     @Test
     void negativeCacheAvoidsRepeatApiCalls() {
         OpenWeatherClient client = mock(OpenWeatherClient.class);
-        RateLimiter limiter = mock(RateLimiter.class);
-        when(limiter.isAllowed(anyString())).thenReturn(true);
         when(client.getWeatherJSON("Nowhere")).thenThrow(new CityNotFoundException("Nowhere"));
 
-        WeatherService service = new WeatherService(client, limiter);
+        AtomicInteger rateLimitCalls = new AtomicInteger();
+        Runnable enforceRateLimit = rateLimitCalls::incrementAndGet;
 
-        assertThrows(CityNotFoundException.class, () -> service.getWeather("Nowhere", "3.3.3.3"));
-        assertThrows(CityNotFoundException.class, () -> service.getWeather("Nowhere", "3.3.3.3"));
+        WeatherService service = new WeatherService(client);
+
+        assertThrows(CityNotFoundException.class, () -> service.getWeather("Nowhere", enforceRateLimit));
+        assertThrows(CityNotFoundException.class, () -> service.getWeather("Nowhere", enforceRateLimit));
 
         verify(client, times(1)).getWeatherJSON("Nowhere");
-        verify(limiter, times(1)).isAllowed("3.3.3.3");
+        assertEquals(1, rateLimitCalls.get());
     }
 
     @Test
     void concurrentMissesOnlyFetchOnce() throws Exception {
         OpenWeatherClient client = mock(OpenWeatherClient.class);
-        RateLimiter limiter = mock(RateLimiter.class);
-        when(limiter.isAllowed(anyString())).thenReturn(true);
 
         AtomicInteger callCount = new AtomicInteger();
         CountDownLatch started = new CountDownLatch(1);
@@ -121,12 +120,12 @@ class WeatherServiceTest {
             return VALID_WEATHER_JSON.replace("London", "Berlin");
         });
 
-        WeatherService service = new WeatherService(client, limiter);
+        WeatherService service = new WeatherService(client);
         ExecutorService pool = Executors.newFixedThreadPool(2);
 
         try {
-            Future<WeatherData> first = pool.submit(() -> service.getWeather("Berlin", "4.4.4.4"));
-            Future<WeatherData> second = pool.submit(() -> service.getWeather("Berlin", "4.4.4.4"));
+            Future<WeatherData> first = pool.submit(() -> service.getWeather("Berlin", () -> {}));
+            Future<WeatherData> second = pool.submit(() -> service.getWeather("Berlin", () -> {}));
 
             started.await();
             release.countDown();
@@ -142,8 +141,6 @@ class WeatherServiceTest {
     @Test
     void concurrentWeatherAndForecastUseSeparateLocks() throws Exception {
         OpenWeatherClient client = mock(OpenWeatherClient.class);
-        RateLimiter limiter = mock(RateLimiter.class);
-        when(limiter.isAllowed(anyString())).thenReturn(true);
 
         CountDownLatch release = new CountDownLatch(1);
         AtomicInteger inFlight = new AtomicInteger();
@@ -164,12 +161,12 @@ class WeatherServiceTest {
             return VALID_FORECAST_JSON;
         });
 
-        WeatherService service = new WeatherService(client, limiter);
+        WeatherService service = new WeatherService(client);
         ExecutorService pool = Executors.newFixedThreadPool(2);
 
         try {
-            Future<WeatherData> weather = pool.submit(() -> service.getWeather("Tokyo", "5.5.5.5"));
-            Future<List<ForecastDay>> forecast = pool.submit(() -> service.getForecast("Tokyo", "5.5.5.5"));
+            Future<WeatherData> weather = pool.submit(() -> service.getWeather("Tokyo", () -> {}));
+            Future<List<ForecastDay>> forecast = pool.submit(() -> service.getForecast("Tokyo", () -> {}));
 
             Thread.sleep(100);
             release.countDown();

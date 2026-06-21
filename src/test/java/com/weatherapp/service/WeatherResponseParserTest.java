@@ -40,7 +40,7 @@ class WeatherResponseParserTest {
         assertEquals(50, data.getHumidity());
         assertEquals("clear sky", data.getCondition());
         assertEquals(5.0, data.getWindSpeed());
-        assertEquals(180, data.getwindDeg());
+        assertEquals(180, data.getWindDeg());
         assertEquals(25, data.getCloudCover());
     }
 
@@ -95,7 +95,7 @@ class WeatherResponseParserTest {
         );
 
         assertEquals(0.0, data.getWindSpeed());
-        assertEquals(0, data.getwindDeg());
+        assertEquals(0, data.getWindDeg());
         assertEquals(0.0, data.getLat());
         assertEquals(0.0, data.getLon());
         assertEquals(0L, data.getSunrise());

@@ -1,6 +1,7 @@
 package com.weatherapp.server;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -20,7 +21,6 @@ class HandleCityRouteTest {
         Response res = mock(Response.class);
         Gson gson = new Gson();
 
-        when(req.headers("True-Client-Ip")).thenReturn("9.9.9.9");
         when(req.ip()).thenReturn("1.2.3.4");
 
         Object result = WeatherServer.handleCityRoute(
@@ -77,11 +77,30 @@ class HandleCityRouteTest {
                 "London",
                 "City not found.",
                 (city, ip) -> {
-                    throw new RateLimitExceededException("Too many requests. Please wait a minute.");
+                    throw new RateLimitExceededException(RateLimitExceededException.DEFAULT_MESSAGE);
                 });
 
         org.mockito.Mockito.verify(res).status(429);
         assertTrue(result.toString().contains("Too many requests"));
+    }
+
+    @Test
+    void rateLimitCheckThrowsWhenLimiterRejects() {
+        RateLimiter limiter = mock(RateLimiter.class);
+        when(limiter.isAllowed("127.0.0.1")).thenReturn(false);
+
+        Runnable check = WeatherServer.rateLimitCheck(limiter, "127.0.0.1");
+
+        assertThrows(RateLimitExceededException.class, check::run);
+    }
+
+    @Test
+    void rateLimitCheckPassesWhenLimiterAllows() {
+        RateLimiter limiter = mock(RateLimiter.class);
+        when(limiter.isAllowed("127.0.0.1")).thenReturn(true);
+
+        Runnable check = WeatherServer.rateLimitCheck(limiter, "127.0.0.1");
+        check.run();
     }
 
     @Test
