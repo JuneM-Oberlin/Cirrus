@@ -13,3 +13,4 @@ graphify-out/**
 graphify.log
 graphify.lock
 .DS_Store
+.gstack/

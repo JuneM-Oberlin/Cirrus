@@ -2,7 +2,9 @@ package com.weatherapp.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -103,6 +105,55 @@ class WeatherServiceTest {
 
         verify(client, times(1)).getWeatherJSON("Nowhere");
         assertEquals(1, rateLimitCalls.get());
+    }
+
+    @Test
+    void weatherNotFoundBlocksForecastWithoutApiCall() {
+        OpenWeatherClient client = mock(OpenWeatherClient.class);
+        when(client.getWeatherJSON("Nowhere")).thenThrow(new CityNotFoundException("Nowhere"));
+
+        WeatherService service = new WeatherService(client);
+
+        assertThrows(CityNotFoundException.class, () -> service.getWeather("Nowhere", () -> {}));
+        assertThrows(CityNotFoundException.class, () -> service.getForecast("Nowhere", () -> {}));
+
+        verify(client, times(1)).getWeatherJSON("Nowhere");
+        verify(client, never()).getForecastJSON(anyString());
+    }
+
+    @Test
+    void parallelWeatherAndForecastMissInvokesRateLimitTwice() throws Exception {
+        OpenWeatherClient client = mock(OpenWeatherClient.class);
+
+        CountDownLatch release = new CountDownLatch(1);
+        AtomicInteger rateLimitCalls = new AtomicInteger();
+        Runnable enforceRateLimit = rateLimitCalls::incrementAndGet;
+
+        when(client.getWeatherJSON("Oslo")).thenAnswer(invocation -> {
+            release.await(2, TimeUnit.SECONDS);
+            return VALID_WEATHER_JSON.replace("London", "Oslo");
+        });
+        when(client.getForecastJSON("Oslo")).thenAnswer(invocation -> {
+            release.await(2, TimeUnit.SECONDS);
+            return VALID_FORECAST_JSON;
+        });
+
+        WeatherService service = new WeatherService(client);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+
+        try {
+            Future<WeatherData> weather = pool.submit(() -> service.getWeather("Oslo", enforceRateLimit));
+            Future<List<ForecastDay>> forecast = pool.submit(() -> service.getForecast("Oslo", enforceRateLimit));
+
+            Thread.sleep(100);
+            release.countDown();
+
+            weather.get(2, TimeUnit.SECONDS);
+            forecast.get(2, TimeUnit.SECONDS);
+            assertEquals(2, rateLimitCalls.get());
+        } finally {
+            pool.shutdownNow();
+        }
     }
 
     @Test

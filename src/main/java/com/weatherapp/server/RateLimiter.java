@@ -2,6 +2,10 @@ package com.weatherapp.server;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,14 +45,29 @@ public class RateLimiter {
         });
 
         if (expired || windows.size() > MAX_TRACKED_IPS) {
-            pruneExpired(now);
+            prune(now);
         }
 
         return window.count.incrementAndGet() <= MAX_REQUESTS;
     }
 
-    private void pruneExpired(Instant now) {
+    int trackedIpCount() {
+        return windows.size();
+    }
+
+    private void prune(Instant now) {
         windows.entrySet().removeIf(entry -> now.isAfter(entry.getValue().resetAt));
+
+        if (windows.size() <= MAX_TRACKED_IPS) {
+            return;
+        }
+
+        List<Map.Entry<String, Window>> entries = new ArrayList<>(windows.entrySet());
+        entries.sort(Comparator.comparing(entry -> entry.getValue().resetAt));
+
+        int toRemove = windows.size() - MAX_TRACKED_IPS;
+        for (int i = 0; i < toRemove; i++) {
+            windows.remove(entries.get(i).getKey());
+        }
     }
 }
-

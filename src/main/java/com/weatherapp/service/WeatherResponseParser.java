@@ -5,13 +5,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import static com.weatherapp.service.OpenWeatherJson.optionalDouble;
-import static com.weatherapp.service.OpenWeatherJson.optionalInt;
-import static com.weatherapp.service.OpenWeatherJson.optionalLong;
-import static com.weatherapp.service.OpenWeatherJson.precipVolume;
-import static com.weatherapp.service.OpenWeatherJson.requireDouble;
-import static com.weatherapp.service.OpenWeatherJson.requireInt;
-import static com.weatherapp.service.OpenWeatherJson.requireString;
 
 class WeatherResponseParser {
 
@@ -37,34 +30,34 @@ class WeatherResponseParser {
         }
         JsonObject weather = weatherElement.getAsJsonObject();
 
-        String city = requireString(root, "name", "name");
-        double temperature = requireDouble(main, "temp", "temp");
-        double feelsLike = requireDouble(main, "feels_like", "feels_like");
-        int humidity = requireInt(main, "humidity", "humidity");
-        String condition = requireString(weather, "description", "description");
-        double windSpeed = optionalDouble(wind, "speed", 0.0);
-        String weatherCode = requireString(weather, "icon", "icon");
-        int conditionId = requireInt(weather, "id", "id");
-        int windDeg = optionalInt(wind, "deg", 0);
-        int visibility = optionalInt(root, "visibility", 0);
+        String city = OpenWeatherJson.requireString(root, "name", "weather");
+        double temperature = OpenWeatherJson.requireDouble(main, "temp", "weather");
+        double feelsLike = OpenWeatherJson.requireDouble(main, "feels_like", "weather");
+        int humidity = OpenWeatherJson.requireInt(main, "humidity", "weather");
+        String condition = OpenWeatherJson.requireString(weather, "description", "weather");
+        double windSpeed = OpenWeatherJson.optionalDouble(wind, "speed", 0.0);
+        String weatherCode = OpenWeatherJson.requireString(weather, "icon", "weather");
+        int conditionId = OpenWeatherJson.requireInt(weather, "id", "weather");
+        int windDeg = OpenWeatherJson.optionalInt(wind, "deg", 0);
+        int visibility = OpenWeatherJson.optionalInt(root, "visibility", 0);
 
         JsonObject clouds = root.getAsJsonObject("clouds");
-        int cloudCover = optionalInt(clouds, "all", 0);
+        int cloudCover = OpenWeatherJson.optionalInt(clouds, "all", 0);
 
         JsonObject sys = root.getAsJsonObject("sys");
-        long sunrise = optionalLong(sys, "sunrise", 0L);
-        long sunset = optionalLong(sys, "sunset", 0L);
+        long sunrise = OpenWeatherJson.optionalLong(sys, "sunrise", 0L);
+        long sunset = OpenWeatherJson.optionalLong(sys, "sunset", 0L);
 
-        double pressure = requireDouble(main, "pressure", "pressure");
-        double tempMin = requireDouble(main, "temp_min", "temp_min");
-        double tempMax = requireDouble(main, "temp_max", "temp_max");
+        double pressure = OpenWeatherJson.requireDouble(main, "pressure", "weather");
+        double tempMin = OpenWeatherJson.requireDouble(main, "temp_min", "weather");
+        double tempMax = OpenWeatherJson.requireDouble(main, "temp_max", "weather");
 
-        double precipitation = precipVolume(root, "rain", "1h", "3h")
-                + precipVolume(root, "snow", "1h", "3h");
+        double precipitation = OpenWeatherJson.precipVolume(root, "rain", "1h", "3h")
+                + OpenWeatherJson.precipVolume(root, "snow", "1h", "3h");
 
         JsonObject coord = root.getAsJsonObject("coord");
-        double lat = optionalDouble(coord, "lat", 0.0);
-        double lon = optionalDouble(coord, "lon", 0.0);
+        double lat = OpenWeatherJson.optionalDouble(coord, "lat", 0.0);
+        double lon = OpenWeatherJson.optionalDouble(coord, "lon", 0.0);
 
         return new WeatherData(
                 city,

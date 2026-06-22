@@ -2,6 +2,7 @@ package com.weatherapp.server;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -56,12 +57,15 @@ class RateLimiterTest {
     }
 
     @Test
-    void prunesWhenTrackedIpCountExceedsLimit() {
+    void capsTrackedIpsAtFiveHundred() {
         Clock clock = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC);
         RateLimiter limiter = new RateLimiter(clock);
 
-        for (int i = 0; i < 501; i++) {
-            assertTrue(limiter.isAllowed("10.0.0." + (i % 256)));
+        for (int i = 0; i < 600; i++) {
+            assertTrue(limiter.isAllowed("ip-" + i));
         }
+
+        assertEquals(500, limiter.trackedIpCount());
+        assertTrue(limiter.isAllowed("ip-new"));
     }
 }

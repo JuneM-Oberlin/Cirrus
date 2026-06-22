@@ -34,7 +34,6 @@ public class WeatherService {
                 city,
                 weatherCache,
                 "weather:",
-                "weather",
                 enforceRateLimit,
                 client::getWeatherJSON,
                 weatherParser::parseWeather);
@@ -45,7 +44,6 @@ public class WeatherService {
                 city,
                 forecastCache,
                 "forecast:",
-                "forecast",
                 enforceRateLimit,
                 client::getForecastJSON,
                 forecastParser::parseForecast);
@@ -55,7 +53,6 @@ public class WeatherService {
             String city,
             WeatherCache<T> cache,
             String lockPrefix,
-            String cacheLabel,
             Runnable enforceRateLimit,
             Function<String, String> fetchJson,
             Function<String, T> parse) {
@@ -64,7 +61,7 @@ public class WeatherService {
 
         T cached = cache.get(key);
         if (cached != null) {
-            System.out.println("Cache hit: " + cacheLabel + "/" + key);
+            System.out.println("Cache hit: " + lockPrefix.replace(':', '/') + key);
             return cached;
         }
 

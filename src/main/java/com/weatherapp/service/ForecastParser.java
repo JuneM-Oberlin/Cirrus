@@ -1,5 +1,10 @@
 package com.weatherapp.service;
 
+import com.weatherapp.model.ForecastDay;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.time.LocalDate;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
@@ -8,26 +13,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.weatherapp.model.ForecastDay;
-import static com.weatherapp.service.OpenWeatherJson.optionalDouble;
-import static com.weatherapp.service.OpenWeatherJson.precipVolume;
-import static com.weatherapp.service.OpenWeatherJson.requireInt;
-import static com.weatherapp.service.OpenWeatherJson.requireString;
-
 class ForecastParser {
-
-    private static final String RESPONSE_TYPE = "forecast";
 
     List<ForecastDay> parseForecast(String json) {
 
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
         JsonArray list = root.getAsJsonArray("list");
-        // missing list is treated as empty forecast
-        // malformed entries are skipped
         if (list == null) {
             return List.of();
         }
@@ -82,8 +73,8 @@ class ForecastParser {
                 }
             }
 
-            precipitation += precipVolume(e, "rain", "3h")
-                    + precipVolume(e, "snow", "3h");
+            precipitation += OpenWeatherJson.precipVolume(e, "rain", "3h")
+                    + OpenWeatherJson.precipVolume(e, "snow", "3h");
 
             if (e.has("dt_txt") && e.get("dt_txt").getAsString().contains("12:00:00")) {
                 chosenEntry = e;
@@ -108,7 +99,7 @@ class ForecastParser {
         JsonObject weather = weatherElement.getAsJsonObject();
 
         JsonObject wind = chosenEntry.getAsJsonObject("wind");
-        double windSpeed = optionalDouble(wind, "speed", 0.0);
+        double windSpeed = OpenWeatherJson.optionalDouble(wind, "speed", 0.0);
 
         int rainChance = 0;
         if (chosenEntry.has("pop")) {
@@ -117,9 +108,9 @@ class ForecastParser {
             );
         }
 
-        String condition = requireString(weather, "description", "description", RESPONSE_TYPE);
-        String weatherCode = requireString(weather, "icon", "icon", RESPONSE_TYPE);
-        int conditionId = requireInt(weather, "id", "id", RESPONSE_TYPE);
+        String condition = OpenWeatherJson.requireString(weather, "description", "forecast");
+        String weatherCode = OpenWeatherJson.requireString(weather, "icon", "forecast");
+        int conditionId = OpenWeatherJson.requireInt(weather, "id", "forecast");
 
         String dayName = LocalDate.parse(dateStr)
                 .getDayOfWeek()
