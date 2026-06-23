@@ -27,6 +27,18 @@ function hpaToInHg(hpa) {
     return (hpa * 0.02953).toFixed(2);
 }
 
+function formatCityTime(unixSeconds, timezoneOffsetSeconds) {
+    if (!unixSeconds) {
+        return "--";
+    }
+    const date = new Date((unixSeconds + (timezoneOffsetSeconds || 0)) * 1000);
+    return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "UTC",
+    });
+}
+
 function isForecastTabActive() {
     return !document.getElementById("forecastView").classList.contains("hidden");
 }
@@ -143,6 +155,7 @@ function normalizeBackendWeatherData(data) {
         sunset: data.sunset,
         lat: data.lat,
         lon: data.lon,
+        timezoneOffset: data.timezoneOffset ?? 0,
     };
 }
 
@@ -185,10 +198,20 @@ function fetchForecastData(city) {
     return fetchCached("forecast", city, clientCache.forecast);
 }
 
+function updateTodayEmptyState() {
+    if (!document.getElementById("todayView").classList.contains("hidden")
+        && document.getElementById("weatherDisplay").classList.contains("hidden")) {
+        show("todayEmpty");
+    } else {
+        hide("todayEmpty");
+    }
+}
+
 function presentWeather(data) {
     const isNight = data.weatherCode.endsWith("n");
     document.body.classList.toggle("theme-day", !isNight);
     renderTodayView(data, isNight);
+    hide("todayEmpty");
 }
 
 function activateOnEnterOrSpace(event, action) {
@@ -274,6 +297,7 @@ function switchTab(tab) {
         tabForecast.classList.remove("active");
         tabToday.setAttribute("aria-selected", "true");
         tabForecast.setAttribute("aria-selected", "false");
+        updateTodayEmptyState();
     } else {
         forecastView.classList.remove("hidden");
         todayView.classList.add("hidden");
@@ -551,12 +575,8 @@ function renderTodayView(data, isNight) {
     set("cloudCover", data.cloudCover + "%");
     set("pressure", hpaToInHg(data.pressure) + " inHg");
 
-    const sunriseTime = new Date(data.sunrise * 1000).toLocaleTimeString([], {
-        hour: "2-digit", minute: "2-digit"
-    });
-    const sunsetTime = new Date(data.sunset * 1000).toLocaleTimeString([], {
-        hour: "2-digit", minute: "2-digit"
-    });
+    const sunriseTime = formatCityTime(data.sunrise, data.timezoneOffset);
+    const sunsetTime = formatCityTime(data.sunset, data.timezoneOffset);
     set("sunrise", sunriseTime);
     set("sunset", sunsetTime);
 
@@ -575,3 +595,4 @@ function renderTodayView(data, isNight) {
 }
 
 renderHistory();
+updateTodayEmptyState();

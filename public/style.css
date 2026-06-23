@@ -259,6 +259,9 @@ body.theme-day::after {
 }
 
 .history span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   background: linear-gradient(to bottom,
       rgba(255, 255, 255, 0.22) 0%,
       rgba(255, 255, 255, 0.1) 50%,
@@ -298,6 +301,20 @@ body.theme-day::after {
 @keyframes loadingPulse {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #loading {
+    animation: none;
+  }
+
+  body::before,
+  body::after,
+  .glass-panel,
+  .globe-bg,
+  .forecast-day {
+    transition: none;
+  }
 }
 
 .error {
@@ -563,8 +580,9 @@ body.theme-day::after {
 
 .timestamp {
   margin-left: auto;
-  background: linear-gradient(to right, #a63a50, #6d0f26);
-  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.92);
   font-size: 12px;
   padding: 7px 12px;
   border-radius: 10px;

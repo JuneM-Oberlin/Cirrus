@@ -24,6 +24,7 @@ class WeatherResponseParserTest {
               "weather": [{"description": "clear sky", "icon": "01d", "id": 800}],
               "wind": {"speed": 5.0, "deg": 180},
               "coord": {"lat": 51.5, "lon": -0.1},
+              "timezone": 3600,
               "sys": {"sunrise": 100, "sunset": 200},
               "clouds": {"all": 25},
               "visibility": 10000
@@ -42,6 +43,7 @@ class WeatherResponseParserTest {
         assertEquals(5.0, data.getWindSpeed());
         assertEquals(180, data.getWindDeg());
         assertEquals(25, data.getCloudCover());
+        assertEquals(3600, data.getTimezoneOffset());
     }
 
     @Test

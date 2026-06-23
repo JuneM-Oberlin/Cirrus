@@ -21,6 +21,7 @@ public class WeatherData {
     private double tempMin;
     private double lat;
     private double lon;
+    private int timezoneOffset;
 
     public WeatherData(String city,
             double temperature,
@@ -40,7 +41,8 @@ public class WeatherData {
             double tempMin,
             double tempMax,
             double lat,
-            double lon) {
+            double lon,
+            int timezoneOffset) {
 
         this.city = city;
         this.temperature = temperature;
@@ -61,6 +63,7 @@ public class WeatherData {
         this.tempMax = tempMax;
         this.lat = lat;
         this.lon = lon;
+        this.timezoneOffset = timezoneOffset;
     }
 
     public String getCity() {
@@ -139,6 +142,10 @@ public class WeatherData {
         return lon;
     }
 
+    public int getTimezoneOffset() {
+        return timezoneOffset;
+    }
+
     @Override
     public String toString() {
         return String.format(
@@ -146,13 +153,15 @@ public class WeatherData {
                 + "Temperature: %.1f F  (Feels like %.1f F)%n"
                 + "Humidity:  %d%%%n"
                 + "Condition: %s%n"
-                + "Wind:      %.1f mph",
+                + "Wind:      %.1f mph%n"
+                + "Timezone:  %+d s",
                 city,
                 temperature,
                 feelsLike,
                 humidity,
                 condition,
-                windSpeed
+                windSpeed,
+                timezoneOffset
         );
     }
 }

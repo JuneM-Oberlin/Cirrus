@@ -58,6 +58,7 @@ class WeatherResponseParser {
         JsonObject coord = root.getAsJsonObject("coord");
         double lat = OpenWeatherJson.optionalDouble(coord, "lat", 0.0);
         double lon = OpenWeatherJson.optionalDouble(coord, "lon", 0.0);
+        int timezoneOffset = OpenWeatherJson.optionalInt(root, "timezone", 0);
 
         return new WeatherData(
                 city,
@@ -78,7 +79,8 @@ class WeatherResponseParser {
                 tempMin,
                 tempMax,
                 lat,
-                lon
+                lon,
+                timezoneOffset
         );
     }
 }
