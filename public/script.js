@@ -368,8 +368,8 @@ function renderForecast(days) {
       <img class="forecast-icon"
            src="icons/${iconMap[iconKey] ?? "default.png"}"
            alt="${day.condition}">
-      <div class="forecast-high">${Math.round(day.high)}°</div>
-      <div class="forecast-low">${Math.round(day.low)}°</div>
+      <div class="forecast-high">${Math.round(day.high)}°F</div>
+      <div class="forecast-low">${Math.round(day.low)}°F</div>
       <div class="forecast-rain">
         <img class="rain-icon" src="icons/${rainIcon}" alt="${rainAlt}">
         ${day.rainChance}%
