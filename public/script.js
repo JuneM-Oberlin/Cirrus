@@ -548,22 +548,30 @@ function switchTab(tab) {
 
     if (tab === "today") {
         todayView.classList.remove("hidden");
+        todayView.hidden = false;
         forecastView.classList.add("hidden");
+        forecastView.hidden = true;
         tabToday.classList.add("active");
         tabForecast.classList.remove("active");
         tabToday.setAttribute("aria-selected", "true");
         tabForecast.setAttribute("aria-selected", "false");
+        tabToday.tabIndex = 0;
+        tabForecast.tabIndex = -1;
         updateTodayEmptyState();
         if (currentWeatherConditionId !== null) {
             setWeatherAtmosphere(currentWeatherConditionId);
         }
     } else {
         forecastView.classList.remove("hidden");
+        forecastView.hidden = false;
         todayView.classList.add("hidden");
+        todayView.hidden = true;
         tabForecast.classList.add("active");
         tabToday.classList.remove("active");
         tabToday.setAttribute("aria-selected", "false");
         tabForecast.setAttribute("aria-selected", "true");
+        tabToday.tabIndex = -1;
+        tabForecast.tabIndex = 0;
 
         const city = document.getElementById("cityInput").value.trim();
         const strip = document.getElementById("forecastStrip");
