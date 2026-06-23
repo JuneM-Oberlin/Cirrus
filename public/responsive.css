@@ -36,7 +36,6 @@
   .history,
   .details-row,
   .wind-bar,
-  .timestamp,
   #loading,
   .error,
   .forecast-empty {
@@ -287,9 +286,10 @@
   }
 
   .timestamp {
-    margin-left: 0;
-    font-size: 11px;
-    padding: 6px 10px;
+    margin-left: auto;
+    margin-right: 6px;
+    font-size: 10px;
+    padding: 5px 12px;
     white-space: normal;
   }
 

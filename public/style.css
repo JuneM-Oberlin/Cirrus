@@ -580,15 +580,28 @@ body.theme-day::after {
 
 .timestamp {
   margin-left: auto;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 12px;
-  padding: 7px 12px;
-  border-radius: 10px;
-  line-height: 1.1;
+  margin-right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(255, 255, 255, 0) 55%),
+    linear-gradient(to right,
+      rgba(138, 26, 58, 0.58),
+      rgba(90, 10, 34, 0.68));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  line-height: 1.2;
   text-align: center;
   white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /*  FORECAST STRIP  */
