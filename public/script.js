@@ -1,8 +1,10 @@
 //helper show or hide id
 function show(id) {document.getElementById(id).classList.remove("hidden");}
 function hide(id) {document.getElementById(id).classList.add("hidden");}
-function set(id, value) {document.getElementById(id).textContent = value;} 
+function set(id, value) {document.getElementById(id).textContent = value;}
 
+const HISTORY_KEY = "cirrus_city_history";
+const MAX_HISTORY = 8;
 
 function degreesToCompass(deg) {
     const directions = [
@@ -13,6 +15,75 @@ function degreesToCompass(deg) {
     ];
     const index = Math.round(deg / 22.5) % 16;
     return directions[index];
+}
+
+function formatCityLabel(city) {
+    return city.trim().split(/\s+/).map((word) =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(" ");
+}
+
+function hpaToInHg(hpa) {
+    return (hpa * 0.02953).toFixed(2);
+}
+
+function isForecastTabActive() {
+    return !document.getElementById("forecastView").classList.contains("hidden");
+}
+
+function loadHistory() {
+    try {
+        const stored = localStorage.getItem(HISTORY_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch (err) {
+        console.log("Could not load search history:", err);
+        return [];
+    }
+}
+
+function saveHistory(cities) {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(cities));
+}
+
+function addToHistory(city) {
+    const trimmed = city.trim();
+    if (!trimmed) {
+        return;
+    }
+
+    const key = normalizeCityKey(trimmed);
+    let cities = loadHistory().filter((entry) => normalizeCityKey(entry) !== key);
+    cities.unshift(trimmed);
+    if (cities.length > MAX_HISTORY) {
+        cities = cities.slice(0, MAX_HISTORY);
+    }
+    saveHistory(cities);
+    renderHistory();
+}
+
+function renderHistory() {
+    const container = document.getElementById("historyList");
+    if (!container) {
+        return;
+    }
+
+    container.replaceChildren();
+    loadHistory().forEach((city) => {
+        const chip = document.createElement("span");
+        chip.textContent = city;
+        chip.setAttribute("role", "button");
+        chip.tabIndex = 0;
+        chip.addEventListener("click", () => selectHistoryCity(city));
+        chip.addEventListener("keydown", (event) =>
+            activateOnEnterOrSpace(event, () => selectHistoryCity(city))
+        );
+        container.appendChild(chip);
+    });
+}
+
+function selectHistoryCity(city) {
+    document.getElementById("cityInput").value = city;
+    searchCity();
 }
 
 const BACKEND_URL = "https://weatherapp-project-6rms.onrender.com";
@@ -141,6 +212,54 @@ function onTabKeydown(event, tab) {
     activateOnEnterOrSpace(event, () => switchTab(tab));
 }
 
+function hasForecastDays() {
+    return document.getElementById("forecastStrip").querySelectorAll(".forecast-day").length > 0;
+}
+
+function updateForecastEmptyState() {
+    const empty = document.getElementById("forecastEmpty");
+    if (!empty) {
+        return;
+    }
+
+    const city = document.getElementById("cityInput").value.trim();
+    if (hasForecastDays()) {
+        hide("forecastEmpty");
+        return;
+    }
+
+    if (!city) {
+        empty.textContent = "Search a city to see the 5-day forecast.";
+        show("forecastEmpty");
+        return;
+    }
+
+    hide("forecastEmpty");
+}
+
+function hideForecastDetails() {
+    const panel = document.getElementById("forecastDetails");
+    if (!panel) {
+        return;
+    }
+    panel.classList.add("hidden");
+    panel.innerHTML = "";
+}
+
+function forecastRainIcon(day) {
+    const chance = day.rainChance ?? 0;
+    if (chance <= 0) {
+        return "partly-cloudy-day.png";
+    }
+
+    const mapped = iconMap[day.conditionId];
+    if (mapped && /rain|thunder|mixed|sleet|snow/.test(mapped)) {
+        return mapped;
+    }
+
+    return "partly-cloudy-with-rain-day.png";
+}
+
 function switchTab(tab) {
     const todayView    = document.getElementById("todayView");
     const forecastView = document.getElementById("forecastView");
@@ -163,22 +282,28 @@ function switchTab(tab) {
         tabToday.setAttribute("aria-selected", "false");
         tabForecast.setAttribute("aria-selected", "true");
 
-        const city  = document.getElementById("cityInput").value.trim();
+        const city = document.getElementById("cityInput").value.trim();
         const strip = document.getElementById("forecastStrip");
+        updateForecastEmptyState();
+
         if (city && strip.innerHTML.trim() === "") {
+            hide("forecastEmpty");
             set("loading", "Fetching forecast...");
             show("loading");
             hide("errorMsg");
             fetchForecastData(city)
-                .then(data => {
+                .then((data) => {
                     hide("loading");
+                    set("cityName", formatCityLabel(city));
                     renderForecast(data);
+                    addToHistory(city);
                 })
-                .catch(err => {
+                .catch((err) => {
                     hide("loading");
                     console.log("Forecast error:", err);
                     set("errorMsg", err.message || "Could not load forecast.");
                     show("errorMsg");
+                    updateForecastEmptyState();
                 });
         }
     }
@@ -193,7 +318,7 @@ function switchTab(tab) {
 }
 
 function renderForecast(days) {
-     const strip = document.getElementById("forecastStrip");
+    const strip = document.getElementById("forecastStrip");
     const footer = document.getElementById("forecastFooter");
     const now = new Date();
     const timeText = now.toLocaleTimeString([], {
@@ -207,10 +332,13 @@ function renderForecast(days) {
 
     footer.textContent = `As of ${timeText}, ${dateText}`;
 
-  strip.innerHTML = days.map((day, i) => {
-    // always use the day icon variant
-    const iconKey = day.conditionId;
-    return `
+    strip.innerHTML = days.map((day, i) => {
+        const iconKey = day.conditionId;
+        const rainIcon = forecastRainIcon(day);
+        const rainAlt = (day.rainChance ?? 0) > 0
+            ? `${day.rainChance}% chance of rain`
+            : "No rain expected";
+        return `
     <div class="forecast-day glass-panel" role="button" tabindex="0" aria-label="${day.day} forecast">
       <div class="forecast-label ${i === 0 ? 'today' : ''}">${day.day}</div>
       <img class="forecast-icon"
@@ -219,12 +347,14 @@ function renderForecast(days) {
       <div class="forecast-high">${Math.round(day.high)}°</div>
       <div class="forecast-low">${Math.round(day.low)}°</div>
       <div class="forecast-rain">
-        <img class="rain-icon" src="icons/partly-cloudy-with-rain-day.png" alt="rain">
+        <img class="rain-icon" src="icons/${rainIcon}" alt="${rainAlt}">
         ${day.rainChance}%
       </div>
     </div>
   `;
-  }).join(""); 
+    }).join("");
+
+    hide("forecastEmpty");
 
     const dayEls = strip.querySelectorAll(".forecast-day");
     dayEls.forEach((el, idx) => {
@@ -265,7 +395,6 @@ function showForecastDetails(day) {
         </div>
     `;
     panel.classList.remove('hidden');
-    // scroll into view so user sees the details below the strip
     panel.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
@@ -278,7 +407,6 @@ async function withLoading(task, { revealWeather = true } = {}) {
     }
     hide("errorMsg");
 
-    // if the request drags on it has to be Render cold start
     const coldStartTimer = setTimeout(() => {
         set("loading", "Waking up the server — the first search can take up to a minute...");
     }, 4000);
@@ -292,19 +420,39 @@ async function withLoading(task, { revealWeather = true } = {}) {
         console.log("Search error:", err);
         set("errorMsg", err.message || "Could not load weather data.");
         show("errorMsg");
+        if (isForecastTabActive()) {
+            updateForecastEmptyState();
+        }
     } finally {
         clearTimeout(coldStartTimer);
         hide("loading");
     }
 }
 
-function getWeatherForecast() {
-    const city = document.getElementById("cityInputForecast").value.trim();
-    if (!city) return;
+function searchCity() {
+    const city = document.getElementById("cityInput").value.trim();
+    if (!city) {
+        return;
+    }
 
-    // sync to main input
-    document.getElementById("cityInput").value = city;
+    if (isForecastTabActive()) {
+        searchForecast(city);
+    } else {
+        searchToday(city);
+    }
+}
+
+function searchToday(city) {
+    withLoading(async () => {
+        presentWeather(await fetchWeatherData(city));
+        addToHistory(city);
+    });
+}
+
+function searchForecast(city) {
     document.getElementById("forecastStrip").innerHTML = "";
+    hideForecastDetails();
+    hide("forecastEmpty");
 
     withLoading(async () => {
         const [weatherData, forecastData] = await Promise.all([
@@ -313,6 +461,7 @@ function getWeatherForecast() {
         ]);
         presentWeather(weatherData);
         renderForecast(forecastData);
+        addToHistory(city);
     }, { revealWeather: false });
 }
 
@@ -360,14 +509,12 @@ function updateGlobe(lat, lon) {
 
     const globe = document.getElementById("globeBg");
 
-    // preload before swapping so there's no flash
     const img = new Image();
     img.onload = () => {
         globe.style.backgroundImage = `url('${nasaUrl}')`;
         globe.classList.remove("globe-hidden");
     };
     img.onerror = () => {
-        //if NASA tile failed  silently hide globe rather than break the UI
         globe.classList.add("globe-hidden");
     };
     img.src = nasaUrl;
@@ -402,7 +549,7 @@ function renderTodayView(data, isNight) {
     const visibilityMiles = (data.visibility / 1609.34).toFixed(1);
     set("visibility", visibilityMiles + " mi");
     set("cloudCover", data.cloudCover + "%");
-    set("pressure", data.pressure + " hPa");
+    set("pressure", hpaToInHg(data.pressure) + " inHg");
 
     const sunriseTime = new Date(data.sunrise * 1000).toLocaleTimeString([], {
         hour: "2-digit", minute: "2-digit"
@@ -427,11 +574,4 @@ function renderTodayView(data, isNight) {
     updateGlobe(data.lat, data.lon);
 }
 
-function getWeather() {
-    const city = document.getElementById("cityInput").value.trim();
-    if (!city) return;
-
-    withLoading(async () => {
-        presentWeather(await fetchWeatherData(city));
-    });
-}
+renderHistory();

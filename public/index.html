@@ -30,115 +30,106 @@
 
     <div class="page-content">
 
-    <div id="loading" class="glass-panel glass-panel--pill hidden" aria-live="polite">Fetching weather...</div>
-    <div id="errorMsg" class="error hidden" role="alert" aria-live="polite"></div>
-
-    <!-- TODAY VIEW -->
-    <div id="todayView">
-
-
-      <!-- SEARCH -->
       <div class="search-row">
         <input id="cityInput" type="text" placeholder="Enter city..."
-          onkeydown="if(event.key === 'Enter') getWeather()">
-        <button onclick="getWeather()">Search</button>
+          onkeydown="if(event.key === 'Enter') searchCity()">
+        <button onclick="searchCity()">Search</button>
       </div>
 
       <div id="historyList" class="history"></div>
 
-      <div id="weatherDisplay" class="weather-card glass-panel glass-panel--card hidden">
+      <div id="loading" class="glass-panel glass-panel--pill hidden" aria-live="polite">Fetching weather...</div>
+      <div id="errorMsg" class="error hidden" role="alert" aria-live="polite"></div>
 
-        <!-- LEFT: temp + condition -->
-        <div class="card-left">
-          <div id="tempMain" class="temp">--°</div>
-          <div id="condition" class="condition">
-            <span id="conditionText">--</span>
-            <span id="feelsExplanation" class="feels-expl"></span>
-          </div>
-        </div>
+      <!-- TODAY VIEW -->
+      <div id="todayView">
 
-        <!-- RIGHT: weather icon -->
-        <div id="weatherIcon" class="icon"></div>
+        <div id="weatherDisplay" class="weather-card glass-panel glass-panel--card hidden">
 
-        <!-- DETAIL STRIP -->
-        <div class="details-row">
-          <div class="detail">
-            <span class="detail-label">Feels Like</span>
-            <span class="detail-val" id="feelsLike">--</span>
-          </div>
-          <div class="detail">
-            <span class="detail-label">Humidity</span>
-            <span class="detail-val" id="humidity">--</span>
-          </div>
-          <div class="detail">
-            <span class="detail-label">Wind</span>
-            <span class="detail-val" id="wind">--</span>
-          </div>
-          <div class="detail">
-            <span class="detail-label">Visibility</span>
-            <span class="detail-val" id="visibility">--</span>
-          </div>
-          <div class="detail">
-            <span class="detail-label">Cloud Cover</span>
-            <span class="detail-val" id="cloudCover">--</span>
-          </div>
-          <div class="detail">
-            <span class="detail-label">Pressure</span>
-            <span class="detail-val" id="pressure">--</span>
-          </div>
-        </div>
-
-        <div class="aux-grid">
-          <!-- WIND + TIMESTAMP BAR -->
-          <div class="wind-bar glass-panel">
-            <span class="wind-label">Wind Direction</span>
-            <span class="wind-val" id="windDir">--</span>
-            <span class="timestamp" id="timestamp">--</span>
-          </div>
-
-          <!-- SUNRISE / SUNSET BAR -->
-          <div class="sun-bar glass-panel">
-            <div class="sun-item">
-              <img src="icons/clear-day.png" alt="Sunrise" class="sun-icon">
-              <span class="sun-label">Sunrise</span>
-              <span class="sun-val" id="sunrise">--</span>
-            </div>
-            <div class="sun-divider"></div>
-            <div class="sun-item">
-              <img src="icons/clear-night.png" alt="Sunset" class="sun-icon">
-              <span class="sun-label">Sunset</span>
-              <span class="sun-val" id="sunset">--</span>
+          <!-- LEFT: temp + condition -->
+          <div class="card-left">
+            <div id="tempMain" class="temp">--°</div>
+            <div id="condition" class="condition">
+              <span id="conditionText">--</span>
+              <span id="feelsExplanation" class="feels-expl"></span>
             </div>
           </div>
+
+          <!-- RIGHT: weather icon -->
+          <div id="weatherIcon" class="icon"></div>
+
+          <!-- DETAIL STRIP -->
+          <div class="details-row">
+            <div class="detail">
+              <span class="detail-label">Feels Like</span>
+              <span class="detail-val" id="feelsLike">--</span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Humidity</span>
+              <span class="detail-val" id="humidity">--</span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Wind</span>
+              <span class="detail-val" id="wind">--</span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Visibility</span>
+              <span class="detail-val" id="visibility">--</span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Cloud Cover</span>
+              <span class="detail-val" id="cloudCover">--</span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Pressure</span>
+              <span class="detail-val" id="pressure">--</span>
+            </div>
+          </div>
+
+          <div class="aux-grid">
+            <!-- WIND + TIMESTAMP BAR -->
+            <div class="wind-bar glass-panel">
+              <span class="wind-label">Wind Direction</span>
+              <span class="wind-val" id="windDir">--</span>
+              <span class="timestamp" id="timestamp">--</span>
+            </div>
+
+            <!-- SUNRISE / SUNSET BAR -->
+            <div class="sun-bar glass-panel">
+              <div class="sun-item">
+                <img src="icons/clear-day.png" alt="Sunrise" class="sun-icon">
+                <span class="sun-label">Sunrise</span>
+                <span class="sun-val" id="sunrise">--</span>
+              </div>
+              <div class="sun-divider"></div>
+              <div class="sun-item">
+                <img src="icons/clear-night.png" alt="Sunset" class="sun-icon">
+                <span class="sun-label">Sunset</span>
+                <span class="sun-val" id="sunset">--</span>
+              </div>
+            </div>
+          </div>
+
         </div>
-
-      </div>
-    </div>
-
-    <!-- FORECAST VIEW -->
-    <div id="forecastView" class="hidden">
-
-      <!-- SEARCH -->
-      <div class="search-row">
-        <input id="cityInputForecast" type="text" placeholder="Enter city..."
-               onkeydown="if(event.key === 'Enter') getWeatherForecast()">
-        <button onclick="getWeatherForecast()">Search</button>
       </div>
 
-      <div class="history" id="historyListForecast"></div>
-      <div class="forecast-strip" id="forecastStrip"></div>
+      <!-- FORECAST VIEW -->
+      <div id="forecastView" class="hidden">
 
-      <!-- Selected day details (hidden until a day is clicked) -->
-      <div id="forecastDetails" class="forecast-details hidden"></div>
+        <p id="forecastEmpty" class="forecast-empty">Search a city to see the 5-day forecast.</p>
+        <div class="forecast-strip" id="forecastStrip"></div>
 
-      <div class="forecast-footer" id="forecastFooter">AS OF --:-- --, --/--</div>
-    </div>
+        <!-- Selected day details (hidden until a day is clicked) -->
+        <div id="forecastDetails" class="forecast-details hidden"></div>
+
+        <div class="forecast-footer" id="forecastFooter">AS OF --:-- --, --/--</div>
+      </div>
 
     </div> <!-- /page-content -->
 
   </div>
 
   <script src="iconMap.js?v=20260523"></script>
-  <script src="script.js?v=20260523"></script>
+  <script src="script.js?v=20260622"></script>
 </body>
 </html>

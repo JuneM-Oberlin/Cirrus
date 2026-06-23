@@ -34,7 +34,8 @@
   .wind-bar,
   .timestamp,
   #loading,
-  .error {
+  .error,
+  .forecast-empty {
     padding-left: 24px;
     padding-right: 24px;
     margin-left: 0;
@@ -83,6 +84,11 @@
   .error {
     margin-top: 10px;
     font-size: 13px;
+  }
+
+  .forecast-empty {
+    margin-top: 28px;
+    font-size: 14px;
   }
 
   .weather-card {
