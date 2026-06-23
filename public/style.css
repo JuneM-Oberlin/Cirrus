@@ -716,6 +716,15 @@ body.theme-day::after {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 -2px 8px rgba(0,0,0,0.25);
 }
 
+.forecast-hint {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  font-weight: 400;
+  padding: 8px 24px 4px;
+  margin: 0;
+}
+
 /* Details card shown when a forecast day is selected */
 .forecast-details {
   width: 100%;

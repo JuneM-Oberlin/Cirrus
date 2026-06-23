@@ -28,6 +28,10 @@
     padding: 0 12px 0 10px;
   }
 
+  .header-city.header-city--redundant {
+    visibility: hidden;
+  }
+
   .search-row,
   .history,
   .details-row,
@@ -181,6 +185,11 @@
     padding: 8px 18px;
     justify-content: center;
     font-size: 11px;
+  }
+
+  .forecast-hint {
+    font-size: 12px;
+    padding: 6px 24px 2px;
   }
 
   .forecast-details {

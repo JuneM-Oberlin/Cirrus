@@ -4,7 +4,10 @@ function hide(id) {document.getElementById(id).classList.add("hidden");}
 function set(id, value) {document.getElementById(id).textContent = value;}
 
 const HISTORY_KEY = "cirrus_city_history";
+const FORECAST_HINT_KEY = "cirrus_forecast_hint_dismissed";
 const MAX_HISTORY = 8;
+
+let activeTimezoneOffset = 0;
 
 function degreesToCompass(deg) {
     const directions = [
@@ -37,6 +40,23 @@ function formatCityTime(unixSeconds, timezoneOffsetSeconds) {
         minute: "2-digit",
         timeZone: "UTC",
     });
+}
+
+function formatCityNow(timezoneOffsetSeconds) {
+    const unixSeconds = Math.floor(Date.now() / 1000);
+    const date = new Date((unixSeconds + (timezoneOffsetSeconds || 0)) * 1000);
+    return {
+        time: date.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            timeZone: "UTC",
+        }),
+        date: date.toLocaleDateString("en-US", {
+            month: "2-digit",
+            day: "2-digit",
+            timeZone: "UTC",
+        }),
+    };
 }
 
 function isForecastTabActive() {
@@ -80,7 +100,11 @@ function renderHistory() {
     }
 
     container.replaceChildren();
+    const inputKey = normalizeCityKey(document.getElementById("cityInput").value);
     loadHistory().forEach((city) => {
+        if (normalizeCityKey(city) === inputKey) {
+            return;
+        }
         const chip = document.createElement("span");
         chip.textContent = city;
         chip.setAttribute("role", "button");
@@ -160,6 +184,16 @@ function normalizeBackendWeatherData(data) {
 }
 
 async function readBackendError(response) {
+    if (response.status === 404) {
+        return "City not found — check the spelling and try again.";
+    }
+    if (response.status === 429) {
+        return "Too many searches — please wait a minute and try again.";
+    }
+    if (response.status >= 500) {
+        return "Server error — try again in a moment.";
+    }
+
     let errorMessage = "Something went wrong.";
     try {
         const err = await response.json();
@@ -167,10 +201,14 @@ async function readBackendError(response) {
     } catch (parseError) {
         console.log("Could not parse backend error response:", parseError);
     }
-    if (response.status === 429) {
-        errorMessage = "Too many searches — please wait a minute.";
-    }
     return errorMessage;
+}
+
+function networkErrorMessage() {
+    if (!navigator.onLine) {
+        return "You're offline — check your connection and try again.";
+    }
+    return "Couldn't reach the server — check your connection and try again.";
 }
 
 async function fetchCached(path, city, cache, normalize = (d) => d) {
@@ -180,7 +218,13 @@ async function fetchCached(path, city, cache, normalize = (d) => d) {
         return cached;
     }
 
-    const response = await fetch(`${BACKEND_URL}/${path}?city=${encodeURIComponent(city)}`);
+    let response;
+    try {
+        response = await fetch(`${BACKEND_URL}/${path}?city=${encodeURIComponent(city)}`);
+    } catch (fetchError) {
+        throw new Error(networkErrorMessage());
+    }
+
     if (!response.ok) {
         throw new Error(await readBackendError(response));
     }
@@ -208,10 +252,64 @@ function updateTodayEmptyState() {
 }
 
 function presentWeather(data) {
+    activeTimezoneOffset = data.timezoneOffset ?? 0;
     const isNight = data.weatherCode.endsWith("n");
     document.body.classList.toggle("theme-day", !isNight);
     renderTodayView(data, isNight);
     hide("todayEmpty");
+}
+
+function updateHeaderCityVisibility() {
+    const headerCity = document.getElementById("cityName");
+    const inputValue = document.getElementById("cityInput").value.trim();
+    const headerText = headerCity.textContent.trim();
+    const isRedundant = inputValue
+        && headerText !== "--"
+        && normalizeCityKey(headerText) === normalizeCityKey(inputValue);
+
+    headerCity.classList.toggle("header-city--redundant", isRedundant);
+}
+
+let coldStartTimers = [];
+
+function startColdStartLoading(initialMessage) {
+    stopColdStartLoading();
+    set("loading", initialMessage);
+    show("loading");
+
+    const startedAt = Date.now();
+    coldStartTimers.push(setTimeout(() => {
+        set("loading", "Waking up the server — first search can take up to a minute...");
+    }, 4000));
+
+    coldStartTimers.push(setTimeout(() => {
+        const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+        set("loading", `Still connecting… (${elapsed}s)`);
+    }, 15000));
+
+    coldStartTimers.push(setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+        if (elapsed >= 15) {
+            set("loading", `Still connecting… (${elapsed}s)`);
+        }
+    }, 1000));
+
+    coldStartTimers.push(setTimeout(() => {
+        set("loading", "Almost there — free-tier servers can be slow on cold start.");
+    }, 30000));
+}
+
+function stopColdStartLoading() {
+    coldStartTimers.forEach((timerId) => {
+        clearTimeout(timerId);
+        clearInterval(timerId);
+    });
+    coldStartTimers = [];
+}
+
+function dismissForecastHint() {
+    hide("forecastHint");
+    localStorage.setItem(FORECAST_HINT_KEY, "1");
 }
 
 function activateOnEnterOrSpace(event, action) {
@@ -312,22 +410,32 @@ function switchTab(tab) {
 
         if (city && strip.innerHTML.trim() === "") {
             hide("forecastEmpty");
-            set("loading", "Fetching forecast...");
-            show("loading");
             hide("errorMsg");
-            fetchForecastData(city)
-                .then((data) => {
-                    hide("loading");
+            startColdStartLoading("Fetching forecast...");
+
+            const cityKey = normalizeCityKey(city);
+            const cachedWeather = getCachedEntry(clientCache.weather, cityKey);
+            const weatherPromise = cachedWeather
+                ? Promise.resolve(cachedWeather)
+                : fetchWeatherData(city);
+
+            Promise.all([fetchForecastData(city), weatherPromise])
+                .then(([forecastData, weatherData]) => {
+                    activeTimezoneOffset = weatherData.timezoneOffset ?? 0;
                     set("cityName", formatCityLabel(city));
-                    renderForecast(data);
+                    updateHeaderCityVisibility();
+                    renderForecast(forecastData, activeTimezoneOffset);
                     addToHistory(city);
                 })
                 .catch((err) => {
-                    hide("loading");
                     console.log("Forecast error:", err);
                     set("errorMsg", err.message || "Could not load forecast.");
                     show("errorMsg");
                     updateForecastEmptyState();
+                })
+                .finally(() => {
+                    stopColdStartLoading();
+                    hide("loading");
                 });
         }
     }
@@ -341,18 +449,10 @@ function switchTab(tab) {
     }
 }
 
-function renderForecast(days) {
+function renderForecast(days, timezoneOffset = activeTimezoneOffset) {
     const strip = document.getElementById("forecastStrip");
     const footer = document.getElementById("forecastFooter");
-    const now = new Date();
-    const timeText = now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-    });
-    const dateText = now.toLocaleDateString([], {
-        month: "2-digit",
-        day: "2-digit"
-    });
+    const { time: timeText, date: dateText } = formatCityNow(timezoneOffset);
 
     footer.textContent = `As of ${timeText}, ${dateText}`;
 
@@ -380,9 +480,14 @@ function renderForecast(days) {
 
     hide("forecastEmpty");
 
+    if (!localStorage.getItem(FORECAST_HINT_KEY)) {
+        show("forecastHint");
+    }
+
     const dayEls = strip.querySelectorAll(".forecast-day");
     dayEls.forEach((el, idx) => {
         const selectDay = () => {
+            dismissForecastHint();
             dayEls.forEach((d) => d.classList.remove("active"));
             el.classList.add("active");
             showForecastDetails(days[idx]);
@@ -423,17 +528,12 @@ function showForecastDetails(day) {
 }
 
 // shared loading/error choreography for both search paths
-async function withLoading(task, { revealWeather = true } = {}) {
-    set("loading", "Fetching weather...");
-    show("loading");
+async function withLoading(task, { revealWeather = true, loadingMessage = "Fetching weather..." } = {}) {
+    startColdStartLoading(loadingMessage);
     if (revealWeather) {
         hide("weatherDisplay");
     }
     hide("errorMsg");
-
-    const coldStartTimer = setTimeout(() => {
-        set("loading", "Waking up the server — the first search can take up to a minute...");
-    }, 4000);
 
     try {
         await task();
@@ -448,7 +548,7 @@ async function withLoading(task, { revealWeather = true } = {}) {
             updateForecastEmptyState();
         }
     } finally {
-        clearTimeout(coldStartTimer);
+        stopColdStartLoading();
         hide("loading");
     }
 }
@@ -484,9 +584,11 @@ function searchForecast(city) {
             fetchForecastData(city),
         ]);
         presentWeather(weatherData);
-        renderForecast(forecastData);
+        set("cityName", formatCityLabel(city));
+        updateHeaderCityVisibility();
+        renderForecast(forecastData, weatherData.timezoneOffset);
         addToHistory(city);
-    }, { revealWeather: false });
+    }, { revealWeather: false, loadingMessage: "Fetching forecast..." });
 }
 
 function getFeelsLikeExplanation(temp, feelsLike, windSpeed, humidity) {
@@ -566,9 +668,9 @@ function renderTodayView(data, isNight) {
     set("humidity", data.humidity + "%");
     set("wind", Math.round(data.windSpeed) + " mph");
     set("windDir", degreesToCompass(data.windDeg) + " " + Math.round(data.windSpeed) + " mph");
-    set("timestamp", "As of " + new Date().toLocaleTimeString([], {
-        hour: "2-digit", minute: "2-digit"
-    }));
+    const { time: cityTime } = formatCityNow(data.timezoneOffset);
+    set("timestamp", "As of " + cityTime);
+    updateHeaderCityVisibility();
 
     const visibilityMiles = (data.visibility / 1609.34).toFixed(1);
     set("visibility", visibilityMiles + " mi");
@@ -596,3 +698,9 @@ function renderTodayView(data, isNight) {
 
 renderHistory();
 updateTodayEmptyState();
+updateHeaderCityVisibility();
+
+document.getElementById("cityInput").addEventListener("input", () => {
+    renderHistory();
+    updateHeaderCityVisibility();
+});
