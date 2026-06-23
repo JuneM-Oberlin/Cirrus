@@ -53,6 +53,117 @@ const FORECAST_HINT_KEY = "cirrus_forecast_hint_dismissed";
 const MAX_HISTORY = 8;
 
 let activeTimezoneOffset = 0;
+let currentWeatherConditionId = null;
+
+const VIDEO_RAIN_EFFECTS = {
+    drizzle: "drizzle",
+    rain: "rain",
+    "rain-heavy": "rain-heavy",
+    sleet: "sleet",
+    thunderstorm: "rain-heavy",
+};
+
+function getWeatherEffect(conditionId) {
+    const id = Number(conditionId);
+    if (!Number.isFinite(id)) {
+        return "clear";
+    }
+
+    if (id >= 200 && id <= 232) {
+        return "thunderstorm";
+    }
+    if (id >= 300 && id <= 321) {
+        return "drizzle";
+    }
+    if (id >= 500 && id <= 501) {
+        return "rain";
+    }
+    if (id >= 502 && id <= 504) {
+        return "rain-heavy";
+    }
+    if (id === 510 || id === 511 || id === 611 || id === 612 || id === 613
+        || id === 615 || id === 616) {
+        return "sleet";
+    }
+    if (id >= 520 && id <= 531) {
+        return "rain";
+    }
+    if ((id >= 600 && id <= 602) || (id >= 620 && id <= 622)) {
+        return "snow";
+    }
+    if (id === 771 || id === 781) {
+        return "thunderstorm";
+    }
+    if (id >= 701 && id <= 762) {
+        return "fog";
+    }
+    if (id === 801 || id === 802) {
+        return "clouds";
+    }
+    if (id >= 803) {
+        return "clouds-heavy";
+    }
+    return "clear";
+}
+
+function setWeatherAtmosphere(conditionId) {
+    const layer = document.getElementById("weatherAtmosphere");
+    const globe = document.getElementById("globeBg");
+    if (!layer) {
+        return;
+    }
+
+    const effect = getWeatherEffect(conditionId);
+    layer.dataset.effect = effect;
+
+    if (effect === "clear") {
+        if (typeof AtmoRainVideo !== "undefined") {
+            AtmoRainVideo.stop();
+        }
+        if (typeof AtmoLightning !== "undefined") {
+            AtmoLightning.stop();
+        }
+        layer.classList.add("is-hidden");
+        globe?.classList.remove("atmosphere-active");
+        return;
+    }
+
+    layer.classList.remove("is-hidden");
+    globe?.classList.add("atmosphere-active");
+
+    const rainProfile = VIDEO_RAIN_EFFECTS[effect];
+    if (typeof AtmoRainVideo !== "undefined") {
+        if (rainProfile) {
+            requestAnimationFrame(() => AtmoRainVideo.start(rainProfile));
+        } else {
+            AtmoRainVideo.stop();
+        }
+    }
+
+    if (typeof AtmoLightning !== "undefined") {
+        if (conditionHasThunder(conditionId)) {
+            AtmoLightning.start(conditionId);
+        } else {
+            AtmoLightning.stop();
+        }
+    }
+}
+
+function clearWeatherAtmosphere() {
+    const layer = document.getElementById("weatherAtmosphere");
+    const globe = document.getElementById("globeBg");
+    if (typeof AtmoRainVideo !== "undefined") {
+        AtmoRainVideo.stop();
+    }
+    if (typeof AtmoLightning !== "undefined") {
+        AtmoLightning.stop();
+    }
+    if (layer) {
+        layer.dataset.effect = "clear";
+        layer.classList.add("is-hidden");
+    }
+    globe?.classList.remove("atmosphere-active");
+}
 
 function degreesToCompass(deg) {
     const directions = [
@@ -298,9 +409,11 @@ function updateTodayEmptyState() {
 
 function presentWeather(data) {
     activeTimezoneOffset = data.timezoneOffset ?? 0;
+    currentWeatherConditionId = data.conditionId;
     const isNight = data.weatherCode.endsWith("n");
     document.body.classList.toggle("theme-day", !isNight);
     renderTodayView(data, isNight);
+    setWeatherAtmosphere(data.conditionId);
     hide("todayEmpty");
 }
 
@@ -441,6 +554,9 @@ function switchTab(tab) {
         tabToday.setAttribute("aria-selected", "true");
         tabForecast.setAttribute("aria-selected", "false");
         updateTodayEmptyState();
+        if (currentWeatherConditionId !== null) {
+            setWeatherAtmosphere(currentWeatherConditionId);
+        }
     } else {
         forecastView.classList.remove("hidden");
         todayView.classList.add("hidden");
@@ -467,8 +583,15 @@ function switchTab(tab) {
             Promise.all([fetchForecastData(city), weatherPromise])
                 .then(([forecastData, weatherData]) => {
                     activeTimezoneOffset = weatherData.timezoneOffset ?? 0;
+                    currentWeatherConditionId = weatherData.conditionId;
                     set("cityName", formatCityLabel(city));
                     updateHeaderCityVisibility();
+                    document.body.classList.toggle(
+                        "theme-day",
+                        !weatherData.weatherCode.endsWith("n")
+                    );
+                    setWeatherAtmosphere(weatherData.conditionId);
+                    updateGlobe(weatherData.lat, weatherData.lon);
                     renderForecast(forecastData, activeTimezoneOffset);
                     addToHistory(city);
                 })
@@ -574,11 +697,15 @@ function showForecastDetails(day) {
     panel.classList.remove('hidden');
     const card = panel.querySelector(".details-card");
     playAnimation(card, "anim-pop");
+    if (day.conditionId !== undefined) {
+        setWeatherAtmosphere(day.conditionId);
+    }
     panel.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
 // shared loading/error choreography for both search paths
 async function withLoading(task, { revealWeather = true, loadingMessage = "Fetching weather..." } = {}) {
+    clearWeatherAtmosphere();
     startColdStartLoading(loadingMessage);
     if (revealWeather) {
         hide("weatherDisplay");

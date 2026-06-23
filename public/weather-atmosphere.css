@@ -1,0 +1,188 @@
+/* Weather atmosphere overlays on the globe background */
+
+.weather-atmosphere {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  width: 100vw;
+  bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.6s ease;
+}
+
+.weather-atmosphere.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.weather-atmosphere .atmo-rain-video,
+.weather-atmosphere .atmo-precip,
+.weather-atmosphere .atmo-fog,
+.weather-atmosphere .atmo-clouds {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.atmo-rain-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 2;
+  mix-blend-mode: screen;
+  opacity: 0.09;
+  transition: opacity 0.5s ease;
+  filter: contrast(1.15) brightness(1.05);
+}
+
+.atmo-rain-video.is-hidden {
+  display: none;
+}
+
+.weather-atmosphere[data-effect="drizzle"] .atmo-rain-video,
+.weather-atmosphere[data-effect="rain"] .atmo-rain-video,
+.weather-atmosphere[data-effect="rain-heavy"] .atmo-rain-video,
+.weather-atmosphere[data-effect="sleet"] .atmo-rain-video,
+.weather-atmosphere[data-effect="thunderstorm"] .atmo-rain-video {
+  display: block;
+}
+
+/* ── Lightning strike GIF layer ── */
+.atmo-lightning-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  opacity: 1;
+  pointer-events: none;
+}
+
+.atmo-lightning-layer.is-hidden {
+  display: none;
+}
+
+.atmo-lightning-strike {
+  position: absolute;
+  width: auto;
+  height: auto;
+  max-height: 58vh;
+  pointer-events: none;
+  transform-origin: top center;
+  filter: drop-shadow(0 0 18px rgba(170, 215, 255, 0.45));
+}
+
+.atmo-lightning-layer.atmo-lightning-flash::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(195, 220, 255, 0.14);
+  opacity: 1;
+  pointer-events: none;
+}
+
+/* ── Snow flakes ── */
+.atmo-precip--snow {
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.85) 0 1.2px, transparent 1.3px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.65) 0 0.9px, transparent 1px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.75) 0 1px, transparent 1.1px);
+  background-size: 52px 52px, 38px 38px, 64px 64px;
+  background-position: 0 0, 16px 24px, 8px 40px;
+}
+
+.weather-atmosphere[data-effect="snow"] .atmo-precip--snow {
+  opacity: 0.75;
+  animation: atmoSnowFall 6s linear infinite;
+}
+
+.weather-atmosphere[data-effect="sleet"] .atmo-precip--snow {
+  opacity: 0.45;
+  animation: atmoSnowFall 4s linear infinite;
+}
+
+@keyframes atmoSnowFall {
+  from { transform: translateY(-8%) translateX(0); }
+  to   { transform: translateY(8%) translateX(12px); }
+}
+
+/* ── Fog / mist ── */
+.atmo-fog {
+  background:
+    linear-gradient(180deg,
+      rgba(200, 210, 230, 0.18) 0%,
+      rgba(180, 195, 220, 0.28) 45%,
+      rgba(160, 175, 200, 0.22) 100%);
+  animation: none;
+  opacity: 0;
+}
+
+.weather-atmosphere[data-effect="fog"] .atmo-fog {
+  opacity: 1;
+  animation: atmoFogDrift 12s ease-in-out infinite alternate;
+}
+
+@keyframes atmoFogDrift {
+  from { transform: translateX(-2%) scale(1.02); opacity: 0.85; }
+  to   { transform: translateX(2%) scale(1.04); opacity: 1; }
+}
+
+/* ── Drifting clouds ── */
+.atmo-clouds {
+  background:
+    radial-gradient(ellipse 42% 18% at 20% 28%, rgba(255, 255, 255, 0.14) 0%, transparent 70%),
+    radial-gradient(ellipse 36% 14% at 72% 22%, rgba(255, 255, 255, 0.1) 0%, transparent 68%),
+    radial-gradient(ellipse 50% 20% at 48% 38%, rgba(220, 230, 245, 0.12) 0%, transparent 72%);
+  animation: none;
+  opacity: 0;
+}
+
+.weather-atmosphere[data-effect="clouds"] .atmo-clouds {
+  opacity: 0.85;
+  animation: atmoCloudDrift 22s ease-in-out infinite alternate;
+}
+
+.weather-atmosphere[data-effect="clouds-heavy"] .atmo-clouds {
+  opacity: 1;
+  background:
+    radial-gradient(ellipse 55% 22% at 15% 25%, rgba(210, 220, 240, 0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 48% 18% at 65% 20%, rgba(200, 215, 235, 0.18) 0%, transparent 68%),
+    radial-gradient(ellipse 60% 24% at 42% 42%, rgba(190, 205, 225, 0.2) 0%, transparent 72%),
+    linear-gradient(180deg, rgba(120, 140, 170, 0.08) 0%, transparent 60%);
+  animation: atmoCloudDrift 18s ease-in-out infinite alternate;
+}
+
+@keyframes atmoCloudDrift {
+  from { transform: translateX(-3%); }
+  to   { transform: translateX(3%); }
+}
+
+/* Globe stays readable under a light rain veil */
+.globe-bg.atmosphere-active {
+  opacity: 0.52 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atmo-rain-video {
+    display: none !important;
+  }
+
+  .atmo-precip--snow,
+  .atmo-lightning-layer,
+  .atmo-fog,
+  .atmo-clouds {
+    animation: none !important;
+  }
+
+  .atmo-lightning-layer {
+    display: none !important;
+  }
+
+  .weather-atmosphere[data-effect="snow"] .atmo-precip--snow,
+  .weather-atmosphere[data-effect="sleet"] .atmo-precip--snow {
+    opacity: 0.5;
+  }
+}

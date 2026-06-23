@@ -144,3 +144,19 @@ const iconMap = {
   "803n": "mostly-cloudy-night.png",
   "804n": "mostly-cloudy-night.png",
 };
+
+function conditionHasThunder(conditionId) {
+    const icon = iconMap[Number(conditionId)];
+    return typeof icon === "string" && /thunder/i.test(icon);
+}
+
+function thunderIconIntensity(conditionId) {
+    const icon = iconMap[Number(conditionId)];
+    if (typeof icon !== "string" || !/thunder/i.test(icon)) {
+        return "none";
+    }
+    if (/thunderstorms/i.test(icon)) {
+        return "severe";
+    }
+    return "heavy";
+}

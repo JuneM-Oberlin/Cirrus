@@ -8,6 +8,7 @@
   <link rel="icon" href="icons/clear-day.png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="animations.css">
+  <link rel="stylesheet" href="weather-atmosphere.css">
   <link rel="stylesheet" href="responsive.css">
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
 </head>
@@ -30,6 +31,23 @@
 
     <!-- NASA globe background (outside views so it can be shown for both tabs) -->
     <div id="globeBg" class="globe-bg globe-hidden"></div>
+    <div id="weatherAtmosphere" class="weather-atmosphere is-hidden" data-effect="clear" aria-hidden="true">
+      <video
+        id="atmoRainVideo"
+        class="atmo-rain-video is-hidden"
+        src="media/rain-overlay.mp4"
+        autoplay
+        loop
+        muted
+        playsinline
+        preload="auto"
+        aria-hidden="true"
+      ></video>
+      <div class="atmo-precip atmo-precip--snow"></div>
+      <div id="atmoLightningLayer" class="atmo-lightning-layer is-hidden" aria-hidden="true"></div>
+      <div class="atmo-fog"></div>
+      <div class="atmo-clouds"></div>
+    </div>
 
     <div class="page-content">
 
@@ -135,7 +153,9 @@
 
   </div>
 
-  <script src="iconMap.js?v=20260523"></script>
-  <script src="script.js?v=20260624"></script>
+  <script src="iconMap.js?v=20260701"></script>
+  <script src="atmo-rain-video.js?v=20260630"></script>
+  <script src="atmo-lightning.js?v=20260703"></script>
+  <script src="script.js?v=20260701"></script>
 </body>
 </html>
