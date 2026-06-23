@@ -1,0 +1,320 @@
+/* Nintendo / Wii-style playful motion */
+
+:root {
+  --nintendo-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --nintendo-soft: cubic-bezier(0.32, 0.72, 0, 1);
+  --nintendo-press: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes nintendoPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.82) translateY(10px);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.06) translateY(-3px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes nintendoBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-6px) scale(1.04); }
+  65% { transform: translateY(2px) scale(0.98); }
+}
+
+@keyframes nintendoWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-4deg); }
+  40% { transform: rotate(4deg); }
+  60% { transform: rotate(-2deg); }
+  80% { transform: rotate(2deg); }
+}
+
+@keyframes iconBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes sunRock {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+
+@keyframes loadingBounce {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: scale(0.97);
+  }
+}
+
+@keyframes hintBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.75; }
+  50% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes tempPop {
+  0% { transform: scale(0.88); }
+  45% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes citySlideIn {
+  0% {
+    opacity: 0.6;
+    transform: translateX(12px) scale(0.96);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(-3px) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes detailStagger {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* One-shot utility classes (JS-triggered) */
+.anim-pop {
+  animation: nintendoPop 0.55s var(--nintendo-spring) both;
+}
+
+.anim-bounce-once {
+  animation: nintendoBounce 0.5s var(--nintendo-spring);
+}
+
+.anim-wiggle {
+  animation: nintendoWiggle 0.45s var(--nintendo-soft);
+}
+
+.anim-temp-pop {
+  animation: tempPop 0.6s var(--nintendo-spring);
+}
+
+.anim-city-pop {
+  animation: citySlideIn 0.55s var(--nintendo-spring);
+}
+
+.anim-tab-bounce {
+  animation: nintendoBounce 0.45s var(--nintendo-spring);
+}
+
+/* Header tabs — Wii channel bounce */
+.header-tab {
+  transition:
+    background 0.25s var(--nintendo-soft),
+    color 0.25s var(--nintendo-soft),
+    transform 0.35s var(--nintendo-spring);
+}
+
+.header-tab:hover:not(.active) {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.header-tab:active {
+  transform: translateY(1px) scale(0.97);
+  filter: brightness(0.92);
+}
+
+.header-tab.active {
+  transform: scale(1.01);
+}
+
+/* City pill */
+.header-city {
+  transition: transform 0.4s var(--nintendo-spring), opacity 0.3s ease;
+}
+
+/* Search button — squishy press */
+.search-row button {
+  transition:
+    filter 0.2s var(--nintendo-soft),
+    transform 0.35s var(--nintendo-spring),
+    box-shadow 0.25s var(--nintendo-soft);
+}
+
+.search-row button:hover {
+  filter: brightness(1.05);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.06),
+    0 6px 16px rgba(0, 0, 0, 0.38);
+}
+
+.search-row button:active {
+  filter: brightness(0.92);
+  transform: translateY(2px) scale(0.94);
+}
+
+.search-row input {
+  transition:
+    border 0.25s var(--nintendo-soft),
+    box-shadow 0.35s var(--nintendo-spring),
+    transform 0.35s var(--nintendo-spring);
+}
+
+.search-row input:focus {
+  transform: scale(1.01);
+}
+
+/* History chips */
+.history span {
+  transition:
+    background 0.25s var(--nintendo-soft),
+    color 0.25s var(--nintendo-soft),
+    transform 0.35s var(--nintendo-spring);
+}
+
+.history span:hover {
+  transform: translateY(-3px) scale(1.05);
+}
+
+.history span:active {
+  transform: translateY(1px) scale(0.94);
+}
+
+/* Loading pill — gentle bounce */
+#loading:not(.hidden) {
+  animation: loadingBounce 1.2s var(--nintendo-soft) infinite;
+}
+
+/* Weather card entrance (JS adds .anim-card-reveal on each search) */
+.weather-card.anim-card-reveal {
+  animation: nintendoPop 0.65s var(--nintendo-spring) both;
+}
+
+/* Floating weather icon */
+.weather-img {
+  animation: iconBob 3.2s var(--nintendo-soft) infinite;
+}
+
+/* Detail stats stagger on card reveal */
+.weather-card.anim-card-reveal .detail {
+  animation: detailStagger 0.45s var(--nintendo-spring) backwards;
+}
+
+.weather-card .detail:nth-child(1) { animation-delay: 0.05s; }
+.weather-card .detail:nth-child(2) { animation-delay: 0.1s; }
+.weather-card .detail:nth-child(3) { animation-delay: 0.15s; }
+.weather-card .detail:nth-child(4) { animation-delay: 0.2s; }
+.weather-card .detail:nth-child(5) { animation-delay: 0.25s; }
+.weather-card .detail:nth-child(6) { animation-delay: 0.3s; }
+
+/* Sun icons — playful sway */
+.sun-icon {
+  animation: sunRock 4s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.sun-item:last-child .sun-icon {
+  animation-delay: 1.5s;
+}
+
+/* Timestamp pill hover */
+.timestamp {
+  transition: transform 0.35s var(--nintendo-spring);
+}
+
+.timestamp:hover {
+  transform: scale(1.04);
+}
+
+/* Forecast days */
+.forecast-day {
+  transition:
+    transform 0.35s var(--nintendo-spring),
+    box-shadow 0.35s var(--nintendo-soft);
+}
+
+.forecast-day:hover {
+  transform: translateY(-8px) scale(1.02);
+}
+
+.forecast-day:active {
+  transform: translateY(-2px) scale(0.97);
+}
+
+.forecast-strip--enter .forecast-day {
+  animation: nintendoPop 0.5s var(--nintendo-spring) backwards;
+}
+
+.forecast-strip--enter .forecast-day:nth-child(1) { animation-delay: 0.04s; }
+.forecast-strip--enter .forecast-day:nth-child(2) { animation-delay: 0.1s; }
+.forecast-strip--enter .forecast-day:nth-child(3) { animation-delay: 0.16s; }
+.forecast-strip--enter .forecast-day:nth-child(4) { animation-delay: 0.22s; }
+.forecast-strip--enter .forecast-day:nth-child(5) { animation-delay: 0.28s; }
+
+.forecast-icon {
+  transition: transform 0.35s var(--nintendo-spring);
+}
+
+.forecast-day:hover .forecast-icon {
+  animation: nintendoWiggle 0.5s var(--nintendo-soft);
+}
+
+.rain-icon {
+  transition: transform 0.35s var(--nintendo-spring);
+}
+
+.forecast-day:hover .rain-icon {
+  transform: scale(1.15) rotate(-6deg);
+}
+
+/* Forecast hint */
+.forecast-hint:not(.hidden) {
+  animation: hintBounce 2s var(--nintendo-soft) infinite;
+}
+
+/* Details panel pop (JS adds .anim-pop to card) */
+.forecast-details .details-card.anim-pop {
+  animation: nintendoPop 0.5s var(--nintendo-spring) both;
+}
+
+/* Error wiggle */
+.error.anim-wiggle {
+  animation: nintendoWiggle 0.5s var(--nintendo-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .weather-img,
+  .sun-icon,
+  #loading,
+  .forecast-hint {
+    animation: none !important;
+  }
+
+  .header-tab:hover:not(.active),
+  .search-row button:hover,
+  .history span:hover,
+  .forecast-day:hover {
+    transform: none;
+  }
+}

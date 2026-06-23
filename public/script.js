@@ -3,6 +3,51 @@ function show(id) {document.getElementById(id).classList.remove("hidden");}
 function hide(id) {document.getElementById(id).classList.add("hidden");}
 function set(id, value) {document.getElementById(id).textContent = value;}
 
+function prefersReducedMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function playAnimation(el, className) {
+    if (!el || prefersReducedMotion()) {
+        return;
+    }
+    el.classList.remove(className);
+    void el.offsetWidth;
+    el.classList.add(className);
+    el.addEventListener("animationend", () => el.classList.remove(className), { once: true });
+}
+
+function triggerWeatherReveal() {
+    const card = document.getElementById("weatherDisplay");
+    const temp = document.getElementById("tempMain");
+    const city = document.getElementById("cityName");
+    playAnimation(card, "anim-card-reveal");
+    playAnimation(temp, "anim-temp-pop");
+    playAnimation(city, "anim-city-pop");
+}
+
+function triggerForecastStripEnter() {
+    const strip = document.getElementById("forecastStrip");
+    if (!strip || prefersReducedMotion()) {
+        return;
+    }
+    strip.classList.remove("forecast-strip--enter");
+    void strip.offsetWidth;
+    strip.classList.add("forecast-strip--enter");
+    setTimeout(() => strip.classList.remove("forecast-strip--enter"), 900);
+}
+
+function showError(message) {
+    set("errorMsg", message);
+    const el = document.getElementById("errorMsg");
+    el.classList.remove("hidden");
+    playAnimation(el, "anim-wiggle");
+}
+
+function bounceTab(tabEl) {
+    playAnimation(tabEl, "anim-tab-bounce");
+}
+
 const HISTORY_KEY = "cirrus_city_history";
 const FORECAST_HINT_KEY = "cirrus_forecast_hint_dismissed";
 const MAX_HISTORY = 8;
@@ -429,8 +474,7 @@ function switchTab(tab) {
                 })
                 .catch((err) => {
                     console.log("Forecast error:", err);
-                    set("errorMsg", err.message || "Could not load forecast.");
-                    show("errorMsg");
+                    showError(err.message || "Could not load forecast.");
                     updateForecastEmptyState();
                 })
                 .finally(() => {
@@ -443,6 +487,8 @@ function switchTab(tab) {
     const isToday = tab === "today";
     tabToday.setAttribute("tabindex", isToday ? "0" : "-1");
     tabForecast.setAttribute("tabindex", isToday ? "-1" : "0");
+
+    bounceTab(isToday ? tabToday : tabForecast);
 
     if (globe.style.backgroundImage) {
         globe.classList.remove("globe-hidden");
@@ -495,6 +541,8 @@ function renderForecast(days, timezoneOffset = activeTimezoneOffset) {
         el.addEventListener("click", selectDay);
         el.addEventListener("keydown", (event) => activateOnEnterOrSpace(event, selectDay));
     });
+
+    triggerForecastStripEnter();
 }
 
 function showForecastDetails(day) {
@@ -524,6 +572,8 @@ function showForecastDetails(day) {
         </div>
     `;
     panel.classList.remove('hidden');
+    const card = panel.querySelector(".details-card");
+    playAnimation(card, "anim-pop");
     panel.scrollIntoView({behavior: 'smooth', block: 'start'});
 }
 
@@ -539,11 +589,11 @@ async function withLoading(task, { revealWeather = true, loadingMessage = "Fetch
         await task();
         if (revealWeather) {
             show("weatherDisplay");
+            triggerWeatherReveal();
         }
     } catch (err) {
         console.log("Search error:", err);
-        set("errorMsg", err.message || "Could not load weather data.");
-        show("errorMsg");
+        showError(err.message || "Could not load weather data.");
         if (isForecastTabActive()) {
             updateForecastEmptyState();
         }
@@ -692,6 +742,7 @@ function renderTodayView(data, isNight) {
     img.alt = data.description;
     img.className = "weather-img";
     iconEl.appendChild(img);
+    playAnimation(img, "anim-bounce-once");
 
     updateGlobe(data.lat, data.lon);
 }

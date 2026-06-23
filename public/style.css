@@ -295,12 +295,6 @@ body.theme-day::after {
   padding: 10px 22px;
   width: fit-content;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  animation: loadingPulse 1.4s ease-in-out infinite;
-}
-
-@keyframes loadingPulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.55; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -311,8 +305,7 @@ body.theme-day::after {
   body::before,
   body::after,
   .glass-panel,
-  .globe-bg,
-  .forecast-day {
+  .globe-bg {
     transition: none;
   }
 }
@@ -386,12 +379,6 @@ body.theme-day::after {
   margin: 28px auto 0;
   padding: 30px;
   border-radius: 28px;
-  animation: fadeIn 0.5s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Left side — temperature + condition */
@@ -767,7 +754,10 @@ body.theme-day::after {
 .details-row .k { color: rgba(255,255,255,0.6); font-weight:700; margin-right:8px }
 .details-row .v { color: #f0c000; font-weight:800 }
 
-.forecast-day.active { transform: translateY(-6px); box-shadow: 0 8px 30px rgba(0,0,0,0.45) }
+.forecast-day.active {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
 
 /* bump some forecast typography for readability */
 .forecast-label { font-size: 20px }
