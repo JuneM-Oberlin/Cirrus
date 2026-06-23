@@ -2,7 +2,7 @@
 
 .weather-atmosphere {
   position: fixed;
-  top: 52px;
+  top: var(--header-height);
   left: 0;
   width: 100vw;
   bottom: 0;
@@ -51,7 +51,7 @@
   display: block;
 }
 
-/* ── Lightning strike GIF layer ── */
+/* ── Lightning strike layer ── */
 .atmo-lightning-layer {
   position: absolute;
   inset: 0;
@@ -72,7 +72,7 @@
   max-height: 58vh;
   pointer-events: none;
   transform-origin: top center;
-  filter: drop-shadow(0 0 18px rgba(170, 215, 255, 0.45));
+  filter: drop-shadow(0 0 24px rgba(170, 215, 255, 0.65));
 }
 
 .atmo-lightning-layer.atmo-lightning-flash::before {

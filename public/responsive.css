@@ -1,5 +1,9 @@
 /* RESPONSIVE  */
 @media (max-width: 768px) {
+  :root {
+    --header-height: 40px;
+  }
+
   body {
     overflow-x: hidden;
     --panel-tint-night: rgba(10, 20, 80, 0.2);
@@ -12,10 +16,6 @@
 
   .globe-bg.atmosphere-active {
     opacity: 0.58 !important;
-  }
-
-  .header {
-    height: 40px;
   }
 
   .header-tab {

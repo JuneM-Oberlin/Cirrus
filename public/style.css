@@ -12,6 +12,7 @@ html, body {
 }
 
 :root {
+  --header-height: 52px;
   --focus-ring-night: rgba(140, 200, 255, 0.9);
   --focus-ring-day: rgba(255, 255, 255, 0.95);
   --sky-night: linear-gradient(to bottom,
@@ -130,7 +131,7 @@ body.theme-day::after {
 .header {
   display: flex;
   align-items: stretch;
-  height: 52px;
+  height: var(--header-height);
   background: linear-gradient(to bottom, #1f7f15 0%, #155e0e 100%);
   border-bottom: 3px solid #0f5a08;
   flex-shrink: 0;
@@ -338,7 +339,7 @@ body.theme-day::after {
 /*  NASA GLOBE BACKGROUND  */
 .globe-bg {
   position: fixed;
-  top: 52px;          /* sits below the header */
+  top: var(--header-height);
   left: 0;
   width: 100vw;
   bottom: 0;
@@ -597,7 +598,7 @@ body.theme-day::after {
   flex-direction: column;
   /* fill remaining page space between header and footer */
   flex: 1 1 auto;
-  min-height: calc(100dvh - 52px);
+  min-height: calc(100dvh - var(--header-height));
   background: transparent;
 }
 .forecast-strip {
