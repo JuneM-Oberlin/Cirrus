@@ -52,7 +52,7 @@
     <div class="page-content">
 
       <div class="search-row">
-        <input id="cityInput" type="text" placeholder="Enter city..."
+        <input id="cityInput" type="text" placeholder="Enter city..." aria-label="City name"
           onkeydown="if(event.key === 'Enter') searchCity()">
         <button onclick="searchCity()">Search</button>
       </div>
@@ -63,7 +63,7 @@
       <div id="errorMsg" class="error hidden" role="alert" aria-live="polite"></div>
 
       <!-- TODAY VIEW -->
-      <div id="todayView">
+      <div id="todayView" role="tabpanel" aria-labelledby="tabToday">
 
         <p id="todayEmpty" class="forecast-empty">Search a city to see today's weather.</p>
 
@@ -137,7 +137,7 @@
       </div>
 
       <!-- FORECAST VIEW -->
-      <div id="forecastView" class="hidden">
+      <div id="forecastView" class="hidden" role="tabpanel" aria-labelledby="tabForecast" hidden>
 
         <p id="forecastEmpty" class="forecast-empty">Search a city to see the 5-day forecast.</p>
         <div class="forecast-strip" id="forecastStrip"></div>
