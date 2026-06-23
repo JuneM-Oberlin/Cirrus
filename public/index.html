@@ -30,6 +30,9 @@
 
     <div class="page-content">
 
+    <div id="loading" class="glass-panel glass-panel--pill hidden" aria-live="polite">Fetching weather...</div>
+    <div id="errorMsg" class="error hidden" role="alert" aria-live="polite"></div>
+
     <!-- TODAY VIEW -->
     <div id="todayView">
 
@@ -42,8 +45,6 @@
       </div>
 
       <div id="historyList" class="history"></div>
-      <div id="loading" class="glass-panel glass-panel--pill hidden">Fetching weather...</div>
-      <div id="errorMsg" class="error hidden"></div>
 
       <div id="weatherDisplay" class="weather-card glass-panel glass-panel--card hidden">
 

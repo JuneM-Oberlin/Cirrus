@@ -166,9 +166,20 @@ function switchTab(tab) {
         const city  = document.getElementById("cityInput").value.trim();
         const strip = document.getElementById("forecastStrip");
         if (city && strip.innerHTML.trim() === "") {
+            set("loading", "Fetching forecast...");
+            show("loading");
+            hide("errorMsg");
             fetchForecastData(city)
-                .then(data => renderForecast(data))
-                .catch(err => console.log("Forecast error:", err));
+                .then(data => {
+                    hide("loading");
+                    renderForecast(data);
+                })
+                .catch(err => {
+                    hide("loading");
+                    console.log("Forecast error:", err);
+                    set("errorMsg", err.message || "Could not load forecast.");
+                    show("errorMsg");
+                });
         }
     }
 
@@ -259,10 +270,12 @@ function showForecastDetails(day) {
 }
 
 // shared loading/error choreography for both search paths
-async function withLoading(task) {
+async function withLoading(task, { revealWeather = true } = {}) {
     set("loading", "Fetching weather...");
     show("loading");
-    hide("weatherDisplay");
+    if (revealWeather) {
+        hide("weatherDisplay");
+    }
     hide("errorMsg");
 
     // if the request drags on it has to be Render cold start
@@ -272,7 +285,9 @@ async function withLoading(task) {
 
     try {
         await task();
-        show("weatherDisplay");
+        if (revealWeather) {
+            show("weatherDisplay");
+        }
     } catch (err) {
         console.log("Search error:", err);
         set("errorMsg", err.message || "Could not load weather data.");
@@ -298,7 +313,7 @@ function getWeatherForecast() {
         ]);
         presentWeather(weatherData);
         renderForecast(forecastData);
-    });
+    }, { revealWeather: false });
 }
 
 function getFeelsLikeExplanation(temp, feelsLike, windSpeed, humidity) {
