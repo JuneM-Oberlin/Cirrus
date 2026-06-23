@@ -75,7 +75,7 @@ const AtmoLightning = (function () {
         img.style.top = `${top}%`;
         img.style.height = `${heightPx}px`;
         img.style.width = "auto";
-        img.style.opacity = String(rand(0.65, 0.95));
+        img.style.opacity = String(rand(0.78, 0.98));
         img.style.transform = `rotate(${rotation}deg)`;
 
         container.appendChild(img);
