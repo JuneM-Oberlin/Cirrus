@@ -421,12 +421,10 @@ function updateHeaderCityVisibility() {
     const headerCity = document.getElementById("cityName");
     const inputValue = document.getElementById("cityInput").value.trim();
     const headerText = headerCity.textContent.trim();
-    const isEmpty = headerText === "--";
-    const isRedundant = !isEmpty
-        && inputValue
+    const isRedundant = inputValue
+        && headerText !== "--"
         && normalizeCityKey(headerText) === normalizeCityKey(inputValue);
 
-    headerCity.classList.toggle("header-city--empty", isEmpty);
     headerCity.classList.toggle("header-city--redundant", isRedundant);
 }
 
