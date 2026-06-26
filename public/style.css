@@ -173,6 +173,10 @@ body.theme-day::after {
   filter: brightness(0.9);
 }
 
+.header-city--empty {
+  visibility: hidden;
+}
+
 .header-city {
   background: linear-gradient(to bottom, #63f04d 0%, #29bf1f 52%, #159b10 100%);
   color: #fff;
