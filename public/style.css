@@ -203,7 +203,7 @@ body.theme-day::after {
 .search-row input {
   width: 320px;
   background: linear-gradient(to bottom, #e9eef2 0%, #ffffff 40%);
-  border: 1px solid rgba(20, 50, 110, 0.35);
+  border: 1.5px solid #36c3f2;       /* same Wii cyan rim as the buttons */
   border-radius: 999px;
   color: #1c3a66;
   font-size: 15px;
@@ -211,6 +211,7 @@ body.theme-day::after {
   padding: 11px 20px;
   box-shadow:
     inset 0 2px 4px rgba(20, 50, 110, 0.18),
+    0 0 0 1px rgba(54, 195, 242, 0.35),   /* hairline cyan halo, matches the pills */
     0 1px 0 rgba(255, 255, 255, 0.3);
   transition: border 0.2s ease, box-shadow 0.2s ease;
 }
