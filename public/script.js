@@ -271,6 +271,18 @@ function renderHistory() {
         );
         container.appendChild(chip);
     });
+
+    // Wii-style staggered pop-in on (re)render (skipped under reduced motion)
+    if (container.children.length && !prefersReducedMotion()) {
+        container.classList.remove("history--enter");
+        void container.offsetWidth;
+        container.classList.add("history--enter");
+        container.addEventListener(
+            "animationend",
+            () => container.classList.remove("history--enter"),
+            { once: true }
+        );
+    }
 }
 
 function selectHistoryCity(city) {

@@ -144,26 +144,80 @@
   transition: transform 0.4s var(--nintendo-spring), opacity 0.3s ease;
 }
 
-/* Search button — squishy press */
+/* Search button — Wii channel lift + cyan rim bloom + squash press */
 .search-row button {
   transition:
     filter 0.2s var(--nintendo-soft),
     transform 0.35s var(--nintendo-spring),
-    box-shadow 0.25s var(--nintendo-soft);
+    box-shadow 0.25s var(--nintendo-soft),
+    border-color 0.2s var(--nintendo-soft);
 }
 
 .search-row button:hover {
-  filter: brightness(1.05);
+  filter: brightness(1.04);
   transform: translateY(-2px) scale(1.03);
+  border-color: #4fd0fb;            /* calm rim shimmer */
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.06),
-    0 6px 16px rgba(0, 0, 0, 0.38);
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -2px 4px rgba(54, 195, 242, 0.35),
+    0 0 0 1.5px rgba(54, 195, 242, 0.60),   /* the one permitted glow: a single brighter ring */
+    0 7px 18px rgba(0, 0, 0, 0.40);
 }
 
+/* squash-and-stretch press (graft) — fires only on explicit press, never idles */
 .search-row button:active {
-  filter: brightness(0.92);
-  transform: translateY(2px) scale(0.94);
+  filter: brightness(0.96);
+  animation: wiiSquashPress 0.4s var(--nintendo-spring);
+  box-shadow:
+    inset 0 2px 5px rgba(20, 50, 110, 0.22),
+    0 0 0 1px rgba(54, 195, 242, 0.50),
+    0 1px 4px rgba(0, 0, 0, 0.30);
+}
+
+/* selected-channel halo — ONLY while the button holds keyboard focus (not idle) */
+.search-row button:focus-visible {
+  animation: wiiSelectPulse 2.4s var(--nintendo-soft) infinite;
+}
+
+@keyframes wiiSquashPress {
+  0%   { transform: translateY(0) scale(1, 1); }
+  35%  { transform: translateY(3px) scale(1.06, 0.90); }
+  70%  { transform: translateY(-1px) scale(0.97, 1.04); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+@keyframes wiiSelectPulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+      0 0 0 1px rgba(54, 195, 242, 0.35),
+      0 3px 9px rgba(0, 0, 0, 0.32),
+      0 0 8px 1px rgba(54, 195, 242, 0.40);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+      0 0 0 1px rgba(54, 195, 242, 0.35),
+      0 3px 9px rgba(0, 0, 0, 0.32),
+      0 0 18px 3px rgba(54, 195, 242, 0.70);
+  }
+}
+
+/* gloss cap catches the light on press — scales down from its top edge */
+.search-row button::before,
+.history span::before {
+  transform-origin: top center;
+  transition:
+    transform 0.18s var(--nintendo-press),
+    opacity 0.18s var(--nintendo-press);
+}
+
+.search-row button:active::before,
+.history span:active::before {
+  transform: scaleY(0.72);
+  opacity: 0.80;
 }
 
 .search-row input {
@@ -177,21 +231,43 @@
   transform: scale(1.01);
 }
 
-/* History chips */
+/* History chips — same lift + rim bloom + squash press as the button */
 .history span {
   transition:
-    background 0.25s var(--nintendo-soft),
-    color 0.25s var(--nintendo-soft),
+    border-color 0.2s var(--nintendo-soft),
+    box-shadow 0.3s var(--nintendo-soft),
     transform 0.35s var(--nintendo-spring);
 }
 
 .history span:hover {
   transform: translateY(-3px) scale(1.05);
+  border-color: #4fd0fb;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 0 0 1.5px rgba(54, 195, 242, 0.55),
+    0 5px 13px rgba(0, 0, 0, 0.34);
 }
 
 .history span:active {
-  transform: translateY(1px) scale(0.94);
+  animation: wiiSquashPress 0.35s var(--nintendo-spring);
+  box-shadow:
+    inset 0 2px 4px rgba(20, 50, 110, 0.20),
+    0 0 0 1px rgba(54, 195, 242, 0.45),
+    0 1px 3px rgba(0, 0, 0, 0.26);
 }
+
+/* staggered pop-in when chips (re)render — like Wii channels populating.
+   Reuses the existing nintendoPop keyframe; JS adds .history--enter on the container. */
+.history--enter span {
+  animation: nintendoPop 0.5s var(--nintendo-spring) backwards;
+}
+
+.history--enter span:nth-child(1) { animation-delay: 0.04s; }
+.history--enter span:nth-child(2) { animation-delay: 0.10s; }
+.history--enter span:nth-child(3) { animation-delay: 0.16s; }
+.history--enter span:nth-child(4) { animation-delay: 0.22s; }
+.history--enter span:nth-child(5) { animation-delay: 0.28s; }
+.history--enter span:nth-child(6) { animation-delay: 0.34s; }
 
 /* Loading pill — gentle bounce */
 #loading:not(.hidden) {
@@ -316,5 +392,20 @@
   .history span:hover,
   .forecast-day:hover {
     transform: none;
+  }
+
+  /* kill the new Wii motion; keep the static pill + gloss cap intact */
+  .search-row button:focus-visible,
+  .search-row button:active,
+  .history span:active,
+  .history--enter span {
+    animation: none !important;
+  }
+
+  .search-row button::before,
+  .history span::before {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
   }
 }

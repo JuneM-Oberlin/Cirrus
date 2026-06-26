@@ -220,33 +220,45 @@ body.theme-day::after {
   font-weight: 400;
 }
 
+/* Wii Home-Menu cyan pill: white->silver fill, cyan rim, dark-gray etched label.
+   Resting state is fully static. Interaction (hover/press/focus) lives in animations.css. */
 .search-row button {
+  position: relative;
+  isolation: isolate;      /* contains the negative-z gloss cap */
+  overflow: hidden;        /* clip the cap to the pill */
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.28) 0%,
-    rgba(255, 255, 255, 0.12) 100%
-  );
-  color: #fff;
+  border: 1.5px solid #36c3f2;
+  background: linear-gradient(180deg, #fdffff 0%, #eef4f7 50%, #d6e2e9 100%);
+  color: #3a3a3a;
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.5px;
-  padding: 11px 26px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+  padding: 12px 28px;
   cursor: pointer;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+    0 0 0 1px rgba(54, 195, 242, 0.35),
+    0 3px 9px rgba(0, 0, 0, 0.32);
 }
 
-.search-row button:hover {
-  filter: brightness(1.05);
-}
-
-.search-row button:active {
-  filter: brightness(0.92);
-  transform: translateY(1px) scale(0.97);
+/* static gloss cap over the top ~42% — paints above the silver fill, below the label */
+.search-row button::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 2px;
+  height: 42%;
+  border-radius: 999px 999px 60% 60% / 999px 999px 22px 22px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.15) 100%
+  );
+  pointer-events: none;
+  z-index: -1;
 }
 
 /*  HISTORY CHIPS  */
@@ -258,32 +270,45 @@ body.theme-day::after {
   min-height: 36px;
 }
 
+/* Same Wii pill, smaller sibling. Keeps the 44px touch target. */
 .history span {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  background: linear-gradient(to bottom,
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(255, 255, 255, 0.06) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.85);
+  border: 1.5px solid #36c3f2;
+  background: linear-gradient(180deg, #fdffff 0%, #eef4f7 52%, #dbe6ec 100%);
+  color: #3a3a3a;
   font-size: 13px;
-  font-weight: 600;
-  padding: 5px 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  padding: 5px 16px;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(54, 195, 242, 0.30),
+    0 2px 6px rgba(0, 0, 0, 0.28);
 }
 
-.history span:hover {
-  background: rgba(255, 255, 255, 0.25);
-  color: #fff;
-}
-
-.history span:active {
-  transform: scale(0.96);
+.history span::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 2px;
+  height: 42%;
+  border-radius: 999px 999px 60% 60% / 999px 999px 18px 18px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.15) 100%
+  );
+  pointer-events: none;
+  z-index: -1;
 }
 
 /*  LOADING + ERROR  */
