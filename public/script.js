@@ -614,6 +614,7 @@ function switchTab(tab) {
                     setWeatherAtmosphere(weatherData.conditionId);
                     updateGlobe(weatherData.lat, weatherData.lon);
                     renderForecast(forecastData, activeTimezoneOffset);
+                    checkAlerts(weatherData);
                     addToHistory(city);
                 })
                 .catch((err) => {
@@ -919,26 +920,6 @@ const ALERT_TIER_LABELS = {
 let activeAlerts = [];
 let alertLastFocused = null;
 
-function alertSeenKey(id) {
-    return "cirrus_alert_seen_" + id;
-}
-
-function isAlertSeen(id) {
-    try {
-        return sessionStorage.getItem(alertSeenKey(id)) === "1";
-    } catch (e) {
-        return false;
-    }
-}
-
-function markAlertsSeen(alerts) {
-    try {
-        alerts.forEach((a) => sessionStorage.setItem(alertSeenKey(a.id), "1"));
-    } catch (e) {
-        /* sessionStorage unavailable — alerts simply re-pop next search */
-    }
-}
-
 async function fetchAlerts(lat, lon) {
     if (lat == null || lon == null) {
         return [];
@@ -962,12 +943,11 @@ async function checkAlerts(data) {
     activeAlerts = alerts;
     updateAlertBadge();
     if (!alerts.length) {
+        closeAlertOverlay();
         return;
     }
-    const hasUnseenUrgent = alerts.some(
-        (a) => ALERT_AUTO_POP_TIERS.has(a.tier) && !isAlertSeen(a.id)
-    );
-    if (hasUnseenUrgent) {
+    const hasSevere = alerts.some((a) => ALERT_AUTO_POP_TIERS.has(a.tier));
+    if (hasSevere) {
         openAlertOverlay();
     }
 }
@@ -1021,6 +1001,11 @@ function renderAlertChannels() {
     });
 }
 
+function setAlertCenterDetailMode(active) {
+    const center = document.getElementById("alertCenter");
+    center?.classList.toggle("alert-center--detail", active);
+}
+
 function showAlertDetail(alert) {
     const body = document.getElementById("alertDetailBody");
     body.replaceChildren();
@@ -1070,6 +1055,7 @@ function showAlertDetail(alert) {
     const detail = document.getElementById("alertDetail");
     detail.classList.remove("hidden");
     detail.hidden = false;
+    setAlertCenterDetailMode(true);
     document.getElementById("alertBack").focus();
 }
 
@@ -1077,6 +1063,7 @@ function hideAlertDetail() {
     const detail = document.getElementById("alertDetail");
     detail.classList.add("hidden");
     detail.hidden = true;
+    setAlertCenterDetailMode(false);
     document.getElementById("alertChannels").classList.remove("hidden");
 }
 
@@ -1185,7 +1172,6 @@ function closeAlertOverlay() {
     overlay.classList.add("hidden");
     overlay.hidden = true;
     document.removeEventListener("keydown", onAlertKeydown);
-    markAlertsSeen(activeAlerts);
     updateAlertBadge();
     if (alertLastFocused && typeof alertLastFocused.focus === "function") {
         alertLastFocused.focus();

@@ -57,7 +57,18 @@
         <button onclick="searchCity()">Search</button>
       </div>
 
-      <div id="historyList" class="history"></div>
+      <div class="history-row">
+        <div id="historyList" class="history"></div>
+        <button type="button" id="alertBadge" class="alert-badge hidden" hidden
+                aria-label="View active weather alerts" onclick="openAlertOverlay()">
+          <svg class="alert-badge-tri" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 3 L22 20 H2 Z" fill="currentColor"></path>
+            <rect x="11" y="9" width="2" height="6" rx="1" fill="#3a0c0a"></rect>
+            <rect x="11" y="16" width="2" height="2" rx="1" fill="#3a0c0a"></rect>
+          </svg>
+          <span id="alertBadgeCount">0</span>
+        </button>
+      </div>
 
       <div id="loading" class="glass-panel glass-panel--pill hidden" aria-live="polite">Fetching weather...</div>
       <div id="errorMsg" class="error hidden" role="alert" aria-live="polite"></div>
@@ -153,17 +164,6 @@
 
   </div>
 
-  <!-- Floating badge to reopen alerts after they're dismissed -->
-  <button type="button" id="alertBadge" class="alert-badge hidden" hidden
-          aria-label="View active weather alerts" onclick="openAlertOverlay()">
-    <svg class="alert-badge-tri" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M12 3 L22 20 H2 Z" fill="currentColor"></path>
-      <rect x="11" y="9" width="2" height="6" rx="1" fill="#3a0c0a"></rect>
-      <rect x="11" y="16" width="2" height="2" rx="1" fill="#3a0c0a"></rect>
-    </svg>
-    <span id="alertBadgeCount">0</span>
-  </button>
-
   <!-- Severe weather alert overlay (full-screen takeover) -->
   <div id="alertOverlay" class="alert-overlay hidden" hidden
        role="dialog" aria-modal="true" aria-labelledby="alertMenuTitle">
@@ -183,12 +183,12 @@
       <button type="button" class="pill alert-close" id="alertClose" aria-label="Close alerts">Close</button>
     </div>
 
-    <div class="alert-center">
+    <div class="alert-center" id="alertCenter">
       <div class="alert-channels" id="alertChannels"></div>
 
       <div class="alert-detail hidden" id="alertDetail" hidden>
         <button type="button" class="pill alert-back" id="alertBack">Back</button>
-        <div class="alert-detail-body" id="alertDetailBody"></div>
+        <div class="alert-detail-body glass-panel glass-panel--card" id="alertDetailBody"></div>
       </div>
     </div>
 

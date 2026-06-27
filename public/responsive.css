@@ -37,7 +37,7 @@
   }
 
   .search-row,
-  .history,
+  .history-row,
   .details-row,
   .wind-bar,
   #loading,
@@ -72,14 +72,42 @@
     border-radius: 12px;
   }
 
-  .history {
+  .history-row {
     padding-top: 8px;
+    gap: 6px;
+  }
+
+  .history {
     gap: 6px;
   }
 
   .history span {
     font-size: 11px;
     padding: 4px 9px;
+  }
+
+  .alert-badge {
+    min-height: 44px;
+    padding: 4px 12px 4px 10px;
+    font-size: 11px;
+    gap: 5px;
+  }
+
+  .alert-badge-tri {
+    width: 14px;
+    height: 14px;
+  }
+
+  .alert-center {
+    padding: 10px 24px;
+  }
+
+  .alert-detail {
+    max-width: 100%;
+  }
+
+  .alert-detail-body {
+    border-radius: 18px;
   }
 
   #loading {
