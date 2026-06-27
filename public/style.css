@@ -806,3 +806,362 @@ body.theme-day::after {
   white-space: nowrap;
   border: 0;
 }
+
+/* =========================================================================
+   SEVERE WEATHER ALERTS — Wii HOME Menu overlay
+   Resting visuals only; motion lives in animations.css.
+   ========================================================================= */
+
+/* Reusable Wii cyan pill (the signature control). Severity variants below
+   only swap the rim/halo. */
+.pill {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1.5px solid #36c3f2;
+  background: linear-gradient(180deg, #fdffff 0%, #eef4f7 50%, #d6e2e9 100%);
+  color: #3a3a3a;
+  font-family: inherit;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+    0 0 0 1px rgba(54, 195, 242, 0.35),
+    0 3px 9px rgba(0, 0, 0, 0.32);
+}
+
+.pill::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 2px;
+  height: 42%;
+  border-radius: 999px 999px 60% 60% / 999px 999px 22px 22px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.15) 100%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Overlay scrim + centering */
+.alert-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(3, 6, 18, 0.55);
+}
+
+/* The black HOME-menu panel */
+.alert-menu {
+  position: relative;
+  width: min(560px, 94vw);
+  max-height: calc(100dvh - 40px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px 14px;
+  border-radius: 24px;
+  background: #060709;
+  border-top: 3px solid #e0584f;
+  box-shadow:
+    0 0 0 1px rgba(224, 88, 79, 0.35),
+    0 18px 50px rgba(0, 0, 0, 0.6);
+}
+
+.alert-menu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.035) 0 1px,
+    transparent 1px 4px
+  );
+  pointer-events: none;
+}
+
+/* Top bar */
+.alert-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.alert-top-left {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.alert-tri {
+  width: 26px;
+  height: 26px;
+  color: #ff6b60;
+  flex-shrink: 0;
+}
+
+.alert-menu-title {
+  color: #eef4f9;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.alert-menu-sub {
+  color: #ffb3ad;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-top: 1px;
+}
+
+.alert-close {
+  flex-shrink: 0;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* Channel grid — alerts as Wii channels */
+.alert-channels {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 15px;
+}
+
+.alert-channel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  min-height: 116px;
+  padding: 15px 18px;
+  border-radius: 28px;
+  text-align: left;
+}
+
+.alert-channel::before {
+  border-radius: 28px 28px 50% 50% / 26px 26px 20px 20px;
+  height: 38%;
+}
+
+/* Severity rims + halos */
+.alert-channel--warning {
+  border-color: #e0584f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 0 0 1px rgba(224, 88, 79, 0.45),
+    0 3px 9px rgba(0, 0, 0, 0.4);
+}
+
+.alert-channel--watch {
+  border-color: #ef9f27;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 0 0 1px rgba(239, 159, 39, 0.45),
+    0 3px 9px rgba(0, 0, 0, 0.4);
+}
+
+.alert-channel--advisory {
+  border-color: #e0b000;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 0 0 1px rgba(224, 176, 0, 0.4),
+    0 3px 9px rgba(0, 0, 0, 0.4);
+}
+
+.alert-sev {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 11px;
+  border-radius: 999px;
+}
+
+.alert-sev--warning { background: #e0584f; color: #3a0c0a; }
+.alert-sev--watch { background: #ef9f27; color: #4a2a02; }
+.alert-sev--advisory { background: #e0b000; color: #463600; }
+.alert-sev--statement { background: #36c3f2; color: #0c3247; }
+
+.alert-ch-event {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #27384a;
+}
+
+.alert-ch-until {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5a6b7a;
+}
+
+/* Detail view */
+.alert-detail {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.alert-back {
+  align-self: flex-start;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.alert-detail-body {
+  color: #d4e0ea;
+}
+
+.alert-detail-event {
+  color: #fff;
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 8px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.alert-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  color: #ffd9d5;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.alert-detail-office {
+  color: #9fb4c6;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.alert-detail-desc {
+  color: #d4e0ea;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.alert-detail-instruction {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(224, 88, 79, 0.12);
+  border: 1px solid rgba(224, 88, 79, 0.3);
+  color: #ffd9d5;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* Status strip (repurposed P1-P4) */
+.alert-strip-wrap {
+  position: relative;
+  z-index: 1;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.alert-strip {
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  border: 2px solid #3a4654;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.alert-seg {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #c2cfdb;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: center;
+}
+
+.alert-seg:last-child { border-right: 0; }
+.alert-seg b { color: #9ddcff; font-weight: 800; }
+
+.alert-strip-label {
+  color: #aeb9c5;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* Floating reopen badge */
+.alert-badge {
+  position: fixed;
+  top: calc(var(--header-height) + 12px);
+  right: 16px;
+  z-index: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px 9px 13px;
+  border-radius: 999px;
+  border: 1.5px solid #ff7a70;
+  background: linear-gradient(180deg, #f0584f 0%, #c5352c 100%);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 3px 12px rgba(0, 0, 0, 0.4);
+}
+
+.alert-badge[data-tier="watch"] {
+  border-color: #ffc266;
+  background: linear-gradient(180deg, #f0a32e 0%, #c47a12 100%);
+}
+
+.alert-badge-tri {
+  width: 18px;
+  height: 18px;
+  color: #fff;
+}

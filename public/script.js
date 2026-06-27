@@ -427,6 +427,7 @@ function presentWeather(data) {
     renderTodayView(data, isNight);
     setWeatherAtmosphere(data.conditionId);
     hide("todayEmpty");
+    checkAlerts(data);
 }
 
 function updateHeaderCityVisibility() {
@@ -902,3 +903,296 @@ document.getElementById("cityInput").addEventListener("input", () => {
     renderHistory();
     updateHeaderCityVisibility();
 });
+
+/* =========================================================================
+   SEVERE WEATHER ALERTS — Wii HOME Menu overlay
+   ========================================================================= */
+
+const ALERT_AUTO_POP_TIERS = new Set(["warning", "watch"]);
+const ALERT_TIER_LABELS = {
+    warning: "Warning",
+    watch: "Watch",
+    advisory: "Advisory",
+    statement: "Statement",
+};
+
+let activeAlerts = [];
+let alertLastFocused = null;
+
+function alertSeenKey(id) {
+    return "cirrus_alert_seen_" + id;
+}
+
+function isAlertSeen(id) {
+    try {
+        return sessionStorage.getItem(alertSeenKey(id)) === "1";
+    } catch (e) {
+        return false;
+    }
+}
+
+function markAlertsSeen(alerts) {
+    try {
+        alerts.forEach((a) => sessionStorage.setItem(alertSeenKey(a.id), "1"));
+    } catch (e) {
+        /* sessionStorage unavailable — alerts simply re-pop next search */
+    }
+}
+
+async function fetchAlerts(lat, lon) {
+    if (lat == null || lon == null) {
+        return [];
+    }
+    try {
+        const url = `${BACKEND_URL}/alerts?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            return [];
+        }
+        const data = await response.json();
+        return Array.isArray(data.alerts) ? data.alerts : [];
+    } catch (e) {
+        console.log("Alerts fetch failed:", e);
+        return [];
+    }
+}
+
+async function checkAlerts(data) {
+    const alerts = await fetchAlerts(data.lat, data.lon);
+    activeAlerts = alerts;
+    updateAlertBadge();
+    if (!alerts.length) {
+        return;
+    }
+    const hasUnseenUrgent = alerts.some(
+        (a) => ALERT_AUTO_POP_TIERS.has(a.tier) && !isAlertSeen(a.id)
+    );
+    if (hasUnseenUrgent) {
+        openAlertOverlay();
+    }
+}
+
+function alertTierLabel(tier) {
+    return ALERT_TIER_LABELS[tier] || "Alert";
+}
+
+function alertShortEvent(event) {
+    return event.replace(/\s+(Warning|Watch|Advisory|Statement)$/i, "").trim() || event;
+}
+
+function alertUntilText(alert) {
+    const epoch = alert.ends > 0 ? alert.ends : alert.expires;
+    if (!epoch) {
+        return "";
+    }
+    return "Until " + formatCityTime(epoch, activeTimezoneOffset);
+}
+
+function renderAlertChannels() {
+    const wrap = document.getElementById("alertChannels");
+    wrap.replaceChildren();
+
+    activeAlerts.forEach((alert) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `pill alert-channel alert-channel--${alert.tier}`;
+
+        const sev = document.createElement("span");
+        sev.className = `alert-sev alert-sev--${alert.tier}`;
+        sev.textContent = alertTierLabel(alert.tier);
+
+        const event = document.createElement("span");
+        event.className = "alert-ch-event";
+        event.textContent = alertShortEvent(alert.event);
+
+        btn.appendChild(sev);
+        btn.appendChild(event);
+
+        const until = alertUntilText(alert);
+        if (until) {
+            const untilEl = document.createElement("span");
+            untilEl.className = "alert-ch-until";
+            untilEl.textContent = until;
+            btn.appendChild(untilEl);
+        }
+
+        btn.addEventListener("click", () => showAlertDetail(alert));
+        wrap.appendChild(btn);
+    });
+}
+
+function showAlertDetail(alert) {
+    const body = document.getElementById("alertDetailBody");
+    body.replaceChildren();
+
+    const title = document.createElement("div");
+    title.className = "alert-detail-event";
+    title.textContent = alert.event;
+    body.appendChild(title);
+
+    const meta = document.createElement("div");
+    meta.className = "alert-detail-meta";
+    const sev = document.createElement("span");
+    sev.className = `alert-sev alert-sev--${alert.tier}`;
+    sev.textContent = alertTierLabel(alert.tier);
+    meta.appendChild(sev);
+    const until = alertUntilText(alert);
+    if (until) {
+        const u = document.createElement("span");
+        u.textContent = until;
+        meta.appendChild(u);
+    }
+    body.appendChild(meta);
+
+    if (alert.senderName) {
+        const office = document.createElement("div");
+        office.className = "alert-detail-office";
+        office.textContent = alert.senderName;
+        body.appendChild(office);
+    }
+
+    if (alert.description) {
+        const desc = document.createElement("div");
+        desc.className = "alert-detail-desc";
+        desc.textContent = alert.description;
+        body.appendChild(desc);
+    }
+
+    if (alert.instruction) {
+        const instr = document.createElement("div");
+        instr.className = "alert-detail-instruction";
+        instr.textContent = alert.instruction;
+        body.appendChild(instr);
+    }
+
+    document.getElementById("alertChannels").classList.add("hidden");
+    document.getElementById("alertStripWrap").classList.add("hidden");
+    const detail = document.getElementById("alertDetail");
+    detail.classList.remove("hidden");
+    detail.hidden = false;
+    document.getElementById("alertBack").focus();
+}
+
+function hideAlertDetail() {
+    const detail = document.getElementById("alertDetail");
+    detail.classList.add("hidden");
+    detail.hidden = true;
+    document.getElementById("alertChannels").classList.remove("hidden");
+    document.getElementById("alertStripWrap").classList.remove("hidden");
+}
+
+function renderAlertStrip() {
+    const strip = document.getElementById("alertStrip");
+    strip.replaceChildren();
+
+    const first = activeAlerts[0] || {};
+    const area = first.areaDesc ? first.areaDesc.split(";")[0].trim() : "Your area";
+    const count = activeAlerts.length;
+
+    addAlertSeg(strip, area);
+    addAlertSeg(strip, `${count} alert${count === 1 ? "" : "s"}`);
+    addAlertSeg(strip, "NWS");
+}
+
+function addAlertSeg(strip, text) {
+    const seg = document.createElement("div");
+    seg.className = "alert-seg";
+    seg.textContent = text;
+    strip.appendChild(seg);
+}
+
+function updateAlertMenuHeader() {
+    const sub = document.getElementById("alertMenuSub");
+    const n = activeAlerts.length;
+    sub.textContent = `${n} active alert${n === 1 ? "" : "s"}`;
+}
+
+function updateAlertBadge() {
+    const badge = document.getElementById("alertBadge");
+    if (!badge) {
+        return;
+    }
+    if (activeAlerts.length > 0) {
+        document.getElementById("alertBadgeCount").textContent = activeAlerts.length;
+        badge.setAttribute("data-tier", activeAlerts[0].tier);
+        badge.classList.remove("hidden");
+        badge.hidden = false;
+    } else {
+        badge.classList.add("hidden");
+        badge.hidden = true;
+    }
+}
+
+function openAlertOverlay() {
+    if (!activeAlerts.length) {
+        return;
+    }
+    const overlay = document.getElementById("alertOverlay");
+    const wasClosed = overlay.classList.contains("hidden");
+
+    renderAlertChannels();
+    renderAlertStrip();
+    updateAlertMenuHeader();
+    hideAlertDetail();
+
+    if (wasClosed) {
+        alertLastFocused = document.activeElement;
+        overlay.classList.remove("hidden");
+        overlay.hidden = false;
+        document.addEventListener("keydown", onAlertKeydown);
+    }
+    document.getElementById("alertClose").focus();
+}
+
+function closeAlertOverlay() {
+    const overlay = document.getElementById("alertOverlay");
+    overlay.classList.add("hidden");
+    overlay.hidden = true;
+    document.removeEventListener("keydown", onAlertKeydown);
+    markAlertsSeen(activeAlerts);
+    updateAlertBadge();
+    if (alertLastFocused && typeof alertLastFocused.focus === "function") {
+        alertLastFocused.focus();
+    }
+}
+
+function onAlertKeydown(event) {
+    if (event.key === "Escape") {
+        closeAlertOverlay();
+        return;
+    }
+    if (event.key !== "Tab") {
+        return;
+    }
+    const menu = document.querySelector(".alert-menu");
+    const focusable = menu.querySelectorAll(
+        'button:not([hidden]), [href], [tabindex]:not([tabindex="-1"])'
+    );
+    const visible = [...focusable].filter((el) => el.offsetParent !== null);
+    if (!visible.length) {
+        return;
+    }
+    const first = visible[0];
+    const last = visible[visible.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
+}
+
+(function wireAlertControls() {
+    const close = document.getElementById("alertClose");
+    const back = document.getElementById("alertBack");
+    if (close) {
+        close.addEventListener("click", closeAlertOverlay);
+    }
+    if (back) {
+        back.addEventListener("click", () => {
+            hideAlertDetail();
+            document.getElementById("alertClose").focus();
+        });
+    }
+})();

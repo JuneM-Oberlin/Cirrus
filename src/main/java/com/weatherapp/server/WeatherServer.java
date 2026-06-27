@@ -3,9 +3,15 @@ package com.weatherapp.server;
 import com.google.gson.Gson;
 import com.weatherapp.error.CityNotFoundException;
 import com.weatherapp.error.RateLimitExceededException;
+import com.weatherapp.model.WeatherAlert;
+import com.weatherapp.service.AlertService;
+import com.weatherapp.service.NwsAlertClient;
 import com.weatherapp.service.OpenWeatherClient;
 import com.weatherapp.service.WeatherService;
 import java.time.Clock;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import spark.Request;
 import spark.Response;
 import static spark.Spark.before;
@@ -40,6 +46,7 @@ public class WeatherServer {
 
         RateLimiter rateLimiter = new RateLimiter(Clock.systemUTC());
         WeatherService service = new WeatherService(new OpenWeatherClient());
+        AlertService alertService = new AlertService(new NwsAlertClient());
         Gson gson = new Gson();
 
         get("/health", (req, res) -> {
@@ -63,6 +70,32 @@ public class WeatherServer {
             }
             return handleCityRoute(req, res, gson, city, "Forecast not found.", (c, ip) ->
                     service.getForecast(c, rateLimitCheck(rateLimiter, ip)));
+        });
+
+        get("/alerts", (req, res) -> {
+            res.type("application/json");
+            String latStr = req.queryParams("lat");
+            String lonStr = req.queryParams("lon");
+            if (latStr == null || latStr.isBlank() || lonStr == null || lonStr.isBlank()) {
+                return badRequest(res, gson, "lat and lon parameters are required.");
+            }
+            double lat;
+            double lon;
+            try {
+                lat = Double.parseDouble(latStr);
+                lon = Double.parseDouble(lonStr);
+            } catch (NumberFormatException e) {
+                return badRequest(res, gson, "lat and lon must be numbers.");
+            }
+            Map<String, Object> payload = new HashMap<>();
+            try {
+                List<WeatherAlert> alerts = alertService.getAlerts(lat, lon);
+                payload.put("alerts", alerts);
+            } catch (Exception e) {
+                System.err.println("Alerts route error: " + e.getMessage());
+                payload.put("alerts", List.of());
+            }
+            return gson.toJson(payload);
         });
     }
 
