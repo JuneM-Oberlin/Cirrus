@@ -474,6 +474,18 @@
   50% { opacity: 0.5; }
 }
 
+/* CRT scan-line drift on letterbox chrome (decorative) */
+.alert-overlay:not(.hidden) .alert-top-bar::before,
+.alert-overlay:not(.hidden) .alert-bottom-bar::before {
+  background-size: 100% 4px;
+  animation: alertScanDrift 10s linear infinite;
+}
+
+@keyframes alertScanDrift {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 4px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -522,6 +534,12 @@
   .alert-close:active,
   .alert-back:active {
     animation: none !important;
+  }
+
+  .alert-overlay:not(.hidden) .alert-top-bar::before,
+  .alert-overlay:not(.hidden) .alert-bottom-bar::before {
+    animation: none !important;
+    background-position: 0 0 !important;
   }
 
   .alert-channel:hover,
