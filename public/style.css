@@ -849,59 +849,63 @@ body.theme-day::after {
   z-index: -1;
 }
 
-/* Overlay scrim + centering */
+/* Full-screen takeover: scrim lets the dimmed app show through */
 .alert-overlay {
   position: fixed;
   inset: 0;
   z-index: 1000;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(3, 6, 18, 0.55);
-}
-
-/* The black HOME-menu panel */
-.alert-menu {
-  position: relative;
-  width: min(560px, 94vw);
-  max-height: calc(100dvh - 40px);
-  overflow: hidden;
-  display: flex;
   flex-direction: column;
-  padding: 16px 20px 14px;
-  border-radius: 24px;
-  background: #060709;
-  border-top: 3px solid #e0584f;
-  box-shadow:
-    0 0 0 1px rgba(224, 88, 79, 0.35),
-    0 18px 50px rgba(0, 0, 0, 0.6);
+  background: rgba(4, 7, 16, 0.42);
 }
 
-.alert-menu::before {
+.alert-overlay::after {
   content: "";
   position: absolute;
   inset: 0;
   background: repeating-linear-gradient(
     0deg,
-    rgba(255, 255, 255, 0.035) 0 1px,
+    rgba(255, 255, 255, 0.022) 0 1px,
     transparent 1px 4px
   );
   pointer-events: none;
 }
 
-/* Top bar */
-.alert-top {
+/* Translucent black letterbox bars (top + bottom chrome) */
+.alert-top-bar,
+.alert-bottom-bar {
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.52);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.alert-top-bar::before,
+.alert-bottom-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.03) 0 1px,
+    transparent 1px 4px
+  );
+  pointer-events: none;
+}
+
+.alert-top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
+  padding: 13px 26px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .alert-top-left {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -916,10 +920,10 @@ body.theme-day::after {
 
 .alert-menu-title {
   color: #eef4f9;
-  font-size: 21px;
+  font-size: 22px;
   font-weight: 700;
-  line-height: 1.1;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  line-height: 1.05;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
 }
 
 .alert-menu-sub {
@@ -931,19 +935,32 @@ body.theme-day::after {
 }
 
 .alert-close {
+  position: relative;
+  z-index: 1;
   flex-shrink: 0;
-  padding: 8px 20px;
-  font-size: 14px;
+  padding: 9px 22px;
+  font-size: 15px;
   font-weight: 800;
 }
 
-/* Channel grid — alerts as Wii channels */
-.alert-channels {
+/* Center band — channels (or detail) float over the dimmed app */
+.alert-center {
   position: relative;
   z-index: 1;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  overflow-y: auto;
+}
+
+.alert-channels {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 580px;
 }
 
 .alert-channel {
@@ -951,52 +968,28 @@ body.theme-day::after {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 6px;
-  min-height: 116px;
-  padding: 15px 18px;
-  border-radius: 28px;
+  gap: 8px;
+  min-height: 146px;
+  padding: 20px 24px;
+  border-radius: 32px;
   text-align: left;
 }
 
 .alert-channel::before {
-  border-radius: 28px 28px 50% 50% / 26px 26px 20px 20px;
-  height: 38%;
+  border-radius: 32px 32px 50% 50% / 30px 30px 22px 22px;
+  height: 36%;
 }
 
-/* Severity rims + halos */
-.alert-channel--warning {
-  border-color: #e0584f;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 0 0 1px rgba(224, 88, 79, 0.45),
-    0 3px 9px rgba(0, 0, 0, 0.4);
-}
-
-.alert-channel--watch {
-  border-color: #ef9f27;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 0 0 1px rgba(239, 159, 39, 0.45),
-    0 3px 9px rgba(0, 0, 0, 0.4);
-}
-
-.alert-channel--advisory {
-  border-color: #e0b000;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 0 0 1px rgba(224, 176, 0, 0.4),
-    0 3px 9px rgba(0, 0, 0, 0.4);
-}
-
+/* Severity reads from the badge; the pill rim stays the standard cyan */
 .alert-sev {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.6px;
   text-transform: uppercase;
-  padding: 3px 11px;
+  padding: 4px 13px;
   border-radius: 999px;
 }
 
@@ -1006,31 +999,30 @@ body.theme-day::after {
 .alert-sev--statement { background: #36c3f2; color: #0c3247; }
 
 .alert-ch-event {
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 800;
-  line-height: 1.15;
+  line-height: 1.12;
   color: #27384a;
 }
 
 .alert-ch-until {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: #5a6b7a;
 }
 
-/* Detail view */
+/* Detail view (fills the center band) */
 .alert-detail {
-  position: relative;
-  z-index: 1;
+  width: 100%;
+  max-width: 760px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  overflow-y: auto;
 }
 
 .alert-back {
   align-self: flex-start;
-  padding: 8px 20px;
+  padding: 8px 22px;
   font-size: 14px;
   font-weight: 800;
 }
@@ -1041,11 +1033,11 @@ body.theme-day::after {
 
 .alert-detail-event {
   color: #fff;
-  font-size: 23px;
+  font-size: 24px;
   font-weight: 800;
   line-height: 1.15;
   margin-bottom: 8px;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .alert-detail-meta {
@@ -1087,25 +1079,27 @@ body.theme-day::after {
   white-space: pre-wrap;
 }
 
-/* Status strip (repurposed P1-P4) */
-.alert-strip-wrap {
-  position: relative;
-  z-index: 1;
-  margin-top: 16px;
+/* Bottom bar — P1-P4-style status strip */
+.alert-bottom-bar {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding: 12px 26px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .alert-strip {
+  position: relative;
+  z-index: 1;
   width: 100%;
+  max-width: 760px;
   display: flex;
   align-items: stretch;
-  border: 2px solid #3a4654;
+  border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 999px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .alert-seg {
@@ -1113,21 +1107,30 @@ body.theme-day::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 7px 8px;
-  font-size: 12.5px;
+  gap: 7px;
+  padding: 9px 8px;
+  font-size: 13px;
   font-weight: 700;
-  color: #c2cfdb;
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  color: #eef3f8;
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
   text-align: center;
 }
 
 .alert-seg:last-child { border-right: 0; }
 .alert-seg b { color: #9ddcff; font-weight: 800; }
 
+.alert-seg-ic {
+  width: 16px;
+  height: 16px;
+  color: #9ddcff;
+  flex-shrink: 0;
+}
+
 .alert-strip-label {
-  color: #aeb9c5;
-  font-size: 12.5px;
+  position: relative;
+  z-index: 1;
+  color: #d3dde7;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.3px;
 }

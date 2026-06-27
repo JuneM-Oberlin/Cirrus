@@ -995,7 +995,7 @@ function renderAlertChannels() {
     activeAlerts.forEach((alert) => {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = `pill alert-channel alert-channel--${alert.tier}`;
+        btn.className = "pill alert-channel";
 
         const sev = document.createElement("span");
         sev.className = `alert-sev alert-sev--${alert.tier}`;
@@ -1065,8 +1065,8 @@ function showAlertDetail(alert) {
         body.appendChild(instr);
     }
 
+    // bottom bar stays visible — it's persistent chrome
     document.getElementById("alertChannels").classList.add("hidden");
-    document.getElementById("alertStripWrap").classList.add("hidden");
     const detail = document.getElementById("alertDetail");
     detail.classList.remove("hidden");
     detail.hidden = false;
@@ -1078,7 +1078,36 @@ function hideAlertDetail() {
     detail.classList.add("hidden");
     detail.hidden = true;
     document.getElementById("alertChannels").classList.remove("hidden");
-    document.getElementById("alertStripWrap").classList.remove("hidden");
+}
+
+const ALERT_SEG_ICONS = {
+    pin: '<svg class="alert-seg-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>',
+    alert: '<svg class="alert-seg-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3 22 20 2 20Z"/><rect x="11" y="9" width="2" height="6" rx="1" fill="#0c3247"/><rect x="11" y="16" width="2" height="2" rx="1" fill="#0c3247"/></svg>',
+    clock: '<svg class="alert-seg-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    source: '<svg class="alert-seg-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M7.5 7.5a6.5 6.5 0 0 0 0 9M16.5 7.5a6.5 6.5 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+};
+
+function makeAlertSeg(iconName) {
+    const seg = document.createElement("div");
+    seg.className = "alert-seg";
+    const svg = ALERT_SEG_ICONS[iconName];
+    if (svg) {
+        const ic = document.createElement("span");
+        ic.style.display = "inline-flex";
+        ic.innerHTML = svg; // static markup, no user data
+        seg.appendChild(ic);
+    }
+    return seg;
+}
+
+function appendAlertSegText(seg, text, bold) {
+    if (bold) {
+        const b = document.createElement("b");
+        b.textContent = text;
+        seg.appendChild(b);
+    } else {
+        seg.appendChild(document.createTextNode(text));
+    }
 }
 
 function renderAlertStrip() {
@@ -1086,19 +1115,26 @@ function renderAlertStrip() {
     strip.replaceChildren();
 
     const first = activeAlerts[0] || {};
-    const area = first.areaDesc ? first.areaDesc.split(";")[0].trim() : "Your area";
+    const county = first.areaDesc ? first.areaDesc.split(";")[0].trim() : "Your area";
     const count = activeAlerts.length;
+    const until = alertUntilText(first);
 
-    addAlertSeg(strip, area);
-    addAlertSeg(strip, `${count} alert${count === 1 ? "" : "s"}`);
-    addAlertSeg(strip, "NWS");
-}
+    const segCounty = makeAlertSeg("pin");
+    appendAlertSegText(segCounty, county, true);
+    strip.appendChild(segCounty);
 
-function addAlertSeg(strip, text) {
-    const seg = document.createElement("div");
-    seg.className = "alert-seg";
-    seg.textContent = text;
-    strip.appendChild(seg);
+    const segCount = makeAlertSeg("alert");
+    appendAlertSegText(segCount, String(count), true);
+    appendAlertSegText(segCount, count === 1 ? " alert" : " alerts", false);
+    strip.appendChild(segCount);
+
+    const segUntil = makeAlertSeg("clock");
+    appendAlertSegText(segUntil, until || "In effect", false);
+    strip.appendChild(segUntil);
+
+    const segSource = makeAlertSeg("source");
+    appendAlertSegText(segSource, "NWS", true);
+    strip.appendChild(segSource);
 }
 
 function updateAlertMenuHeader() {

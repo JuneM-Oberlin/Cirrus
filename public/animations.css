@@ -380,13 +380,28 @@
   animation: alertScrimIn 0.25s var(--nintendo-soft) both;
 }
 
-.alert-overlay:not(.hidden) .alert-menu {
-  animation: nintendoPop 0.45s var(--nintendo-spring) both;
+/* letterbox bars slide in from the edges like console chrome */
+.alert-overlay:not(.hidden) .alert-top-bar {
+  animation: alertBarDown 0.4s var(--nintendo-spring) both;
+}
+
+.alert-overlay:not(.hidden) .alert-bottom-bar {
+  animation: alertBarUp 0.4s var(--nintendo-spring) both;
 }
 
 @keyframes alertScrimIn {
   0% { opacity: 0; }
   100% { opacity: 1; }
+}
+
+@keyframes alertBarDown {
+  0% { opacity: 0; transform: translateY(-100%); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes alertBarUp {
+  0% { opacity: 0; transform: translateY(100%); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 /* Alert channels — shared pill press/hover + staggered entrance */
@@ -497,9 +512,10 @@
     opacity: 1 !important;
   }
 
-  /* alerts: kill pulse/pop/squash, keep the static pills + gloss caps */
+  /* alerts: kill pulse/slide/squash, keep the static chrome + pills */
   .alert-overlay:not(.hidden),
-  .alert-overlay:not(.hidden) .alert-menu,
+  .alert-overlay:not(.hidden) .alert-top-bar,
+  .alert-overlay:not(.hidden) .alert-bottom-bar,
   .alert-channels .alert-channel,
   .alert-tri,
   .alert-channel:active,
