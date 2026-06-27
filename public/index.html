@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cirrus</title>
+  <meta name="description" content="A Nintendo inspired weather app with current conditions and a 5-day forecast for any city.">
+  <link rel="icon" href="icons/clear-day.png">
+  <link rel="stylesheet" href="style.css?v=20260626b">
+  <link rel="stylesheet" href="animations.css?v=20260626b">
+  <link rel="stylesheet" href="weather-atmosphere.css">
+  <link rel="stylesheet" href="responsive.css">
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <h1 class="visually-hidden">Cirrus Weather</h1>
+
+  <div class="page">
+
+    <!-- green header bar -->
+    <div class="header">
+      <div class="header-tabs" role="tablist" aria-label="Weather views">
+        <div class="header-tab active" id="tabToday" role="tab" tabindex="0" aria-selected="true"
+             aria-controls="todayView" onclick="switchTab('today')" onkeydown="onTabKeydown(event, 'today')">TODAY</div>
+        <div class="header-tab" id="tabForecast" role="tab" tabindex="-1" aria-selected="false"
+             aria-controls="forecastView" onclick="switchTab('forecast')" onkeydown="onTabKeydown(event, 'forecast')">5-DAY FORECAST</div>
+      </div>
+      <div class="header-city" id="cityName">--</div>
+    </div>
+
+    <!-- NASA globe background (outside views so it can be shown for both tabs) -->
+    <div id="globeBg" class="globe-bg globe-hidden"></div>
+    <div id="weatherAtmosphere" class="weather-atmosphere is-hidden" data-effect="clear" aria-hidden="true">
+      <video
+        id="atmoRainVideo"
+        class="atmo-rain-video is-hidden"
+        src="media/rain-overlay.mp4"
+        autoplay
+        loop
+        muted
+        playsinline
+        preload="auto"
+        aria-hidden="true"
+      ></video>
+      <div class="atmo-precip atmo-precip--snow"></div>
+      <div id="atmoLightningLayer" class="atmo-lightning-layer is-hidden" aria-hidden="true"></div>
+      <div class="atmo-fog"></div>
+      <div class="atmo-clouds"></div>
+    </div>
+
+    <div class="page-content">
+
+      <div class="search-row">
+        <input id="cityInput" type="text" placeholder="Enter city..." aria-label="City name"
+          onkeydown="if(event.key === 'Enter') searchCity()">
+        <button onclick="searchCity()">Search</button>
+      </div>
+
+      <div class="history-row">
+        <div id="historyList" class="history"></div>
+        <button type="button" id="alertBadge" class="alert-badge hidden" hidden
+                aria-label="View active weather alerts" onclick="openAlertOverlay()">
+          <svg class="alert-badge-tri" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 3 L22 20 H2 Z" fill="currentColor"></path>
+            <rect x="11" y="9" width="2" height="6" rx="1" fill="#3a0c0a"></rect>
+            <rect x="11" y="16" width="2" height="2" rx="1" fill="#3a0c0a"></rect>
+          </svg>
+          <span id="alertBadgeCount">0</span>
+        </button>
+      </div>
+
+      <div id="loading" class="glass-panel glass-panel--pill hidden" aria-live="polite">Fetching weather...</div>
+      <div id="errorMsg" class="error hidden" role="alert" aria-live="polite"></div>
+
+      <!-- TODAY VIEW -->
+      <div id="todayView" role="tabpanel" aria-labelledby="tabToday">
+
+        <p id="todayEmpty" class="forecast-empty">Search a city to see today's weather.</p>
+
+        <div id="weatherDisplay" class="weather-card glass-panel glass-panel--card hidden">
+
+          <!-- LEFT: temp + condition -->
+          <div class="card-left">
+            <div id="tempMain" class="temp">--°</div>
+            <div id="condition" class="condition">
+              <span id="conditionText">--</span>
+              <span id="feelsExplanation" class="feels-expl"></span>
+            </div>
+          </div>
+
+          <!-- RIGHT: weather icon -->
+          <div id="weatherIcon" class="icon"></div>
+
+          <!-- DETAIL STRIP -->
+          <div class="details-row">
+            <div class="detail">
+              <span class="detail-label">Feels Like</span>
+              <span class="detail-val" id="feelsLike">--</span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Humidity</span>
+              <span class="detail-val" id="humidity">--</span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Wind</span>
+              <span class="detail-val" id="wind">--</span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Visibility</span>
+              <span class="detail-val" id="visibility">--</span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Cloud Cover</span>
+              <span class="detail-val" id="cloudCover">--</span>
+            </div>
+            <div class="detail">
+              <span class="detail-label">Pressure</span>
+              <span class="detail-val" id="pressure">--</span>
+            </div>
+          </div>
+
+          <div class="aux-grid">
+            <!-- WIND + TIMESTAMP BAR -->
+            <div class="wind-bar glass-panel">
+              <span class="wind-label">Wind Direction</span>
+              <span class="wind-val" id="windDir">--</span>
+              <span class="timestamp" id="timestamp">--</span>
+            </div>
+
+            <!-- SUNRISE / SUNSET BAR -->
+            <div class="sun-bar glass-panel">
+              <div class="sun-item">
+                <img src="icons/clear-day.png" alt="Sunrise" class="sun-icon">
+                <span class="sun-label">Sunrise</span>
+                <span class="sun-val" id="sunrise">--</span>
+              </div>
+              <div class="sun-divider"></div>
+              <div class="sun-item">
+                <img src="icons/clear-night.png" alt="Sunset" class="sun-icon">
+                <span class="sun-label">Sunset</span>
+                <span class="sun-val" id="sunset">--</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- FORECAST VIEW -->
+      <div id="forecastView" class="hidden" role="tabpanel" aria-labelledby="tabForecast" hidden>
+
+        <p id="forecastEmpty" class="forecast-empty">Search a city to see the 5-day forecast.</p>
+        <div class="forecast-strip" id="forecastStrip"></div>
+        <p id="forecastHint" class="forecast-hint hidden">Tap a day for details</p>
+
+        <!-- Selected day details (hidden until a day is clicked) -->
+        <div id="forecastDetails" class="forecast-details hidden"></div>
+
+        <div class="forecast-footer" id="forecastFooter">AS OF --:-- --, --/--</div>
+      </div>
+
+    </div> <!-- /page-content -->
+
+  </div>
+
+  <!-- Severe weather alert overlay (full-screen takeover) -->
+  <div id="alertOverlay" class="alert-overlay hidden" hidden
+       role="dialog" aria-modal="true" aria-labelledby="alertMenuTitle">
+
+    <div class="alert-top-bar">
+      <div class="alert-top-left">
+        <svg class="alert-tri" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 3 L22 20 H2 Z" fill="currentColor"></path>
+          <rect x="11" y="9" width="2" height="6" rx="1" fill="#3a0c0a"></rect>
+          <rect x="11" y="16" width="2" height="2" rx="1" fill="#3a0c0a"></rect>
+        </svg>
+        <div>
+          <div class="alert-menu-title" id="alertMenuTitle">Weather Alert</div>
+          <div class="alert-menu-sub" id="alertMenuSub">Active alerts</div>
+        </div>
+      </div>
+      <button type="button" class="pill alert-close" id="alertClose" aria-label="Close alerts">Close</button>
+    </div>
+
+    <div class="alert-center" id="alertCenter">
+      <div class="alert-channels" id="alertChannels"></div>
+
+      <div class="alert-detail hidden" id="alertDetail" hidden>
+        <button type="button" class="pill alert-back" id="alertBack" aria-label="Back to alert list">Back</button>
+        <div class="alert-detail-body glass-panel glass-panel--card" id="alertDetailBody" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="alert-bottom-bar" id="alertStripWrap">
+      <div class="alert-strip" id="alertStrip"></div>
+      <div class="alert-strip-label">Severe weather in effect</div>
+    </div>
+  </div>
+
+  <script src="iconMap.js?v=20260701"></script>
+  <script src="atmo-rain-video.js?v=20260623"></script>
+  <script src="atmo-lightning.js?v=20260703"></script>
+  <script src="script.js?v=20260626b"></script>
+</body>
+</html>
