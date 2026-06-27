@@ -900,12 +900,29 @@ body.theme-day::after {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 1;
+  pointer-events: none;
   background: repeating-linear-gradient(
     0deg,
-    rgba(255, 255, 255, 0.03) 0 1px,
-    transparent 1px 4px
+    rgba(0, 0, 0, 0.38) 0 1px,
+    transparent 1px 3px
   );
+  mix-blend-mode: multiply;
+}
+
+.alert-top-bar::after,
+.alert-bottom-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.045) 0 1px,
+    transparent 1px 3px
+  );
+  opacity: 0.55;
 }
 
 .alert-top-bar {
