@@ -89,13 +89,23 @@
   .alert-badge {
     min-height: 44px;
     padding: 4px 12px 4px 10px;
-    font-size: 11px;
+    font-size: 12px;
     gap: 5px;
   }
 
   .alert-badge-tri {
     width: 14px;
     height: 14px;
+  }
+
+  .alert-top-bar {
+    min-height: 72px;
+    padding: 18px 24px;
+  }
+
+  .alert-bottom-bar {
+    min-height: 96px;
+    padding: 18px 24px 20px;
   }
 
   .alert-center {

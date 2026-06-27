@@ -919,27 +919,36 @@ const ALERT_TIER_LABELS = {
 
 let activeAlerts = [];
 let alertLastFocused = null;
+let alertAutoPopDismissed = false;
 
 async function fetchAlerts(lat, lon) {
     if (lat == null || lon == null) {
-        return [];
+        return { alerts: [], error: false };
     }
     try {
         const url = `${BACKEND_URL}/alerts?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
         const response = await fetch(url);
         if (!response.ok) {
-            return [];
+            return { alerts: [], error: true };
         }
         const data = await response.json();
-        return Array.isArray(data.alerts) ? data.alerts : [];
+        const alerts = Array.isArray(data.alerts) ? data.alerts : [];
+        return { alerts, error: false };
     } catch (e) {
         console.log("Alerts fetch failed:", e);
-        return [];
+        return { alerts: [], error: true };
     }
 }
 
 async function checkAlerts(data) {
-    const alerts = await fetchAlerts(data.lat, data.lon);
+    const { alerts, error } = await fetchAlerts(data.lat, data.lon);
+    if (error) {
+        activeAlerts = [];
+        updateAlertBadge();
+        set("errorMsg", "Could not load weather alerts. Try searching again.");
+        show("errorMsg");
+        return;
+    }
     activeAlerts = alerts;
     updateAlertBadge();
     if (!alerts.length) {
@@ -947,7 +956,7 @@ async function checkAlerts(data) {
         return;
     }
     const hasSevere = alerts.some((a) => ALERT_AUTO_POP_TIERS.has(a.tier));
-    if (hasSevere) {
+    if (hasSevere && !alertAutoPopDismissed) {
         openAlertOverlay();
     }
 }
@@ -996,6 +1005,7 @@ function renderAlertChannels() {
             btn.appendChild(untilEl);
         }
 
+        btn.setAttribute("aria-label", `${alertTierLabel(alert.tier)}: ${alert.event}`);
         btn.addEventListener("click", () => showAlertDetail(alert));
         wrap.appendChild(btn);
     });
@@ -1169,9 +1179,13 @@ function openAlertOverlay() {
 
 function closeAlertOverlay() {
     const overlay = document.getElementById("alertOverlay");
+    const wasOpen = !overlay.classList.contains("hidden");
     overlay.classList.add("hidden");
     overlay.hidden = true;
     document.removeEventListener("keydown", onAlertKeydown);
+    if (wasOpen) {
+        alertAutoPopDismissed = true;
+    }
     updateAlertBadge();
     if (alertLastFocused && typeof alertLastFocused.focus === "function") {
         alertLastFocused.focus();
@@ -1186,9 +1200,12 @@ function onAlertKeydown(event) {
     if (event.key !== "Tab") {
         return;
     }
-    const menu = document.querySelector(".alert-menu");
+    const menu = document.getElementById("alertOverlay");
+    if (!menu) {
+        return;
+    }
     const focusable = menu.querySelectorAll(
-        'button:not([hidden]), [href], [tabindex]:not([tabindex="-1"])'
+        'button:not([hidden]):not(.hidden), [href], [tabindex]:not([tabindex="-1"])'
     );
     const visible = [...focusable].filter((el) => el.offsetParent !== null);
     if (!visible.length) {
