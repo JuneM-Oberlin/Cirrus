@@ -1,4 +1,6 @@
-/* Random lightning strike overlays during thunder weather */
+/* Random lightning strike overlays during thunder weather or active
+   thunderstorm / tornado watches and warnings. Pass start() a profile
+   name ("normal" | "heavy" | "severe"); the caller decides intensity. */
 
 const AtmoLightning = (function () {
     const SRC = "media/lightning-strike.png";
@@ -12,6 +14,7 @@ const AtmoLightning = (function () {
     let timer = null;
     let active = false;
     let profile = PROFILES.normal;
+    let currentProfileName = null;
 
     function prefersReducedMotion() {
         return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -22,21 +25,6 @@ const AtmoLightning = (function () {
             layer = document.getElementById("atmoLightningLayer");
         }
         return layer;
-    }
-
-    function profileForCondition(conditionId) {
-        const intensity = typeof thunderIconIntensity === "function"
-            ? thunderIconIntensity(conditionId)
-            : "none";
-
-        switch (intensity) {
-            case "severe":
-                return PROFILES.severe;
-            case "heavy":
-                return PROFILES.heavy;
-            default:
-                return PROFILES.normal;
-        }
     }
 
     function rand(min, max) {
@@ -109,7 +97,7 @@ const AtmoLightning = (function () {
         }, delay);
     }
 
-    function start(conditionId) {
+    function start(profileName) {
         if (prefersReducedMotion()) {
             return;
         }
@@ -119,9 +107,16 @@ const AtmoLightning = (function () {
             return;
         }
 
+        const name = PROFILES[profileName] ? profileName : "normal";
+        // Idempotent: don't restart an already-running storm of the same intensity
+        if (active && currentProfileName === name) {
+            return;
+        }
+
         stop();
         active = true;
-        profile = profileForCondition(conditionId);
+        currentProfileName = name;
+        profile = PROFILES[name];
         el.classList.remove("is-hidden");
 
         window.setTimeout(() => {
@@ -135,6 +130,7 @@ const AtmoLightning = (function () {
 
     function stop() {
         active = false;
+        currentProfileName = null;
         if (timer !== null) {
             window.clearTimeout(timer);
             timer = null;
