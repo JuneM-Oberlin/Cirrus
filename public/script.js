@@ -106,6 +106,55 @@ function getWeatherEffect(conditionId) {
     return "clear";
 }
 
+// A storm-threat alert is a thunderstorm or tornado watch/warning — these
+// drive the lightning flashes even when the current condition is calm.
+function isStormThreatAlert(alert) {
+    if (!alert || !alert.event) {
+        return false;
+    }
+    const event = alert.event.toLowerCase();
+    const isWatchOrWarning = alert.tier === "warning" || alert.tier === "watch";
+    return isWatchOrWarning
+        && (event.includes("thunderstorm") || event.includes("tornado"));
+}
+
+function alertsHaveStormThreat() {
+    return typeof activeAlerts !== "undefined"
+        && activeAlerts.some(isStormThreatAlert);
+}
+
+// Pick the strongest lightning profile across the live condition and any
+// active storm alerts: tornado or any warning = severe, watch = heavy.
+function stormLightningProfile(conditionId) {
+    const rank = { none: 0, normal: 0, heavy: 1, severe: 2 };
+    let best = typeof thunderIconIntensity === "function"
+        ? thunderIconIntensity(conditionId)
+        : "none";
+
+    if (typeof activeAlerts !== "undefined") {
+        activeAlerts.forEach((alert) => {
+            if (!isStormThreatAlert(alert)) {
+                return;
+            }
+            const event = alert.event.toLowerCase();
+            const intensity = event.includes("tornado") || alert.tier === "warning"
+                ? "severe"
+                : "heavy";
+            if (rank[intensity] > rank[best]) {
+                best = intensity;
+            }
+        });
+    }
+
+    if (best === "severe") {
+        return "severe";
+    }
+    if (best === "heavy") {
+        return "heavy";
+    }
+    return "normal";
+}
+
 function setWeatherAtmosphere(conditionId) {
     const layer = document.getElementById("weatherAtmosphere");
     const globe = document.getElementById("globeBg");
@@ -116,22 +165,10 @@ function setWeatherAtmosphere(conditionId) {
     const effect = getWeatherEffect(conditionId);
     layer.dataset.effect = effect;
 
-    if (effect === "clear") {
-        if (typeof AtmoRainVideo !== "undefined") {
-            AtmoRainVideo.stop();
-        }
-        if (typeof AtmoLightning !== "undefined") {
-            AtmoLightning.stop();
-        }
-        layer.classList.add("is-hidden");
-        globe?.classList.remove("atmosphere-active");
-        return;
-    }
+    const wantLightning = typeof AtmoLightning !== "undefined"
+        && (conditionHasThunder(conditionId) || alertsHaveStormThreat());
 
-    layer.classList.remove("is-hidden");
-    globe?.classList.add("atmosphere-active");
-
-    const rainProfile = VIDEO_RAIN_EFFECTS[effect];
+    const rainProfile = effect === "clear" ? null : VIDEO_RAIN_EFFECTS[effect];
     if (typeof AtmoRainVideo !== "undefined") {
         if (rainProfile) {
             requestAnimationFrame(() => AtmoRainVideo.start(rainProfile));
@@ -141,11 +178,19 @@ function setWeatherAtmosphere(conditionId) {
     }
 
     if (typeof AtmoLightning !== "undefined") {
-        if (conditionHasThunder(conditionId)) {
-            AtmoLightning.start(conditionId);
+        if (wantLightning) {
+            AtmoLightning.start(stormLightningProfile(conditionId));
         } else {
             AtmoLightning.stop();
         }
+    }
+
+    // Keep the atmosphere layer alive if EITHER rain or storm-alert lightning
+    // is showing, so a tornado warning still flashes under otherwise clear skies.
+    const hasAtmosphere = effect !== "clear" || wantLightning;
+    layer.classList.toggle("is-hidden", !hasAtmosphere);
+    if (globe) {
+        globe.classList.toggle("atmosphere-active", hasAtmosphere);
     }
 }
 
@@ -942,15 +987,17 @@ async function fetchAlerts(lat, lon) {
 
 async function checkAlerts(data) {
     const { alerts, error } = await fetchAlerts(data.lat, data.lon);
+    activeAlerts = error ? [] : alerts;
+    updateAlertBadge();
+    // Alerts arrive after presentWeather ran, so re-apply the atmosphere now —
+    // an active thunderstorm/tornado watch or warning drives the lightning.
+    setWeatherAtmosphere(data.conditionId);
+
     if (error) {
-        activeAlerts = [];
-        updateAlertBadge();
         set("errorMsg", "Could not load weather alerts. Try searching again.");
         show("errorMsg");
         return;
     }
-    activeAlerts = alerts;
-    updateAlertBadge();
     if (!alerts.length) {
         closeAlertOverlay();
         return;
