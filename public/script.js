@@ -965,6 +965,7 @@ const ALERT_TIER_LABELS = {
 let activeAlerts = [];
 let alertLastFocused = null;
 let alertAutoPopDismissed = false;
+let alertClosing = false;
 
 async function fetchAlerts(lat, lon) {
     if (lat == null || lon == null) {
@@ -1215,6 +1216,10 @@ function openAlertOverlay() {
     updateAlertMenuHeader();
     hideAlertDetail();
 
+    // cancel an in-progress retract if the user reopens mid-close
+    alertClosing = false;
+    overlay.classList.remove("alert-closing");
+
     if (wasClosed) {
         alertLastFocused = document.activeElement;
         overlay.classList.remove("hidden");
@@ -1224,19 +1229,44 @@ function openAlertOverlay() {
     document.getElementById("alertClose").focus();
 }
 
-function closeAlertOverlay() {
-    const overlay = document.getElementById("alertOverlay");
-    const wasOpen = !overlay.classList.contains("hidden");
+function finishCloseAlertOverlay(overlay) {
+    overlay.classList.remove("alert-closing");
     overlay.classList.add("hidden");
     overlay.hidden = true;
+    alertClosing = false;
     document.removeEventListener("keydown", onAlertKeydown);
-    if (wasOpen) {
-        alertAutoPopDismissed = true;
-    }
     updateAlertBadge();
     if (alertLastFocused && typeof alertLastFocused.focus === "function") {
         alertLastFocused.focus();
     }
+}
+
+function closeAlertOverlay() {
+    const overlay = document.getElementById("alertOverlay");
+    if (overlay.classList.contains("hidden")) {
+        return;
+    }
+
+    alertAutoPopDismissed = true;
+
+    // No animation under reduced motion (or if already retracting) — close now.
+    if (prefersReducedMotion() || alertClosing) {
+        finishCloseAlertOverlay(overlay);
+        return;
+    }
+
+    // Play the retract, then hide once the scrim has faded out.
+    alertClosing = true;
+    overlay.classList.add("alert-closing");
+
+    const onClosed = (event) => {
+        if (event.target !== overlay || event.animationName !== "alertScrimOut") {
+            return;
+        }
+        overlay.removeEventListener("animationend", onClosed);
+        finishCloseAlertOverlay(overlay);
+    };
+    overlay.addEventListener("animationend", onClosed);
 }
 
 function onAlertKeydown(event) {
