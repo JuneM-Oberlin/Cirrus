@@ -377,29 +377,29 @@
 
 /* Overlay menu pops in like a Wii channel; scrim fades */
 .alert-overlay:not(.hidden):not(.alert-closing) {
-  animation: alertScrimIn 0.31s var(--nintendo-soft) both;
+  animation: alertScrimIn 0.45s var(--nintendo-soft) both;
 }
 
 /* letterbox bars slide in from the edges like console chrome */
 .alert-overlay:not(.hidden):not(.alert-closing) .alert-top-bar {
-  animation: alertBarDown 0.5s var(--nintendo-spring) both;
+  animation: alertBarDown 0.7s var(--nintendo-spring) both;
 }
 
 .alert-overlay:not(.hidden):not(.alert-closing) .alert-bottom-bar {
-  animation: alertBarUp 0.5s var(--nintendo-spring) both;
+  animation: alertBarUp 0.7s var(--nintendo-spring) both;
 }
 
 /* closing: reverse the entrance — scrim fades, bars retract to the edges */
 .alert-overlay.alert-closing {
-  animation: alertScrimOut 0.38s var(--nintendo-soft) both;
+  animation: alertScrimOut 0.55s var(--nintendo-soft) both;
 }
 
 .alert-overlay.alert-closing .alert-top-bar {
-  animation: alertBarUpOut 0.38s var(--nintendo-soft) both;
+  animation: alertBarUpOut 0.55s var(--nintendo-soft) both;
 }
 
 .alert-overlay.alert-closing .alert-bottom-bar {
-  animation: alertBarDownOut 0.38s var(--nintendo-soft) both;
+  animation: alertBarDownOut 0.55s var(--nintendo-soft) both;
 }
 
 @keyframes alertScrimIn {
