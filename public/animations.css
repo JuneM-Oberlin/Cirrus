@@ -376,22 +376,40 @@
    ========================================================================= */
 
 /* Overlay menu pops in like a Wii channel; scrim fades */
-.alert-overlay:not(.hidden) {
+.alert-overlay:not(.hidden):not(.alert-closing) {
   animation: alertScrimIn 0.25s var(--nintendo-soft) both;
 }
 
 /* letterbox bars slide in from the edges like console chrome */
-.alert-overlay:not(.hidden) .alert-top-bar {
+.alert-overlay:not(.hidden):not(.alert-closing) .alert-top-bar {
   animation: alertBarDown 0.4s var(--nintendo-spring) both;
 }
 
-.alert-overlay:not(.hidden) .alert-bottom-bar {
+.alert-overlay:not(.hidden):not(.alert-closing) .alert-bottom-bar {
   animation: alertBarUp 0.4s var(--nintendo-spring) both;
+}
+
+/* closing: reverse the entrance — scrim fades, bars retract to the edges */
+.alert-overlay.alert-closing {
+  animation: alertScrimOut 0.3s var(--nintendo-soft) both;
+}
+
+.alert-overlay.alert-closing .alert-top-bar {
+  animation: alertBarUpOut 0.3s var(--nintendo-soft) both;
+}
+
+.alert-overlay.alert-closing .alert-bottom-bar {
+  animation: alertBarDownOut 0.3s var(--nintendo-soft) both;
 }
 
 @keyframes alertScrimIn {
   0% { opacity: 0; }
   100% { opacity: 1; }
+}
+
+@keyframes alertScrimOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 @keyframes alertBarDown {
@@ -402,6 +420,16 @@
 @keyframes alertBarUp {
   0% { opacity: 0; transform: translateY(100%); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes alertBarUpOut {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-100%); }
+}
+
+@keyframes alertBarDownOut {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(100%); }
 }
 
 /* Alert channels — shared pill press/hover + staggered entrance */
@@ -528,6 +556,9 @@
   .alert-overlay:not(.hidden),
   .alert-overlay:not(.hidden) .alert-top-bar,
   .alert-overlay:not(.hidden) .alert-bottom-bar,
+  .alert-overlay.alert-closing,
+  .alert-overlay.alert-closing .alert-top-bar,
+  .alert-overlay.alert-closing .alert-bottom-bar,
   .alert-channels .alert-channel,
   .alert-tri,
   .alert-channel:active,
