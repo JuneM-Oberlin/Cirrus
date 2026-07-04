@@ -1003,12 +1003,12 @@ function applyTempMood(temperature) {
     const temp = document.getElementById("tempMain");
     temp.classList.toggle("temp--freezing", temperature < 32);
 
-    const hot = temperature >= 80;
+    const hot = temperature >= 95;
     temp.classList.toggle("temp--hot", hot);
     if (hot) {
-        const intensity = Math.min((temperature - 80) / 25, 1); // maxes out at 105°F
-        temp.style.setProperty("--heat-amp", (1 + intensity * 2.5).toFixed(2) + "px");
-        temp.style.setProperty("--heat-speed", (0.5 - intensity * 0.2).toFixed(2) + "s");
+        const intensity = Math.min((temperature - 95) / 25, 1); // maxes out at 120°F
+        temp.style.setProperty("--heat-amp", (0.3 + intensity * 0.7).toFixed(2) + "px");
+        temp.style.setProperty("--heat-speed", (0.5 - intensity * 0.15).toFixed(2) + "s");
     } else {
         temp.style.removeProperty("--heat-amp");
         temp.style.removeProperty("--heat-speed");
