@@ -109,11 +109,11 @@
 
 @keyframes tempHeatShake {
   0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  15% { transform: translate(calc(var(--heat-amp, 2px) * -0.8), calc(var(--heat-amp, 2px) * 0.5)) rotate(-0.5deg); }
-  30% { transform: translate(var(--heat-amp, 2px), calc(var(--heat-amp, 2px) * -0.7)) rotate(0.6deg); }
-  45% { transform: translate(calc(var(--heat-amp, 2px) * -1), calc(var(--heat-amp, 2px) * -0.4)) rotate(-0.4deg); }
-  60% { transform: translate(calc(var(--heat-amp, 2px) * 0.9), calc(var(--heat-amp, 2px) * 0.6)) rotate(0.5deg); }
-  80% { transform: translate(calc(var(--heat-amp, 2px) * -0.6), calc(var(--heat-amp, 2px) * 0.3)) rotate(-0.3deg); }
+  15% { transform: translate(calc(var(--heat-amp, 0.5px) * -0.8), calc(var(--heat-amp, 0.5px) * 0.5)) rotate(-0.5deg); }
+  30% { transform: translate(var(--heat-amp, 0.5px), calc(var(--heat-amp, 0.5px) * -0.7)) rotate(0.6deg); }
+  45% { transform: translate(calc(var(--heat-amp, 0.5px) * -1), calc(var(--heat-amp, 0.5px) * -0.4)) rotate(-0.4deg); }
+  60% { transform: translate(calc(var(--heat-amp, 0.5px) * 0.9), calc(var(--heat-amp, 0.5px) * 0.6)) rotate(0.5deg); }
+  80% { transform: translate(calc(var(--heat-amp, 0.5px) * -0.6), calc(var(--heat-amp, 0.5px) * 0.3)) rotate(-0.3deg); }
 }
 
 /* below freezing: starts yellow, chills to the low-temp cyan, then shivers */
@@ -124,7 +124,7 @@
     tempShiver 0.3s linear infinite 1.6s;
 }
 
-/* 80°F and up: heat shake — JS scales --heat-amp/--heat-speed with the temp */
+/* 95°F and up: tiny heat shake — JS scales --heat-amp/--heat-speed with the temp */
 .temp--hot {
   animation: tempHeatShake var(--heat-speed, 0.4s) linear infinite;
 }
