@@ -93,6 +93,57 @@
   }
 }
 
+/* Temperature moods on the big number (classes set from script.js) */
+@keyframes tempFreezeIn {
+  from { color: #f0c000; }
+  to { color: #00e5ff; }
+}
+
+@keyframes tempShiver {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-1.2px, 0.6px) rotate(-0.35deg); }
+  40% { transform: translate(1.1px, -0.5px) rotate(0.3deg); }
+  60% { transform: translate(-0.9px, -0.6px) rotate(-0.25deg); }
+  80% { transform: translate(1.2px, 0.5px) rotate(0.35deg); }
+}
+
+@keyframes tempHeatShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  15% { transform: translate(calc(var(--heat-amp, 2px) * -0.8), calc(var(--heat-amp, 2px) * 0.5)) rotate(-0.5deg); }
+  30% { transform: translate(var(--heat-amp, 2px), calc(var(--heat-amp, 2px) * -0.7)) rotate(0.6deg); }
+  45% { transform: translate(calc(var(--heat-amp, 2px) * -1), calc(var(--heat-amp, 2px) * -0.4)) rotate(-0.4deg); }
+  60% { transform: translate(calc(var(--heat-amp, 2px) * 0.9), calc(var(--heat-amp, 2px) * 0.6)) rotate(0.5deg); }
+  80% { transform: translate(calc(var(--heat-amp, 2px) * -0.6), calc(var(--heat-amp, 2px) * 0.3)) rotate(-0.3deg); }
+}
+
+/* below freezing: starts yellow, chills to the low-temp cyan, then shivers */
+.temp--freezing {
+  color: #00e5ff;
+  animation:
+    tempFreezeIn 1.6s ease-in-out both,
+    tempShiver 0.3s linear infinite 1.6s;
+}
+
+/* 80°F and up: heat shake — JS scales --heat-amp/--heat-speed with the temp */
+.temp--hot {
+  animation: tempHeatShake var(--heat-speed, 0.4s) linear infinite;
+}
+
+/* while the squash-land pop plays, run it alongside the mood animation
+   (a lone .anim-temp-pop would otherwise clobber the mood's animation) */
+.anim-temp-pop.temp--freezing {
+  animation:
+    tempPop 0.6s var(--nintendo-spring),
+    tempFreezeIn 1.6s ease-in-out both,
+    tempShiver 0.3s linear infinite 1.6s;
+}
+
+.anim-temp-pop.temp--hot {
+  animation:
+    tempHeatShake var(--heat-speed, 0.4s) linear infinite,
+    tempPop 0.6s var(--nintendo-spring);
+}
+
 /* One-shot utility classes (JS-triggered) */
 .anim-pop {
   animation: nintendoPop 0.55s var(--nintendo-spring) both;
@@ -526,6 +577,12 @@
   /* window swipe becomes an instant swap */
   .view-track {
     transition: none !important;
+  }
+
+  /* no shiver/shake; freezing keeps its static cyan color */
+  .temp--freezing,
+  .temp--hot {
+    animation: none !important;
   }
 
   .header-tab:hover:not(.active),

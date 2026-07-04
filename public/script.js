@@ -997,9 +997,28 @@ function updateGlobe(lat, lon) {
     img.src = nasaUrl;
 }
 
+// Temperature mood on the big number: below freezing it chills from yellow
+// to the low-temp cyan and shivers; from 80°F up it shakes harder with heat.
+function applyTempMood(temperature) {
+    const temp = document.getElementById("tempMain");
+    temp.classList.toggle("temp--freezing", temperature < 32);
+
+    const hot = temperature >= 80;
+    temp.classList.toggle("temp--hot", hot);
+    if (hot) {
+        const intensity = Math.min((temperature - 80) / 25, 1); // maxes out at 105°F
+        temp.style.setProperty("--heat-amp", (1 + intensity * 2.5).toFixed(2) + "px");
+        temp.style.setProperty("--heat-speed", (0.5 - intensity * 0.2).toFixed(2) + "s");
+    } else {
+        temp.style.removeProperty("--heat-amp");
+        temp.style.removeProperty("--heat-speed");
+    }
+}
+
 function renderTodayView(data, isNight) {
     set("cityName", data.city);
     set("tempMain", Math.round(data.temperature) + "°F");
+    applyTempMood(data.temperature);
 
     const conditionFormatted = data.condition
         .split(" ")
