@@ -802,8 +802,18 @@ body.theme-day::after {
   display: flex;
   justify-content: center;
   padding: 12px 80px 18px;
-  /* keep details visible and push footer to bottom */
   flex: 0 0 auto;
+}
+
+/* when open, float the details midway between the strip and the footer;
+   the auto margins split the pane's free space evenly */
+.forecast-details:not(.hidden) {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.forecast-details:not(.hidden) ~ .forecast-footer {
+  margin-top: 0;
 }
 .details-card {
   width: min(1200px, calc(100% - 160px));
