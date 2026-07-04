@@ -26,15 +26,92 @@ function triggerWeatherReveal() {
     playAnimation(city, "anim-city-pop");
 }
 
-function triggerForecastStripEnter() {
-    const strip = document.getElementById("forecastStrip");
-    if (!strip || prefersReducedMotion()) {
+/* Today ⇄ Forecast window swipe + day-card pop choreography.
+   Timings/easings are final per the forecast-animations design handoff. */
+const CARD_POP_DELAY_MS = 520;  // let the window swipe land before cards pop
+const CARD_STAGGER_MS = 150;    // per-card delay, both in and out
+const CARD_SLIDE_PX = 44;       // cards slide in from the left
+const SPRING_EASING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
+
+let activeTab = "today";
+let tabSwitchPending = false;   // true while the card pop-out exit is playing
+let lastSwipeStart = -Infinity; // performance.now() when the track last slid
+
+function forecastDayCards() {
+    return [...document.querySelectorAll("#forecastStrip .forecast-day")];
+}
+
+function cancelCardAnimations(card) {
+    card.getAnimations().forEach((anim) => anim.cancel());
+}
+
+// Hide the cards before the swipe starts so they pop in after the window
+// lands instead of flickering through mid-slide.
+function hideForecastCards() {
+    if (prefersReducedMotion()) {
         return;
     }
-    strip.classList.remove("forecast-strip--enter");
-    void strip.offsetWidth;
-    strip.classList.add("forecast-strip--enter");
-    setTimeout(() => strip.classList.remove("forecast-strip--enter"), 900);
+    forecastDayCards().forEach((card) => {
+        cancelCardAnimations(card);
+        card.style.opacity = "0";
+    });
+}
+
+// Delay that lands the first card pop right as the window swipe settles,
+// whether the cards already exist or arrive later from a fetch.
+function cardPopBaseDelay() {
+    return Math.max(0, CARD_POP_DELAY_MS - (performance.now() - lastSwipeStart));
+}
+
+// Day cards pop in one after another, left → right, with a springy overshoot.
+function popInForecastCards() {
+    const reduced = prefersReducedMotion();
+    forecastDayCards().forEach((card, i) => {
+        cancelCardAnimations(card);
+        card.style.opacity = "";
+        if (reduced) {
+            return;
+        }
+        // 'backwards' holds the card invisible through its stagger delay, then
+        // releases to natural styles at finish so hover/press transforms work
+        card.animate([
+            { opacity: 0, transform: `translateX(${-CARD_SLIDE_PX}px) scale(0.84)` },
+            { opacity: 1, transform: `translateX(${CARD_SLIDE_PX * 0.14}px) scale(1.05)`, offset: 0.6 },
+            { opacity: 1, transform: "translateX(0) scale(1)" },
+        ], {
+            duration: 540,
+            delay: cardPopBaseDelay() + i * CARD_STAGGER_MS,
+            easing: SPRING_EASING,
+            fill: "backwards",
+        });
+    });
+}
+
+// Reverse exit: rightmost card leaves first, accelerating out. `done` fires
+// once the last card is gone so the window swipe can follow.
+function popOutForecastCards(done) {
+    const cards = forecastDayCards();
+    if (!cards.length || prefersReducedMotion()) {
+        done();
+        return;
+    }
+    const duration = 380;
+    let maxEnd = 0;
+    cards.forEach((card, i) => {
+        cancelCardAnimations(card);
+        const delay = (cards.length - 1 - i) * CARD_STAGGER_MS;
+        maxEnd = Math.max(maxEnd, delay + duration);
+        card.animate([
+            { opacity: 1, transform: "translateX(0) scale(1)" },
+            { opacity: 0, transform: `translateX(${-CARD_SLIDE_PX}px) scale(0.84)` },
+        ], {
+            duration,
+            delay,
+            easing: "cubic-bezier(0.4, 0, 1, 1)",
+            fill: "both",
+        });
+    });
+    setTimeout(done, maxEnd + 20);
 }
 
 function showError(message) {
@@ -261,7 +338,7 @@ function formatCityNow(timezoneOffsetSeconds) {
 }
 
 function isForecastTabActive() {
-    return !document.getElementById("forecastView").classList.contains("hidden");
+    return activeTab === "forecast";
 }
 
 function loadHistory() {
@@ -456,7 +533,7 @@ function fetchForecastData(city) {
 }
 
 function updateTodayEmptyState() {
-    if (!document.getElementById("todayView").classList.contains("hidden")
+    if (activeTab === "today"
         && document.getElementById("weatherDisplay").classList.contains("hidden")) {
         show("todayEmpty");
     } else {
@@ -598,91 +675,119 @@ function forecastRainIcon(day) {
 }
 
 function switchTab(tab) {
+    if (tab === activeTab || tabSwitchPending) {
+        return;
+    }
+
+    bounceTab(document.getElementById(tab === "today" ? "tabToday" : "tabForecast"));
+
+    if (tab === "forecast") {
+        // hide the cards first, then swipe; the pop-in delay lands them
+        // on-screen once the window has settled
+        hideForecastCards();
+        applyTab("forecast");
+        popInForecastCards();
+        loadForecastIfNeeded();
+        return;
+    }
+
+    // Back to Today: the reverse pop-out plays first, THEN the window swipes,
+    // and the big temperature squash-lands as the Today pane settles.
+    tabSwitchPending = true;
+    popOutForecastCards(() => {
+        tabSwitchPending = false;
+        applyTab("today");
+        if (!prefersReducedMotion()) {
+            setTimeout(() => {
+                playAnimation(document.getElementById("tempMain"), "anim-temp-pop");
+            }, CARD_POP_DELAY_MS);
+        }
+    });
+}
+
+function applyTab(tab) {
+    activeTab = tab;
+    const isToday = tab === "today";
     const todayView    = document.getElementById("todayView");
     const forecastView = document.getElementById("forecastView");
     const tabToday     = document.getElementById("tabToday");
     const tabForecast  = document.getElementById("tabForecast");
     const globe        = document.getElementById("globeBg");
 
-    if (tab === "today") {
-        todayView.classList.remove("hidden");
-        todayView.hidden = false;
-        forecastView.classList.add("hidden");
-        forecastView.hidden = true;
-        tabToday.classList.add("active");
-        tabForecast.classList.remove("active");
-        tabToday.setAttribute("aria-selected", "true");
-        tabForecast.setAttribute("aria-selected", "false");
-        tabToday.tabIndex = 0;
-        tabForecast.tabIndex = -1;
+    // slide the 200%-wide track like switching windows
+    lastSwipeStart = performance.now();
+    document.getElementById("viewTrack").classList.toggle("view-track--forecast", !isToday);
+
+    tabToday.classList.toggle("active", isToday);
+    tabForecast.classList.toggle("active", !isToday);
+    tabToday.setAttribute("aria-selected", String(isToday));
+    tabForecast.setAttribute("aria-selected", String(!isToday));
+    tabToday.tabIndex = isToday ? 0 : -1;
+    tabForecast.tabIndex = isToday ? -1 : 0;
+
+    // both panes stay rendered for the swipe; keep the off-screen one out of
+    // the tab order and away from screen readers
+    todayView.inert = !isToday;
+    todayView.setAttribute("aria-hidden", String(!isToday));
+    forecastView.inert = isToday;
+    forecastView.setAttribute("aria-hidden", String(isToday));
+
+    if (isToday) {
         updateTodayEmptyState();
         if (currentWeatherConditionId !== null) {
             setWeatherAtmosphere(currentWeatherConditionId);
         }
     } else {
-        forecastView.classList.remove("hidden");
-        forecastView.hidden = false;
-        todayView.classList.add("hidden");
-        todayView.hidden = true;
-        tabForecast.classList.add("active");
-        tabToday.classList.remove("active");
-        tabToday.setAttribute("aria-selected", "false");
-        tabForecast.setAttribute("aria-selected", "true");
-        tabToday.tabIndex = -1;
-        tabForecast.tabIndex = 0;
-
-        const city = document.getElementById("cityInput").value.trim();
-        const strip = document.getElementById("forecastStrip");
         updateForecastEmptyState();
-
-        if (city && strip.innerHTML.trim() === "") {
-            hide("forecastEmpty");
-            hide("errorMsg");
-            startColdStartLoading("Fetching forecast...");
-
-            const cityKey = normalizeCityKey(city);
-            const cachedWeather = getCachedEntry(clientCache.weather, cityKey);
-            const weatherPromise = cachedWeather
-                ? Promise.resolve(cachedWeather)
-                : fetchWeatherData(city);
-
-            Promise.all([fetchForecastData(city), weatherPromise])
-                .then(([forecastData, weatherData]) => {
-                    activeTimezoneOffset = weatherData.timezoneOffset ?? 0;
-                    currentWeatherConditionId = weatherData.conditionId;
-                    set("cityName", formatCityLabel(city));
-                    updateHeaderCityVisibility();
-                    document.body.classList.toggle(
-                        "theme-day",
-                        !weatherData.weatherCode.endsWith("n")
-                    );
-                    setWeatherAtmosphere(weatherData.conditionId);
-                    updateGlobe(weatherData.lat, weatherData.lon);
-                    renderForecast(forecastData, activeTimezoneOffset);
-                    checkAlerts(weatherData);
-                    addToHistory(city);
-                })
-                .catch((err) => {
-                    console.log("Forecast error:", err);
-                    showError(err.message || "Could not load forecast.");
-                    updateForecastEmptyState();
-                })
-                .finally(() => {
-                    stopColdStartLoading();
-                    hide("loading");
-                });
-        }
     }
-
-    const isToday = tab === "today";
-    tabToday.setAttribute("tabindex", isToday ? "0" : "-1");
-    tabForecast.setAttribute("tabindex", isToday ? "-1" : "0");
-
-    bounceTab(isToday ? tabToday : tabForecast);
 
     if (globe.style.backgroundImage) {
         globe.classList.remove("globe-hidden");
     }
+}
+
+function loadForecastIfNeeded() {
+    const city = document.getElementById("cityInput").value.trim();
+    const strip = document.getElementById("forecastStrip");
+    if (!city || strip.innerHTML.trim() !== "") {
+        return;
+    }
+
+    hide("forecastEmpty");
+    hide("errorMsg");
+    startColdStartLoading("Fetching forecast...");
+
+    const cityKey = normalizeCityKey(city);
+    const cachedWeather = getCachedEntry(clientCache.weather, cityKey);
+    const weatherPromise = cachedWeather
+        ? Promise.resolve(cachedWeather)
+        : fetchWeatherData(city);
+
+    Promise.all([fetchForecastData(city), weatherPromise])
+        .then(([forecastData, weatherData]) => {
+            activeTimezoneOffset = weatherData.timezoneOffset ?? 0;
+            currentWeatherConditionId = weatherData.conditionId;
+            set("cityName", formatCityLabel(city));
+            updateHeaderCityVisibility();
+            document.body.classList.toggle(
+                "theme-day",
+                !weatherData.weatherCode.endsWith("n")
+            );
+            setWeatherAtmosphere(weatherData.conditionId);
+            updateGlobe(weatherData.lat, weatherData.lon);
+            renderForecast(forecastData, activeTimezoneOffset);
+            checkAlerts(weatherData);
+            addToHistory(city);
+        })
+        .catch((err) => {
+            console.log("Forecast error:", err);
+            showError(err.message || "Could not load forecast.");
+            updateForecastEmptyState();
+        })
+        .finally(() => {
+            stopColdStartLoading();
+            hide("loading");
+        });
 }
 
 function renderForecast(days, timezoneOffset = activeTimezoneOffset) {
@@ -732,7 +837,9 @@ function renderForecast(days, timezoneOffset = activeTimezoneOffset) {
         el.addEventListener("keydown", (event) => activateOnEnterOrSpace(event, selectDay));
     });
 
-    triggerForecastStripEnter();
+    // stagger the fresh cards in; if a swipe is mid-flight the shared base
+    // delay holds them until the window lands
+    popInForecastCards();
 }
 
 function showForecastDetails(day) {

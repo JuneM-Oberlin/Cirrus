@@ -6,8 +6,8 @@
   <title>Cirrus</title>
   <meta name="description" content="A Nintendo inspired weather app with current conditions and a 5-day forecast for any city.">
   <link rel="icon" href="icons/clear-day.png">
-  <link rel="stylesheet" href="style.css?v=20260626b">
-  <link rel="stylesheet" href="animations.css?v=20260626f">
+  <link rel="stylesheet" href="style.css?v=20260704">
+  <link rel="stylesheet" href="animations.css?v=20260704">
   <link rel="stylesheet" href="weather-atmosphere.css">
   <link rel="stylesheet" href="responsive.css">
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
@@ -73,8 +73,13 @@
       <div id="loading" class="glass-panel glass-panel--pill hidden" aria-live="polite">Fetching weather...</div>
       <div id="errorMsg" class="error hidden" role="alert" aria-live="polite"></div>
 
+      <!-- Today ⇄ Forecast swipe: both panes live in a 200%-wide track that
+           slides horizontally inside the overflow-hidden viewport -->
+      <div class="view-viewport">
+      <div class="view-track" id="viewTrack">
+
       <!-- TODAY VIEW -->
-      <div id="todayView" role="tabpanel" aria-labelledby="tabToday">
+      <div id="todayView" class="view-pane" role="tabpanel" aria-labelledby="tabToday">
 
         <p id="todayEmpty" class="forecast-empty">Search a city to see today's weather.</p>
 
@@ -147,8 +152,9 @@
         </div>
       </div>
 
-      <!-- FORECAST VIEW -->
-      <div id="forecastView" class="hidden" role="tabpanel" aria-labelledby="tabForecast" hidden>
+      <!-- FORECAST VIEW (stays rendered for the swipe; inert while off-screen) -->
+      <div id="forecastView" class="view-pane" role="tabpanel" aria-labelledby="tabForecast"
+           inert aria-hidden="true">
 
         <p id="forecastEmpty" class="forecast-empty">Search a city to see the 5-day forecast.</p>
         <div class="forecast-strip" id="forecastStrip"></div>
@@ -159,6 +165,9 @@
 
         <div class="forecast-footer" id="forecastFooter">AS OF --:-- --, --/--</div>
       </div>
+
+      </div> <!-- /view-track -->
+      </div> <!-- /view-viewport -->
 
     </div> <!-- /page-content -->
 
@@ -201,6 +210,6 @@
   <script src="iconMap.js?v=20260701"></script>
   <script src="atmo-rain-video.js?v=20260623"></script>
   <script src="atmo-lightning.js?v=20260626c"></script>
-  <script src="script.js?v=20260626d"></script>
+  <script src="script.js?v=20260704"></script>
 </body>
 </html>

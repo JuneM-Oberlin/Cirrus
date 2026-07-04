@@ -372,7 +372,6 @@ body.theme-day::after {
 
 #todayView {
   background: transparent;
-  flex: 1;
 }
 
 /*  NASA GLOBE BACKGROUND  */
@@ -404,6 +403,40 @@ body.theme-day::after {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+/* TODAY ⇄ FORECAST WINDOW SWIPE
+   Both panes sit side-by-side in a 200%-wide track that slides
+   horizontally inside an overflow-hidden viewport. */
+.view-viewport {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.view-track {
+  display: flex;
+  width: 200%;
+  flex: 1 0 auto;
+  flex-shrink: 0; /* if the track shrinks, both panes collapse to half width and show at once */
+  will-change: transform;
+  transform: translateX(0);
+  transition: transform 0.5s var(--nintendo-soft);
+}
+
+.view-track--forecast {
+  transform: translateX(-50%);
+}
+
+.view-pane {
+  flex: 0 0 50%;
+  width: 50%;
+  min-width: 0;
+  /* each pane keeps its own height; otherwise the shorter view's content
+     stretches to match the taller one */
+  align-self: flex-start;
 }
 
 /*  MAIN WEATHER CARD  */
@@ -636,7 +669,6 @@ body.theme-day::after {
   display: flex;
   flex-direction: column;
   /* fill remaining page space between header and footer */
-  flex: 1 1 auto;
   min-height: calc(100dvh - var(--header-height));
   background: transparent;
 }
