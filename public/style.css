@@ -411,7 +411,9 @@ body.theme-day::after {
 .view-viewport {
   position: relative;
   flex: 1;
-  overflow: hidden;
+  /* clip, not hidden: a hidden box is still a scroll container, and
+     scrollIntoView/focus could scroll the swipe out of alignment */
+  overflow: clip;
   display: flex;
   flex-direction: column;
 }
@@ -434,9 +436,6 @@ body.theme-day::after {
   flex: 0 0 50%;
   width: 50%;
   min-width: 0;
-  /* each pane keeps its own height; otherwise the shorter view's content
-     stretches to match the taller one */
-  align-self: flex-start;
 }
 
 /*  MAIN WEATHER CARD  */
@@ -668,15 +667,14 @@ body.theme-day::after {
 #forecastView {
   display: flex;
   flex-direction: column;
-  /* fill remaining page space between header and footer */
-  min-height: calc(100dvh - var(--header-height));
+  /* height comes from stretching to the swipe track, which fills the page */
   background: transparent;
 }
 .forecast-strip {
   display: flex;
   justify-content: space-between;
-  /* allow the strip to grow and occupy available vertical space */
-  flex: 1 1 auto;
+  /* natural height — growing here pushes the details panel below the fold */
+  flex: 0 0 auto;
   align-items: flex-start;
   padding: 24px 80px 12px;
   margin: 0;
@@ -768,7 +766,8 @@ body.theme-day::after {
   justify-content: center;
   align-items: center;
   width: 100vw;
-  margin: 0;
+  /* pin to the bottom of the forecast pane */
+  margin: auto 0 0;
   padding: 10px 0;
   position: sticky;
   bottom: 0;
