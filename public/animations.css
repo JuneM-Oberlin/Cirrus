@@ -215,16 +215,59 @@
     0 7px 18px rgba(0, 0, 0, 0.40);
 }
 
-/* squash press + blue glow — the glow appears only while the button is pressed */
-.search-row button:active {
+/* squash on press only when the JS glow class is not yet active (avoids double squash on click) */
+.search-row button:active:not(.search-press-feedback) {
   filter: brightness(0.96);
   animation: wiiSquashPress 0.4s var(--nintendo-spring);
+}
+
+/* Press glow peaks then eases into the searching halo (or resting shadow) */
+@keyframes searchPressGlow {
+  0%, 28% {
+    box-shadow:
+      inset 0 2px 5px rgba(20, 50, 110, 0.22),
+      0 0 0 1.5px rgba(52, 190, 237, 0.70),
+      0 1px 4px rgba(0, 0, 0, 0.30),
+      0 0 8px 2px rgba(52, 190, 237, 0.75),
+      0 0 22px 6px rgba(52, 190, 237, 0.55);
+  }
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+      0 0 0 1.5px rgba(52, 190, 237, 0.55),
+      0 2px 8px rgba(0, 0, 0, 0.28),
+      0 0 10px 2px rgba(52, 190, 237, 0.42),
+      0 0 18px 4px rgba(52, 190, 237, 0.26);
+  }
+}
+
+.search-row button.search-press-feedback {
+  animation:
+    wiiSquashPress 0.4s var(--nintendo-spring),
+    searchPressGlow 0.75s var(--nintendo-soft) forwards;
+  filter: brightness(0.96);
+}
+
+.search-row button.search-press-feedback::before {
+  transform: scaleY(0.72);
+  opacity: 0.80;
+}
+
+/* Softer cyan halo while a search is in flight (matches searchPressGlow 100%) */
+.search-row button.is-searching {
   box-shadow:
-    inset 0 2px 5px rgba(20, 50, 110, 0.22),
-    0 0 0 1.5px rgba(52, 190, 237, 0.70),
-    0 1px 4px rgba(0, 0, 0, 0.30),
-    0 0 8px 2px rgba(52, 190, 237, 0.75),
-    0 0 22px 6px rgba(52, 190, 237, 0.55);
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+    0 0 0 1.5px rgba(52, 190, 237, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.28),
+    0 0 10px 2px rgba(52, 190, 237, 0.42),
+    0 0 18px 4px rgba(52, 190, 237, 0.26);
+  transition: box-shadow 0.35s var(--nintendo-soft);
+}
+
+.search-row button.is-searching:not(.search-press-feedback) {
+  animation: none;
 }
 
 @keyframes wiiSquashPress {
@@ -593,7 +636,18 @@
     animation: none !important;
   }
 
-  .search-row button::before,
+  .search-row button.search-press-feedback,
+  .search-row button.is-searching {
+    animation: none !important;
+    filter: none !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+      0 0 0 1px rgba(54, 195, 242, 0.35),
+      0 3px 9px rgba(0, 0, 0, 0.32) !important;
+  }
+
+  .search-row button.search-press-feedback::before,
   .history span::before {
     transition: none !important;
     transform: none !important;

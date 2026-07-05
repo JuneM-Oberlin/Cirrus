@@ -42,6 +42,7 @@
   .wind-bar,
   #loading,
   .error,
+  .alert-fetch-msg,
   .forecast-empty {
     padding-left: 24px;
     padding-right: 24px;
@@ -110,8 +111,8 @@
   }
 
   .alert-seg {
-    padding: 8px 4px;
-    font-size: 11px;
+    padding: 7px 4px;
+    font-size: 12px;
     gap: 4px;
   }
 

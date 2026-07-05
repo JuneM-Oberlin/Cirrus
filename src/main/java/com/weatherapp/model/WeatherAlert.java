@@ -17,6 +17,7 @@ public class WeatherAlert {
     private long ends;
     private String urgency;
     private String certainty;
+    private boolean autoPop;
 
     public WeatherAlert(
             String id,
@@ -33,7 +34,8 @@ public class WeatherAlert {
             long expires,
             long ends,
             String urgency,
-            String certainty) {
+            String certainty,
+            boolean autoPop) {
         this.id = id;
         this.event = event;
         this.tier = tier;
@@ -49,6 +51,7 @@ public class WeatherAlert {
         this.ends = ends;
         this.urgency = urgency;
         this.certainty = certainty;
+        this.autoPop = autoPop;
     }
 
     public String getId() {
@@ -109,5 +112,9 @@ public class WeatherAlert {
 
     public String getCertainty() {
         return certainty;
+    }
+
+    public boolean isAutoPop() {
+        return autoPop;
     }
 }

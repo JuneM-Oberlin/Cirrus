@@ -370,6 +370,15 @@ body.theme-day::after {
   width: fit-content;
 }
 
+.alert-fetch-msg {
+  color: rgba(255, 210, 160, 0.95);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 10px 80px 0;
+  padding: 0;
+  width: fit-content;
+}
+
 .forecast-empty {
   color: rgba(255, 255, 255, 0.78);
   font-size: 16px;
@@ -1139,6 +1148,7 @@ body.theme-day::after {
 .alert-sev--watch { background: #ef9f27; color: #4a2a02; }
 .alert-sev--advisory { background: #e0b000; color: #463600; }
 .alert-sev--statement { background: #36c3f2; color: #0c3247; }
+.alert-sev--unknown { background: rgba(200, 210, 220, 0.35); color: #2a3844; }
 
 .alert-ch-event {
   font-size: 21px;
