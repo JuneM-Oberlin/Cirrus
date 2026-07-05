@@ -578,6 +578,7 @@ CirrusAlerts.init({
             CirrusAtmosphere.refresh(currentWeatherConditionId);
         }
     },
+    allowAutoPop: () => !CirrusForecast.isForecastTabActive(),
 });
 CirrusForecast.init({
     show,
