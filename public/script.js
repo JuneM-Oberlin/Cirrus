@@ -572,7 +572,7 @@ function startColdStartLoading(initialMessage) {
 
     const startedAt = Date.now();
     coldStartTimers.push(setTimeout(() => {
-        set("loading", "Waking up the server — first search can take up to a minute...");
+        set("loading", "Waking up the server — first search can take up to a minute…");
     }, 4000));
 
     coldStartTimers.push(setTimeout(() => {
@@ -755,7 +755,7 @@ function loadForecastIfNeeded() {
 
     hide("forecastEmpty");
     hide("errorMsg");
-    startColdStartLoading("Fetching forecast...");
+    startColdStartLoading("Fetching forecast…");
 
     const cityKey = normalizeCityKey(city);
     const cachedWeather = getCachedEntry(clientCache.weather, cityKey);
@@ -878,7 +878,7 @@ function showForecastDetails(day) {
 }
 
 // shared loading/error choreography for both search paths
-async function withLoading(task, { revealWeather = true, loadingMessage = "Fetching weather..." } = {}) {
+async function withLoading(task, { revealWeather = true, loadingMessage = "Fetching weather…" } = {}) {
     clearWeatherAtmosphere();
     startColdStartLoading(loadingMessage);
     if (revealWeather) {
@@ -939,7 +939,7 @@ function searchForecast(city) {
         updateHeaderCityVisibility();
         renderForecast(forecastData, weatherData.timezoneOffset);
         addToHistory(city);
-    }, { revealWeather: false, loadingMessage: "Fetching forecast..." });
+    }, { revealWeather: false, loadingMessage: "Fetching forecast…" });
 }
 
 function getFeelsLikeExplanation(temp, feelsLike, windSpeed, humidity) {
