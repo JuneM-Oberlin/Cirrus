@@ -1031,7 +1031,7 @@ function renderTodayView(data, isNight) {
         const expl = getFeelsLikeExplanation(
             data.temperature, data.feelsLike, data.windSpeed, data.humidity
         );
-        feelsEl.textContent = ` — ${expl}`;
+        feelsEl.textContent = `— ${expl}`;
     }
 
     set("feelsLike", Math.round(data.feelsLike) + "°F");

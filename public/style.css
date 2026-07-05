@@ -491,6 +491,8 @@ body.theme-day::after {
   font-style: italic;
   margin-left: 12px;
   vertical-align: middle;
+  /* wrap as one unit — no dangling dash or orphaned last word */
+  display: inline-block;
   opacity: 0.95;
 }
 
