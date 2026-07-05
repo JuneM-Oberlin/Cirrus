@@ -59,7 +59,6 @@ class CorsConfigTest {
     void defaultOriginsIncludeGitHubPages() {
         CorsConfig config = CorsConfig.fromEnvironment();
         assertTrue(config.isAllowed("https://junem-oberlin.github.io"));
-        assertTrue(config.isAllowed("https://weatherapp-project-6rms.onrender.com"));
         assertTrue(config.isAllowed("http://localhost:4567"));
         assertFalse(config.isAllowed("https://evil.example"));
     }

@@ -181,7 +181,8 @@ function activateOnEnterOrSpace(event, action) {
     }
 }
 
-const BACKEND_URL = "https://weatherapp-project-6rms.onrender.com";
+// Same-origin: API calls go to whatever host served this page (EC2, localhost, etc.)
+const BACKEND_URL = "";
 
 fetch(`${BACKEND_URL}/health`).catch(() => {});
 
