@@ -755,6 +755,7 @@ body.theme-day::after {
   font-size: 14px;
   font-weight: 600;
 }
+
 .rain-icon {
   width: 20px;
   height: 20px;
@@ -846,6 +847,55 @@ body.theme-day::after {
 .forecast-label { font-size: 20px }
 .forecast-high { font-size: 60px }
 .forecast-low { font-size: 44px }
+
+/* Short desktop windows (~720p laptops): compact the day cards and the
+   details panel so strip + details + footer fit without scrolling.
+   Lives AFTER the typography bump above so these sizes win the cascade. */
+@media (min-width: 769px) and (max-height: 800px) {
+  .forecast-strip {
+    padding: 16px 80px 8px;
+  }
+
+  .forecast-day {
+    min-height: 190px;
+    padding: 14px 10px 10px;
+    gap: 6px;
+  }
+
+  .forecast-icon {
+    width: 84px;
+    height: 84px;
+  }
+
+  .forecast-label {
+    font-size: 16px;
+  }
+
+  .forecast-high {
+    font-size: 40px;
+  }
+
+  .forecast-low {
+    font-size: 30px;
+  }
+
+  .forecast-details {
+    padding: 6px 80px 10px;
+  }
+
+  .details-card {
+    min-height: 0;
+    padding: 12px 18px;
+  }
+
+  .details-card .details-row {
+    font-size: 15px;
+  }
+
+  .details-day {
+    font-size: 20px;
+  }
+}
 
 /*  HIDDEN UTILITY  */
 .hidden {
