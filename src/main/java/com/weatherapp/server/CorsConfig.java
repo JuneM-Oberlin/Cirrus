@@ -11,7 +11,6 @@ final class CorsConfig {
     private static final String ALLOWED_ORIGINS_ENV = "ALLOWED_ORIGINS";
     private static final Set<String> DEFAULT_ORIGINS = Set.of(
             "https://junem-oberlin.github.io",
-            "https://weatherapp-project-6rms.onrender.com",
             "http://localhost:4567",
             "http://127.0.0.1:4567"
     );
