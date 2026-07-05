@@ -72,33 +72,7 @@ public class WeatherServer {
                     service.getForecast(c, rateLimitCheck(rateLimiter, ip)));
         });
 
-        get("/alerts", (req, res) -> {
-            res.type("application/json");
-            String latStr = req.queryParams("lat");
-            String lonStr = req.queryParams("lon");
-            if (latStr == null || latStr.isBlank() || lonStr == null || lonStr.isBlank()) {
-                return badRequest(res, gson, "lat and lon parameters are required.");
-            }
-            double lat;
-            double lon;
-            try {
-                lat = Double.parseDouble(latStr);
-                lon = Double.parseDouble(lonStr);
-            } catch (NumberFormatException e) {
-                return badRequest(res, gson, "lat and lon must be numbers.");
-            }
-            Map<String, Object> payload = new HashMap<>();
-            try {
-                List<WeatherAlert> alerts = alertService.getAlerts(lat, lon);
-                payload.put("alerts", alerts);
-            } catch (Exception e) {
-                System.err.println("Alerts route error: " + e.getMessage());
-                res.status(503);
-                payload.put("error", "Could not load weather alerts.");
-                payload.put("alerts", List.of());
-            }
-            return gson.toJson(payload);
-        });
+        get("/alerts", (req, res) -> handleAlertsRoute(req, res, gson, rateLimiter, alertService));
     }
 
     static int resolvePort(String portStr) {
@@ -154,6 +128,45 @@ public class WeatherServer {
             res.status(500);
             return gson.toJson(new ErrorResponse("Something went wrong."));
         }
+    }
+
+    static Object handleAlertsRoute(
+            Request req,
+            Response res,
+            Gson gson,
+            RateLimiter rateLimiter,
+            AlertService alertService) {
+
+        res.type("application/json");
+        String latStr = req.queryParams("lat");
+        String lonStr = req.queryParams("lon");
+        if (latStr == null || latStr.isBlank() || lonStr == null || lonStr.isBlank()) {
+            return badRequest(res, gson, "lat and lon parameters are required.");
+        }
+        double lat;
+        double lon;
+        try {
+            lat = Double.parseDouble(latStr);
+            lon = Double.parseDouble(lonStr);
+        } catch (NumberFormatException e) {
+            return badRequest(res, gson, "lat and lon must be numbers.");
+        }
+
+        Map<String, Object> payload = new HashMap<>();
+        try {
+            rateLimitCheck(rateLimiter, ClientIpResolver.resolve(req)).run();
+            List<WeatherAlert> alerts = alertService.getAlerts(lat, lon);
+            payload.put("alerts", alerts);
+        } catch (RateLimitExceededException e) {
+            res.status(429);
+            return gson.toJson(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Alerts route error: " + e.getMessage());
+            res.status(503);
+            payload.put("error", "Could not load weather alerts.");
+            payload.put("alerts", List.of());
+        }
+        return gson.toJson(payload);
     }
 
     static void enableCors(CorsConfig corsConfig) {

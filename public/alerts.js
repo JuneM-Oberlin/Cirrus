@@ -1,4 +1,5 @@
 const CirrusAlerts = (function () {
+    const CLOSE_FALLBACK_MS = 600;
     const ALERT_KNOWN_TIERS = new Set(["warning", "watch", "advisory", "statement"]);
     const ALERT_TIER_LABELS = {
         warning: "Warning",
@@ -24,6 +25,10 @@ const CirrusAlerts = (function () {
     let prefersReducedMotion = () => false;
     let onAlertsChanged = () => {};
     let allowAutoPop = () => true;
+
+    let closeFallbackTimer = null;
+    let closeAnimationListener = null;
+    let closeAnimationOverlay = null;
 
     const session = {
         generation: 0,
@@ -194,6 +199,9 @@ const CirrusAlerts = (function () {
     }
 
     function alertShortEvent(event) {
+        if (typeof event !== "string") {
+            return "Alert";
+        }
         return event.replace(/\s+(Warning|Watch|Advisory|Statement)$/i, "").trim() || event;
     }
 
@@ -207,6 +215,9 @@ const CirrusAlerts = (function () {
 
     function renderAlertChannels() {
         const wrap = document.getElementById("alertChannels");
+        if (!wrap) {
+            return;
+        }
         wrap.replaceChildren();
 
         session.alerts.forEach((alert) => {
@@ -246,8 +257,15 @@ const CirrusAlerts = (function () {
     }
 
     function showAlertDetail(alert, { focus = true } = {}) {
-        session.detailId = alert.id;
         const body = document.getElementById("alertDetailBody");
+        const channels = document.getElementById("alertChannels");
+        const detail = document.getElementById("alertDetail");
+        const back = document.getElementById("alertBack");
+        if (!body || !channels || !detail) {
+            return;
+        }
+
+        session.detailId = alert.id;
         body.replaceChildren();
 
         const title = document.createElement("div");
@@ -291,23 +309,26 @@ const CirrusAlerts = (function () {
             body.appendChild(instr);
         }
 
-        document.getElementById("alertChannels").classList.add("hidden");
-        const detail = document.getElementById("alertDetail");
+        channels.classList.add("hidden");
         detail.classList.remove("hidden");
         detail.hidden = false;
         setAlertCenterDetailMode(true);
-        if (focus) {
-            document.getElementById("alertBack").focus();
+        if (focus && back) {
+            back.focus();
         }
     }
 
     function hideAlertDetail() {
         session.detailId = null;
         const detail = document.getElementById("alertDetail");
+        const channels = document.getElementById("alertChannels");
+        if (!detail || !channels) {
+            return;
+        }
         detail.classList.add("hidden");
         detail.hidden = true;
         setAlertCenterDetailMode(false);
-        document.getElementById("alertChannels").classList.remove("hidden");
+        channels.classList.remove("hidden");
     }
 
     function makeAlertSeg(iconName) {
@@ -335,6 +356,9 @@ const CirrusAlerts = (function () {
 
     function renderAlertStrip() {
         const strip = document.getElementById("alertStrip");
+        if (!strip) {
+            return;
+        }
         strip.replaceChildren();
 
         const first = session.alerts[0] || {};
@@ -362,6 +386,9 @@ const CirrusAlerts = (function () {
 
     function updateAlertMenuHeader() {
         const sub = document.getElementById("alertMenuSub");
+        if (!sub) {
+            return;
+        }
         const n = session.alerts.length;
         sub.textContent = `${n} active alert${n === 1 ? "" : "s"}`;
     }
@@ -387,8 +414,14 @@ const CirrusAlerts = (function () {
             return;
         }
         const overlay = document.getElementById("alertOverlay");
+        const closeBtn = document.getElementById("alertClose");
+        if (!overlay || !closeBtn) {
+            return;
+        }
         const wasClosed = overlay.classList.contains("hidden");
 
+        clearCloseFallbackTimer();
+        clearCloseAnimationListener();
         session.closing = false;
         overlay.classList.remove("alert-closing");
 
@@ -400,10 +433,27 @@ const CirrusAlerts = (function () {
         }
 
         refreshAlertOverlayContent();
-        document.getElementById("alertClose").focus();
+        closeBtn.focus();
+    }
+
+    function clearCloseFallbackTimer() {
+        if (closeFallbackTimer !== null) {
+            clearTimeout(closeFallbackTimer);
+            closeFallbackTimer = null;
+        }
+    }
+
+    function clearCloseAnimationListener() {
+        if (closeAnimationListener && closeAnimationOverlay) {
+            closeAnimationOverlay.removeEventListener("animationend", closeAnimationListener);
+            closeAnimationListener = null;
+            closeAnimationOverlay = null;
+        }
     }
 
     function finishCloseAlertOverlay(overlay) {
+        clearCloseFallbackTimer();
+        clearCloseAnimationListener();
         overlay.classList.remove("alert-closing");
         overlay.classList.add("hidden");
         overlay.hidden = true;
@@ -418,7 +468,7 @@ const CirrusAlerts = (function () {
 
     function closeAlertOverlaySilently() {
         const overlay = document.getElementById("alertOverlay");
-        if (overlay.classList.contains("hidden")) {
+        if (!overlay || overlay.classList.contains("hidden")) {
             return;
         }
 
@@ -434,10 +484,20 @@ const CirrusAlerts = (function () {
             if (event.target !== overlay || event.animationName !== "alertScrimOut") {
                 return;
             }
-            overlay.removeEventListener("animationend", onClosed);
             finishCloseAlertOverlay(overlay);
         };
+        closeAnimationListener = onClosed;
+        closeAnimationOverlay = overlay;
         overlay.addEventListener("animationend", onClosed);
+
+        clearCloseFallbackTimer();
+        closeFallbackTimer = setTimeout(() => {
+            closeFallbackTimer = null;
+            if (!session.closing) {
+                return;
+            }
+            finishCloseAlertOverlay(overlay);
+        }, CLOSE_FALLBACK_MS);
     }
 
     function dismissAlertOverlay() {
@@ -478,13 +538,18 @@ const CirrusAlerts = (function () {
     function wireControls() {
         const close = document.getElementById("alertClose");
         const back = document.getElementById("alertBack");
+        if (close?.dataset.alertWired) {
+            return;
+        }
         if (close) {
+            close.dataset.alertWired = "1";
             close.addEventListener("click", dismissAlertOverlay);
         }
         if (back) {
+            back.dataset.alertWired = "1";
             back.addEventListener("click", () => {
                 hideAlertDetail();
-                document.getElementById("alertClose").focus();
+                document.getElementById("alertClose")?.focus();
             });
         }
     }
@@ -493,6 +558,7 @@ const CirrusAlerts = (function () {
         init,
         resetForSearch,
         checkAlerts,
+        syncOverlay: syncAlertOverlay,
         getStormLightningRank,
         openOverlay: openAlertOverlay,
     };
