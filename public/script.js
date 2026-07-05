@@ -181,8 +181,11 @@ function activateOnEnterOrSpace(event, action) {
     }
 }
 
-// Same-origin: API calls go to whatever host served this page (EC2, localhost, etc.)
-const BACKEND_URL = "";
+// GitHub Pages serves only static files (no backend), so point it at the EC2 API.
+// Anywhere else (EC2, localhost), the app's own server handles the API — stay same-origin.
+const BACKEND_URL = location.hostname.endsWith("github.io")
+    ? "https://cirrus-project1.duckdns.org"
+    : "";
 
 fetch(`${BACKEND_URL}/health`).catch(() => {});
 
