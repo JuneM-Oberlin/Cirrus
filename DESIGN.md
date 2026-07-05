@@ -62,12 +62,13 @@ over 1.2s when `theme-day` toggles. Never set a flat background color on `body`.
 | Secondary number | `#00e5ff` (cyan) | Forecast lows |
 | **Wii cyan rim** | `#36c3f2` border / `#4fd0fb` hover | Search input, Search button, history chips |
 | Cyan halo | `rgba(54,195,242,0.30–0.60)` | The hairline/bloom ring on pills |
+| Press glow | `#34beed` / `rgba(52,190,237,0.55–0.75)` | Search button `:active` halo — press only, never idle |
 | Control label text | `#3a3a3a` (dark gray) | Text inside white pills |
 | Channel green | `#1f7f15 → #155e0e` (bar), `#3ec832 → #1a7a12` (active tab) | Header only |
 | City pill green | `#63f04d → #29bf1f → #159b10` | Header city pill |
 | Error | `#ffaaaa` on `rgba(180,30,30,0.25)` | Error messages |
 | Footer accent | `#8a1a3a → #5a0a22` (maroon) | Forecast footer — intentional, keep it |
-| Muted label | `rgba(255,255,255,0.45)` | Detail/wind/sun labels |
+| Muted label | `rgba(255,255,255,0.62)` | Detail/wind/sun labels (was 0.45; raised 2026-07-04 for contrast over the globe) |
 
 Rule of thumb: **yellow = the number you care about most, cyan = the supporting number,
 cyan rim = "this is a control you can touch," green = navigation chrome.**
@@ -157,20 +158,42 @@ Easing tokens (`animations.css`):
 
 Reusable keyframes already defined: `nintendoPop`, `nintendoBounce`, `nintendoWiggle`,
 `iconBob`, `sunRock`, `loadingBounce`, `hintBounce`, `tempPop`, `citySlideIn`,
-`detailStagger`, `wiiSquashPress`, `wiiSelectPulse`. **Reuse these before inventing new ones.**
+`detailStagger`, `wiiSquashPress`, `tempFreezeIn`, `tempShiver`, `tempHeatShake`.
+**Reuse these before inventing new ones.** (`wiiSelectPulse` was removed 2026-07-04 —
+the Search button no longer pulses on focus; see the press glow below.)
+
+### Today ⇄ Forecast window swipe (script.js, Web Animations API)
+Both tab panels live side-by-side in a 200%-wide `.view-track` inside an
+`overflow: clip` viewport. Switching tabs slides the track 500ms with
+`--nintendo-soft`. Day cards pop in left→right (540ms, 150ms stagger, spring)
+once the swipe lands, and pop out rightmost-first (380ms, ease-in accelerate)
+*before* the swipe back, where the big temp squash-lands (`tempPop`). All
+sequenced from `switchTab()` in script.js via `element.animate()`.
+
+### Temperature moods (`#tempMain`)
+- **Below 32°F:** `.temp--freezing` — number starts yellow, `tempFreezeIn`
+  fades it to the low-temp cyan over 1.6s, then `tempShiver` trembles ±1px.
+- **95°F and up:** `.temp--hot` — `tempHeatShake` jitters with amplitude
+  0.3→1px and period 0.5→0.35s scaling until 120°F (JS sets `--heat-amp` /
+  `--heat-speed`).
+These are *status displays*, not controls — they're the sanctioned exception
+to the no-idle-loop rule, alongside the icon bob / sun sway / hint bounce.
 
 ### Interaction patterns
 | Trigger | Effect |
 |---------|--------|
 | Hover (pill) | lift `translateY(-2px) scale(1.03)` + cyan rim bloom (brighter ring, `border-color → #4fd0fb`). One ring only — no sparkle/shine sweep. |
 | Press (pill) | `wiiSquashPress` squash-and-stretch (non-uniform `scale(x,y)`), one-shot. Gloss cap does a `scaleY(0.72)` light-catch. |
-| Keyboard focus (Search) | `wiiSelectPulse` — slow cyan halo breathing, **only** on `:focus-visible`, never idle. The "selected channel" cue. |
+| Press (Search button) | adds a static two-layer **blue glow** (`#34beed`) to the `:active` box-shadow — appears only while pressed, fades with the box-shadow transition. Never idle, never pulsing. |
+| Keyboard focus | standard 3px `--focus-ring` outline only — no pulse. (The old `wiiSelectPulse` breathing halo was removed 2026-07-04.) |
 | List render | staggered pop-in via `nintendoPop` + an `nth-child` delay ladder (chips, forecast days, detail stats). Class added by JS, removed on `animationend`. |
 | Channel tab | hover lift + active press, spring easing. |
 
 ### Idle/looping motion — allowed ONLY here
 `weather-img` (iconBob), `sun-icon` (sunRock), `#loading` (loadingBounce),
-`forecast-hint` (hintBounce). **Never** add a loop to a button, input, chip, or the card.
+`forecast-hint` (hintBounce), `#tempMain` temperature moods (tempShiver /
+tempHeatShake — status display, see above). **Never** add a loop to a button,
+input, chip, or the card.
 
 ### Reduced motion
 `animations.css` ends with a `prefers-reduced-motion: reduce` block that neutralizes
@@ -193,12 +216,17 @@ and clouds based on conditions. Keep these effects subtle and behind the UI
 
 ## 9. Responsive
 
-Single breakpoint: **768px**. On mobile:
+Single width breakpoint: **768px**. On mobile:
 - Header shrinks to 40px; gutters drop from 80px to 24px.
 - Search row stacks vertically; input and button go full-width.
 - Forecast cards collapse from 5 columns into stacked horizontal rows.
+- Detail stats sit in a 2-column grid (three rows of two).
 - Type scales down (temp 140→64px, etc.) but never below the 16px body / 12px label floors.
 - Globe opacity rises slightly (0.17 → 0.32) since there's less content.
+
+One height query: **`(min-width: 769px) and (max-height: 800px)`** compacts the
+forecast day cards and details panel so strip + details + footer fit a ~720p
+window without scrolling.
 
 Test every UI change at 375px (mobile), 768px (tablet), and ≥1280px (desktop).
 
