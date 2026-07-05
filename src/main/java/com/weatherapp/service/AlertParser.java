@@ -96,7 +96,8 @@ class AlertParser {
                     expires,
                     ends,
                     optString(props, "urgency"),
-                    optString(props, "certainty")));
+                    optString(props, "certainty"),
+                    shouldAutoPop(tier, event)));
         }
 
         alerts.sort(Comparator
@@ -130,6 +131,19 @@ class AlertParser {
             default:
                 return 0;
         }
+    }
+
+    /** Whether the overlay should auto-open for this alert (mirrors frontend shouldAutoPopAlert). */
+    static boolean shouldAutoPop(String tier, String event) {
+        if (!tier.equals("warning") && !tier.equals("watch") && !tier.equals("statement")) {
+            return false;
+        }
+        if (tier.equals("statement")) {
+            String normalized = event == null ? "" : event.trim().toLowerCase();
+            return !normalized.equals("hazardous weather outlook")
+                    && !normalized.equals("hydrologic outlook");
+        }
+        return true;
     }
 
     private static long epoch(String iso) {

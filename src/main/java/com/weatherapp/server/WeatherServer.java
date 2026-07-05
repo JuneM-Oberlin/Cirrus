@@ -93,6 +93,8 @@ public class WeatherServer {
                 payload.put("alerts", alerts);
             } catch (Exception e) {
                 System.err.println("Alerts route error: " + e.getMessage());
+                res.status(503);
+                payload.put("error", "Could not load weather alerts.");
                 payload.put("alerts", List.of());
             }
             return gson.toJson(payload);

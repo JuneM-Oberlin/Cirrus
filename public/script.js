@@ -371,20 +371,17 @@ function addToHistory(city) {
     renderHistory();
 }
 
-function renderHistory() {
+function renderHistory({ animate = true } = {}) {
     const container = document.getElementById("historyList");
     if (!container) {
         return;
     }
 
     container.replaceChildren();
-    const inputKey = normalizeCityKey(document.getElementById("cityInput").value);
     loadHistory().forEach((city) => {
-        if (normalizeCityKey(city) === inputKey) {
-            return;
-        }
         const chip = document.createElement("span");
         chip.textContent = city;
+        chip.dataset.cityKey = normalizeCityKey(city);
         chip.setAttribute("role", "button");
         chip.tabIndex = 0;
         chip.addEventListener("click", () => selectHistoryCity(city));
@@ -394,8 +391,10 @@ function renderHistory() {
         container.appendChild(chip);
     });
 
-    // Wii-style staggered pop-in on (re)render (skipped under reduced motion)
-    if (container.children.length && !prefersReducedMotion()) {
+    updateHistoryFilter();
+
+    // Wii-style staggered pop-in when history actually changes (skipped under reduced motion)
+    if (animate && container.children.length && !prefersReducedMotion()) {
         container.classList.remove("history--enter");
         void container.offsetWidth;
         container.classList.add("history--enter");
@@ -405,6 +404,18 @@ function renderHistory() {
             { once: true }
         );
     }
+}
+
+function updateHistoryFilter() {
+    const container = document.getElementById("historyList");
+    if (!container) {
+        return;
+    }
+
+    const inputKey = normalizeCityKey(document.getElementById("cityInput").value);
+    container.querySelectorAll("span[role=button]").forEach((chip) => {
+        chip.hidden = inputKey !== "" && chip.dataset.cityKey === inputKey;
+    });
 }
 
 function selectHistoryCity(city) {
@@ -541,7 +552,7 @@ function updateTodayEmptyState() {
     }
 }
 
-function presentWeather(data) {
+function presentWeather(data, alertsGen) {
     activeTimezoneOffset = data.timezoneOffset ?? 0;
     currentWeatherConditionId = data.conditionId;
     const isNight = data.weatherCode.endsWith("n");
@@ -549,7 +560,7 @@ function presentWeather(data) {
     renderTodayView(data, isNight);
     setWeatherAtmosphere(data.conditionId);
     hide("todayEmpty");
-    checkAlerts(data);
+    checkAlerts(data, alertsGen);
 }
 
 function updateHeaderCityVisibility() {
@@ -563,10 +574,38 @@ function updateHeaderCityVisibility() {
     headerCity.classList.toggle("header-city--redundant", isRedundant);
 }
 
+const searchButton = document.querySelector(".search-row button");
+
+function setSearchButtonSearching(isSearching) {
+    if (!searchButton) {
+        return;
+    }
+    searchButton.classList.toggle("is-searching", isSearching);
+}
+
+function playSearchPressGlow() {
+    if (!searchButton || prefersReducedMotion()) {
+        return;
+    }
+    searchButton.classList.remove("search-press-feedback");
+    void searchButton.offsetWidth;
+    searchButton.classList.add("search-press-feedback");
+}
+
+if (searchButton) {
+    searchButton.addEventListener("animationend", (event) => {
+        if (event.target !== searchButton || event.animationName !== "searchPressGlow") {
+            return;
+        }
+        searchButton.classList.remove("search-press-feedback");
+    });
+}
+
 let coldStartTimers = [];
 
 function startColdStartLoading(initialMessage) {
     stopColdStartLoading();
+    setSearchButtonSearching(true);
     set("loading", initialMessage);
     show("loading");
 
@@ -598,6 +637,7 @@ function stopColdStartLoading() {
         clearInterval(timerId);
     });
     coldStartTimers = [];
+    setSearchButtonSearching(false);
 }
 
 function dismissForecastHint() {
@@ -755,6 +795,7 @@ function loadForecastIfNeeded() {
 
     hide("forecastEmpty");
     hide("errorMsg");
+    const alertsGen = beginAlertsCheckForSearch();
     startColdStartLoading("Fetching forecast…");
 
     const cityKey = normalizeCityKey(city);
@@ -776,7 +817,7 @@ function loadForecastIfNeeded() {
             setWeatherAtmosphere(weatherData.conditionId);
             updateGlobe(weatherData.lat, weatherData.lon);
             renderForecast(forecastData, activeTimezoneOffset);
-            checkAlerts(weatherData);
+            checkAlerts(weatherData, alertsGen);
             addToHistory(city);
         })
         .catch((err) => {
@@ -879,6 +920,7 @@ function showForecastDetails(day) {
 
 // shared loading/error choreography for both search paths
 async function withLoading(task, { revealWeather = true, loadingMessage = "Fetching weather…" } = {}) {
+    const alertsGen = beginAlertsCheckForSearch();
     clearWeatherAtmosphere();
     startColdStartLoading(loadingMessage);
     if (revealWeather) {
@@ -887,7 +929,7 @@ async function withLoading(task, { revealWeather = true, loadingMessage = "Fetch
     hide("errorMsg");
 
     try {
-        await task();
+        await task(alertsGen);
         if (revealWeather) {
             show("weatherDisplay");
             triggerWeatherReveal();
@@ -910,6 +952,8 @@ function searchCity() {
         return;
     }
 
+    playSearchPressGlow();
+
     if (isForecastTabActive()) {
         searchForecast(city);
     } else {
@@ -918,8 +962,8 @@ function searchCity() {
 }
 
 function searchToday(city) {
-    withLoading(async () => {
-        presentWeather(await fetchWeatherData(city));
+    withLoading(async (alertsGen) => {
+        presentWeather(await fetchWeatherData(city), alertsGen);
         addToHistory(city);
     });
 }
@@ -929,12 +973,12 @@ function searchForecast(city) {
     hideForecastDetails();
     hide("forecastEmpty");
 
-    withLoading(async () => {
+    withLoading(async (alertsGen) => {
         const [weatherData, forecastData] = await Promise.all([
             fetchWeatherData(city),
             fetchForecastData(city),
         ]);
-        presentWeather(weatherData);
+        presentWeather(weatherData, alertsGen);
         set("cityName", formatCityLabel(city));
         updateHeaderCityVisibility();
         renderForecast(forecastData, weatherData.timezoneOffset);
@@ -1072,7 +1116,7 @@ updateTodayEmptyState();
 updateHeaderCityVisibility();
 
 document.getElementById("cityInput").addEventListener("input", () => {
-    renderHistory();
+    updateHistoryFilter();
     updateHeaderCityVisibility();
 });
 
@@ -1080,18 +1124,31 @@ document.getElementById("cityInput").addEventListener("input", () => {
    SEVERE WEATHER ALERTS — Wii HOME Menu overlay
    ========================================================================= */
 
-const ALERT_AUTO_POP_TIERS = new Set(["warning", "watch"]);
+const ALERT_KNOWN_TIERS = new Set(["warning", "watch", "advisory", "statement"]);
 const ALERT_TIER_LABELS = {
     warning: "Warning",
     watch: "Watch",
     advisory: "Advisory",
     statement: "Statement",
+    unknown: "Alert",
 };
 
 let activeAlerts = [];
 let alertLastFocused = null;
 let alertAutoPopDismissed = false;
 let alertClosing = false;
+let alertDetailId = null;
+let alertsCheckGeneration = 0;
+
+function beginAlertsCheckForSearch() {
+    alertsCheckGeneration += 1;
+    hideAlertFetchError();
+    alertAutoPopDismissed = false;
+    activeAlerts = [];
+    updateAlertBadge();
+    closeAlertOverlay({ userDismissed: false });
+    return alertsCheckGeneration;
+}
 
 async function fetchAlerts(lat, lon) {
     if (lat == null || lon == null) {
@@ -1100,10 +1157,10 @@ async function fetchAlerts(lat, lon) {
     try {
         const url = `${BACKEND_URL}/alerts?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
         const response = await fetch(url);
-        if (!response.ok) {
+        const data = await response.json();
+        if (!response.ok || data.error) {
             return { alerts: [], error: true };
         }
-        const data = await response.json();
         const alerts = Array.isArray(data.alerts) ? data.alerts : [];
         return { alerts, error: false };
     } catch (e) {
@@ -1112,8 +1169,11 @@ async function fetchAlerts(lat, lon) {
     }
 }
 
-async function checkAlerts(data) {
+async function checkAlerts(data, generation) {
     const { alerts, error } = await fetchAlerts(data.lat, data.lon);
+    if (generation !== alertsCheckGeneration) {
+        return;
+    }
     activeAlerts = error ? [] : alerts;
     updateAlertBadge();
     // Alerts arrive after presentWeather ran, so re-apply the atmosphere now —
@@ -1121,18 +1181,64 @@ async function checkAlerts(data) {
     setWeatherAtmosphere(data.conditionId);
 
     if (error) {
-        set("errorMsg", "Could not load weather alerts. Try searching again.");
-        show("errorMsg");
+        showAlertFetchError("Could not load weather alerts. Badge counts may be unavailable.");
+        closeAlertOverlay({ userDismissed: false });
         return;
     }
+
+    hideAlertFetchError();
+
     if (!alerts.length) {
-        closeAlertOverlay();
+        closeAlertOverlay({ userDismissed: false });
         return;
     }
-    const hasSevere = alerts.some((a) => ALERT_AUTO_POP_TIERS.has(a.tier));
-    if (hasSevere && !alertAutoPopDismissed) {
+
+    refreshAlertOverlayContent();
+
+    const hasAutoPop = alerts.some(shouldAutoPopAlert);
+    if (hasAutoPop && !alertAutoPopDismissed) {
         openAlertOverlay();
     }
+}
+
+function showAlertFetchError(message) {
+    set("alertFetchMsg", message);
+    show("alertFetchMsg");
+}
+
+function hideAlertFetchError() {
+    hide("alertFetchMsg");
+}
+
+function isAlertOverlayOpen() {
+    const overlay = document.getElementById("alertOverlay");
+    return overlay && !overlay.classList.contains("hidden") && !overlay.hidden;
+}
+
+function refreshAlertOverlayContent() {
+    if (!isAlertOverlayOpen() || !activeAlerts.length) {
+        return;
+    }
+    const preservedId = alertDetailId;
+    renderAlertChannels();
+    renderAlertStrip();
+    updateAlertMenuHeader();
+    if (preservedId) {
+        const still = activeAlerts.find((alert) => alert.id === preservedId);
+        if (still) {
+            showAlertDetail(still, { focus: false });
+            return;
+        }
+    }
+    hideAlertDetail();
+}
+
+function normalizeAlertTier(tier) {
+    return ALERT_KNOWN_TIERS.has(tier) ? tier : "unknown";
+}
+
+function shouldAutoPopAlert(alert) {
+    return alert.autoPop === true;
 }
 
 function alertTierLabel(tier) {
@@ -1160,9 +1266,10 @@ function renderAlertChannels() {
         btn.type = "button";
         btn.className = "pill alert-channel";
 
+        const tier = normalizeAlertTier(alert.tier);
         const sev = document.createElement("span");
-        sev.className = `alert-sev alert-sev--${alert.tier}`;
-        sev.textContent = alertTierLabel(alert.tier);
+        sev.className = `alert-sev alert-sev--${tier}`;
+        sev.textContent = alertTierLabel(tier);
 
         const event = document.createElement("span");
         event.className = "alert-ch-event";
@@ -1179,7 +1286,7 @@ function renderAlertChannels() {
             btn.appendChild(untilEl);
         }
 
-        btn.setAttribute("aria-label", `${alertTierLabel(alert.tier)}: ${alert.event}`);
+        btn.setAttribute("aria-label", `${alertTierLabel(tier)}: ${alert.event}`);
         btn.addEventListener("click", () => showAlertDetail(alert));
         wrap.appendChild(btn);
     });
@@ -1190,7 +1297,8 @@ function setAlertCenterDetailMode(active) {
     center?.classList.toggle("alert-center--detail", active);
 }
 
-function showAlertDetail(alert) {
+function showAlertDetail(alert, { focus = true } = {}) {
+    alertDetailId = alert.id;
     const body = document.getElementById("alertDetailBody");
     body.replaceChildren();
 
@@ -1201,9 +1309,10 @@ function showAlertDetail(alert) {
 
     const meta = document.createElement("div");
     meta.className = "alert-detail-meta";
+    const tier = normalizeAlertTier(alert.tier);
     const sev = document.createElement("span");
-    sev.className = `alert-sev alert-sev--${alert.tier}`;
-    sev.textContent = alertTierLabel(alert.tier);
+    sev.className = `alert-sev alert-sev--${tier}`;
+    sev.textContent = alertTierLabel(tier);
     meta.appendChild(sev);
     const until = alertUntilText(alert);
     if (until) {
@@ -1240,10 +1349,13 @@ function showAlertDetail(alert) {
     detail.classList.remove("hidden");
     detail.hidden = false;
     setAlertCenterDetailMode(true);
-    document.getElementById("alertBack").focus();
+    if (focus) {
+        document.getElementById("alertBack").focus();
+    }
 }
 
 function hideAlertDetail() {
+    alertDetailId = null;
     const detail = document.getElementById("alertDetail");
     detail.classList.add("hidden");
     detail.hidden = true;
@@ -1321,7 +1433,7 @@ function updateAlertBadge() {
     }
     if (activeAlerts.length > 0) {
         document.getElementById("alertBadgeCount").textContent = activeAlerts.length;
-        badge.setAttribute("data-tier", activeAlerts[0].tier);
+        badge.setAttribute("data-tier", normalizeAlertTier(activeAlerts[0].tier));
         badge.classList.remove("hidden");
         badge.hidden = false;
     } else {
@@ -1337,10 +1449,7 @@ function openAlertOverlay() {
     const overlay = document.getElementById("alertOverlay");
     const wasClosed = overlay.classList.contains("hidden");
 
-    renderAlertChannels();
-    renderAlertStrip();
-    updateAlertMenuHeader();
-    hideAlertDetail();
+    refreshAlertOverlayContent();
 
     // cancel an in-progress retract if the user reopens mid-close
     alertClosing = false;
@@ -1367,13 +1476,15 @@ function finishCloseAlertOverlay(overlay) {
     }
 }
 
-function closeAlertOverlay() {
+function closeAlertOverlay({ userDismissed = true } = {}) {
     const overlay = document.getElementById("alertOverlay");
     if (overlay.classList.contains("hidden")) {
         return;
     }
 
-    alertAutoPopDismissed = true;
+    if (userDismissed) {
+        alertAutoPopDismissed = true;
+    }
 
     // No animation under reduced motion (or if already retracting) — close now.
     if (prefersReducedMotion() || alertClosing) {
