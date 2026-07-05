@@ -133,7 +133,7 @@ class AlertParser {
         }
     }
 
-    /** Whether the overlay should auto-open for this alert (mirrors frontend shouldAutoPopAlert). */
+    /** Whether the overlay should auto-open for this alert (sets autoPop on WeatherAlert for the frontend). */
     static boolean shouldAutoPop(String tier, String event) {
         if (!tier.equals("warning") && !tier.equals("watch") && !tier.equals("advisory")
                 && !tier.equals("statement")) {

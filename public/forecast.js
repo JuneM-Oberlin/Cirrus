@@ -26,6 +26,7 @@ const CirrusForecast = (function () {
     let activateOnEnterOrSpace = () => {};
     let formatCityNow = () => ({ time: "", date: "" });
     let getTimezoneOffset = () => 0;
+    let onTodayTabActive = () => {};
 
     function init(deps) {
         showEl = deps.show;
@@ -45,6 +46,7 @@ const CirrusForecast = (function () {
         activateOnEnterOrSpace = deps.activateOnEnterOrSpace;
         formatCityNow = deps.formatCityNow;
         getTimezoneOffset = deps.getTimezoneOffset;
+        onTodayTabActive = deps.onTodayTabActive ?? (() => {});
     }
 
     function isForecastTabActive() {
@@ -202,6 +204,7 @@ const CirrusForecast = (function () {
             if (conditionId !== null) {
                 refreshAtmosphere(conditionId);
             }
+            onTodayTabActive();
         } else {
             updateForecastEmptyState();
         }
@@ -273,7 +276,7 @@ const CirrusForecast = (function () {
                 weatherPromise,
             ]);
             completeForecastLoad(city, weatherData, forecastData);
-        }, { revealWeather: false, loadingMessage: "Fetching forecast…" });
+        }, { revealWeather: false, loadingMessage: "Fetching forecast…", preserveAlertSession: true });
     }
 
     function render(days, timezoneOffset) {

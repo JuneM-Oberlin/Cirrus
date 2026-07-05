@@ -381,9 +381,15 @@ function stopColdStartLoading() {
     CirrusSearchUI.setSearching(false);
 }
 
-async function withLoading(task, { revealWeather = true, loadingMessage = "Fetching weather…" } = {}) {
-    CirrusAlerts.resetForSearch();
-    CirrusAtmosphere.clear();
+async function withLoading(task, {
+    revealWeather = true,
+    loadingMessage = "Fetching weather…",
+    preserveAlertSession = false,
+} = {}) {
+    if (!preserveAlertSession) {
+        CirrusAlerts.resetForSearch();
+        CirrusAtmosphere.clear();
+    }
     startColdStartLoading(loadingMessage);
     if (revealWeather) {
         hide("weatherDisplay");
@@ -599,6 +605,7 @@ CirrusForecast.init({
     activateOnEnterOrSpace,
     formatCityNow,
     getTimezoneOffset: () => activeTimezoneOffset,
+    onTodayTabActive: () => CirrusAlerts.syncOverlay(),
 });
 
 renderHistory();
