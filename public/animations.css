@@ -524,16 +524,32 @@
   50% { opacity: 0.5; }
 }
 
-/* CRT scan-line drift on letterbox chrome (decorative) */
+/* CRT scan-line drift on letterbox chrome (decorative; transform-only per DESIGN.md) */
 .alert-overlay:not(.hidden) .alert-top-bar::before,
 .alert-overlay:not(.hidden) .alert-bottom-bar::before {
-  background-size: 100% 4px;
   animation: alertScanDrift 10s linear infinite;
 }
 
 @keyframes alertScanDrift {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 4px; }
+  0% { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+
+/* Static noise flicker on the highlight scan layer */
+.alert-overlay:not(.hidden) .alert-top-bar::after,
+.alert-overlay:not(.hidden) .alert-bottom-bar::after {
+  animation: alertScanStatic 5s steps(10) infinite;
+}
+
+@keyframes alertScanStatic {
+  0%, 100% { opacity: 0.45; }
+  10% { opacity: 0.62; }
+  22% { opacity: 0.38; }
+  35% { opacity: 0.55; }
+  48% { opacity: 0.42; }
+  61% { opacity: 0.58; }
+  74% { opacity: 0.36; }
+  87% { opacity: 0.52; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -602,7 +618,13 @@
   .alert-overlay:not(.hidden) .alert-top-bar::before,
   .alert-overlay:not(.hidden) .alert-bottom-bar::before {
     animation: none !important;
-    background-position: 0 0 !important;
+    transform: none !important;
+  }
+
+  .alert-overlay:not(.hidden) .alert-top-bar::after,
+  .alert-overlay:not(.hidden) .alert-bottom-bar::after {
+    animation: none !important;
+    opacity: 0.55 !important;
   }
 
   .alert-channel:hover,
