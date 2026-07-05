@@ -52,7 +52,7 @@
     <div class="page-content">
 
       <div class="search-row">
-        <input id="cityInput" type="text" placeholder="Enter city…" aria-label="City name"
+        <input id="cityInput" type="text" placeholder="Enter city" aria-label="City name"
           onkeydown="if(event.key === 'Enter') searchCity()">
         <button onclick="searchCity()">Search</button>
       </div>
@@ -70,12 +70,11 @@
         </button>
       </div>
 
-      <div id="loading" class="glass-panel glass-panel--pill hidden" aria-live="polite">Fetching weather…</div>
+      <div id="loading" class="glass-panel glass-panel--pill hidden" aria-live="polite">Fetching weather</div>
       <div id="errorMsg" class="error hidden" role="alert" aria-live="polite"></div>
       <p id="alertFetchMsg" class="alert-fetch-msg hidden" role="status" aria-live="polite"></p>
 
-      <!-- Today ⇄ Forecast swipe: both panes live in a 200%-wide track that
-           slides horizontally inside the overflow-hidden viewport -->
+    
       <div class="view-viewport">
       <div class="view-track" id="viewTrack">
 
