@@ -116,7 +116,16 @@ body.theme-day::after {
   border-radius: 999px;
 }
 
-:is(.header-tab, .search-row button, .history span, .alert-badge, .forecast-day):focus-visible {
+:is(
+  .header-tab,
+  .search-row button,
+  .history span,
+  .alert-badge,
+  .forecast-day,
+  .alert-close,
+  .alert-back,
+  .alert-channel
+):focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: -3px;
 }
@@ -993,7 +1002,7 @@ body.theme-day::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 0;
   pointer-events: none;
   background: repeating-linear-gradient(
     0deg,
@@ -1008,7 +1017,7 @@ body.theme-day::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 0;
   pointer-events: none;
   background: repeating-linear-gradient(
     0deg,
@@ -1030,7 +1039,7 @@ body.theme-day::after {
 
 .alert-top-left {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -1061,7 +1070,7 @@ body.theme-day::after {
 
 .alert-close {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   flex-shrink: 0;
   padding: 9px 22px;
   font-size: 15px;
@@ -1284,7 +1293,7 @@ body.theme-day::after {
 
 .alert-strip {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: 100%;
   max-width: 760px;
   display: flex;
@@ -1321,7 +1330,7 @@ body.theme-day::after {
 
 .alert-strip-label {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   color: #d3dde7;
   font-size: 13px;
   font-weight: 700;
