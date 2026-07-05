@@ -135,7 +135,8 @@ class AlertParser {
 
     /** Whether the overlay should auto-open for this alert (mirrors frontend shouldAutoPopAlert). */
     static boolean shouldAutoPop(String tier, String event) {
-        if (!tier.equals("warning") && !tier.equals("watch") && !tier.equals("statement")) {
+        if (!tier.equals("warning") && !tier.equals("watch") && !tier.equals("advisory")
+                && !tier.equals("statement")) {
             return false;
         }
         if (tier.equals("statement")) {
