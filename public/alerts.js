@@ -386,8 +386,6 @@ const CirrusAlerts = (function () {
         const overlay = document.getElementById("alertOverlay");
         const wasClosed = overlay.classList.contains("hidden");
 
-        refreshAlertOverlayContent();
-
         session.closing = false;
         overlay.classList.remove("alert-closing");
 
@@ -397,6 +395,8 @@ const CirrusAlerts = (function () {
             overlay.hidden = false;
             document.addEventListener("keydown", onAlertKeydown);
         }
+
+        refreshAlertOverlayContent();
         document.getElementById("alertClose").focus();
     }
 
@@ -405,6 +405,7 @@ const CirrusAlerts = (function () {
         overlay.classList.add("hidden");
         overlay.hidden = true;
         session.closing = false;
+        hideAlertDetail();
         document.removeEventListener("keydown", onAlertKeydown);
         updateAlertBadge();
         if (session.lastFocused && typeof session.lastFocused.focus === "function") {
