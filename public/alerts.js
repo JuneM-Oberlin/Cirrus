@@ -23,6 +23,7 @@ const CirrusAlerts = (function () {
     let formatCityTime = () => "--";
     let prefersReducedMotion = () => false;
     let onAlertsChanged = () => {};
+    let allowAutoPop = () => true;
 
     const session = {
         generation: 0,
@@ -42,6 +43,7 @@ const CirrusAlerts = (function () {
         formatCityTime = deps.formatCityTime;
         prefersReducedMotion = deps.prefersReducedMotion;
         onAlertsChanged = deps.onAlertsChanged;
+        allowAutoPop = deps.allowAutoPop ?? (() => true);
         wireControls();
     }
 
@@ -134,7 +136,8 @@ const CirrusAlerts = (function () {
             return;
         }
         const shouldAutoPop = session.alerts.some((alert) => alert.autoPop)
-            && !session.autoPopDismissed;
+            && !session.autoPopDismissed
+            && allowAutoPop();
         if (shouldAutoPop) {
             openAlertOverlay();
         }
