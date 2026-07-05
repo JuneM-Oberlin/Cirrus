@@ -175,7 +175,8 @@
   }
 
   .feels-expl {
-    display: inline;
+    /* inline-block so the phrase wraps as one unit (no dangling dash) */
+    display: inline-block;
     margin: 0 0 0 8px;
     font-size: 12px;
     font-style: normal;
