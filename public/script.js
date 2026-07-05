@@ -26,94 +26,6 @@ function triggerWeatherReveal() {
     playAnimation(city, "anim-city-pop");
 }
 
-/* Today ⇄ Forecast window swipe + day-card pop choreography.
-   Timings/easings are final per the forecast-animations design handoff. */
-const CARD_POP_DELAY_MS = 520;  // let the window swipe land before cards pop
-const CARD_STAGGER_MS = 150;    // per-card delay, both in and out
-const CARD_SLIDE_PX = 44;       // cards slide in from the left
-const SPRING_EASING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
-
-let activeTab = "today";
-let tabSwitchPending = false;   // true while the card pop-out exit is playing
-let lastSwipeStart = -Infinity; // performance.now() when the track last slid
-
-function forecastDayCards() {
-    return [...document.querySelectorAll("#forecastStrip .forecast-day")];
-}
-
-function cancelCardAnimations(card) {
-    card.getAnimations().forEach((anim) => anim.cancel());
-}
-
-// Hide the cards before the swipe starts so they pop in after the window
-// lands instead of flickering through mid-slide.
-function hideForecastCards() {
-    if (prefersReducedMotion()) {
-        return;
-    }
-    forecastDayCards().forEach((card) => {
-        cancelCardAnimations(card);
-        card.style.opacity = "0";
-    });
-}
-
-// Delay that lands the first card pop right as the window swipe settles,
-// whether the cards already exist or arrive later from a fetch.
-function cardPopBaseDelay() {
-    return Math.max(0, CARD_POP_DELAY_MS - (performance.now() - lastSwipeStart));
-}
-
-// Day cards pop in one after another, left → right, with a springy overshoot.
-function popInForecastCards() {
-    const reduced = prefersReducedMotion();
-    forecastDayCards().forEach((card, i) => {
-        cancelCardAnimations(card);
-        card.style.opacity = "";
-        if (reduced) {
-            return;
-        }
-        // 'backwards' holds the card invisible through its stagger delay, then
-        // releases to natural styles at finish so hover/press transforms work
-        card.animate([
-            { opacity: 0, transform: `translateX(${-CARD_SLIDE_PX}px) scale(0.84)` },
-            { opacity: 1, transform: `translateX(${CARD_SLIDE_PX * 0.14}px) scale(1.05)`, offset: 0.6 },
-            { opacity: 1, transform: "translateX(0) scale(1)" },
-        ], {
-            duration: 540,
-            delay: cardPopBaseDelay() + i * CARD_STAGGER_MS,
-            easing: SPRING_EASING,
-            fill: "backwards",
-        });
-    });
-}
-
-// Reverse exit: rightmost card leaves first, accelerating out. `done` fires
-// once the last card is gone so the window swipe can follow.
-function popOutForecastCards(done) {
-    const cards = forecastDayCards();
-    if (!cards.length || prefersReducedMotion()) {
-        done();
-        return;
-    }
-    const duration = 380;
-    let maxEnd = 0;
-    cards.forEach((card, i) => {
-        cancelCardAnimations(card);
-        const delay = (cards.length - 1 - i) * CARD_STAGGER_MS;
-        maxEnd = Math.max(maxEnd, delay + duration);
-        card.animate([
-            { opacity: 1, transform: "translateX(0) scale(1)" },
-            { opacity: 0, transform: `translateX(${-CARD_SLIDE_PX}px) scale(0.84)` },
-        ], {
-            duration,
-            delay,
-            easing: "cubic-bezier(0.4, 0, 1, 1)",
-            fill: "both",
-        });
-    });
-    setTimeout(done, maxEnd + 20);
-}
-
 function showError(message) {
     set("errorMsg", message);
     const el = document.getElementById("errorMsg");
@@ -126,166 +38,10 @@ function bounceTab(tabEl) {
 }
 
 const HISTORY_KEY = "cirrus_city_history";
-const FORECAST_HINT_KEY = "cirrus_forecast_hint_dismissed";
 const MAX_HISTORY = 8;
 
 let activeTimezoneOffset = 0;
 let currentWeatherConditionId = null;
-
-const VIDEO_RAIN_EFFECTS = {
-    drizzle: "drizzle",
-    rain: "rain",
-    "rain-heavy": "rain-heavy",
-    sleet: "sleet",
-    thunderstorm: "rain-heavy",
-};
-
-function getWeatherEffect(conditionId) {
-    const id = Number(conditionId);
-    if (!Number.isFinite(id)) {
-        return "clear";
-    }
-
-    if (id >= 200 && id <= 232) {
-        return "thunderstorm";
-    }
-    if (id >= 300 && id <= 321) {
-        return "drizzle";
-    }
-    if (id >= 500 && id <= 501) {
-        return "rain";
-    }
-    if (id >= 502 && id <= 504) {
-        return "rain-heavy";
-    }
-    if (id === 510 || id === 511 || id === 611 || id === 612 || id === 613
-        || id === 615 || id === 616) {
-        return "sleet";
-    }
-    if (id >= 520 && id <= 531) {
-        return "rain";
-    }
-    if ((id >= 600 && id <= 602) || (id >= 620 && id <= 622)) {
-        return "snow";
-    }
-    if (id === 771 || id === 781) {
-        return "thunderstorm";
-    }
-    if (id >= 701 && id <= 762) {
-        return "fog";
-    }
-    if (id === 801 || id === 802) {
-        return "clouds";
-    }
-    if (id >= 803) {
-        return "clouds-heavy";
-    }
-    return "clear";
-}
-
-// A storm-threat alert is a thunderstorm or tornado watch/warning — these
-// drive the lightning flashes even when the current condition is calm.
-function isStormThreatAlert(alert) {
-    if (!alert || !alert.event) {
-        return false;
-    }
-    const event = alert.event.toLowerCase();
-    const isWatchOrWarning = alert.tier === "warning" || alert.tier === "watch";
-    return isWatchOrWarning
-        && (event.includes("thunderstorm") || event.includes("tornado"));
-}
-
-function alertsHaveStormThreat() {
-    return typeof activeAlerts !== "undefined"
-        && activeAlerts.some(isStormThreatAlert);
-}
-
-// Pick the strongest lightning profile across the live condition and any
-// active storm alerts: tornado or any warning = severe, watch = heavy.
-function stormLightningProfile(conditionId) {
-    const rank = { none: 0, normal: 0, heavy: 1, severe: 2 };
-    let best = typeof thunderIconIntensity === "function"
-        ? thunderIconIntensity(conditionId)
-        : "none";
-
-    if (typeof activeAlerts !== "undefined") {
-        activeAlerts.forEach((alert) => {
-            if (!isStormThreatAlert(alert)) {
-                return;
-            }
-            const event = alert.event.toLowerCase();
-            const intensity = event.includes("tornado") || alert.tier === "warning"
-                ? "severe"
-                : "heavy";
-            if (rank[intensity] > rank[best]) {
-                best = intensity;
-            }
-        });
-    }
-
-    if (best === "severe") {
-        return "severe";
-    }
-    if (best === "heavy") {
-        return "heavy";
-    }
-    return "normal";
-}
-
-function setWeatherAtmosphere(conditionId) {
-    const layer = document.getElementById("weatherAtmosphere");
-    const globe = document.getElementById("globeBg");
-    if (!layer) {
-        return;
-    }
-
-    const effect = getWeatherEffect(conditionId);
-    layer.dataset.effect = effect;
-
-    const wantLightning = typeof AtmoLightning !== "undefined"
-        && (conditionHasThunder(conditionId) || alertsHaveStormThreat());
-
-    const rainProfile = effect === "clear" ? null : VIDEO_RAIN_EFFECTS[effect];
-    if (typeof AtmoRainVideo !== "undefined") {
-        if (rainProfile) {
-            requestAnimationFrame(() => AtmoRainVideo.start(rainProfile));
-        } else {
-            AtmoRainVideo.stop();
-        }
-    }
-
-    if (typeof AtmoLightning !== "undefined") {
-        if (wantLightning) {
-            AtmoLightning.start(stormLightningProfile(conditionId));
-        } else {
-            AtmoLightning.stop();
-        }
-    }
-
-    // Keep the atmosphere layer alive if EITHER rain or storm-alert lightning
-    // is showing, so a tornado warning still flashes under otherwise clear skies.
-    const hasAtmosphere = effect !== "clear" || wantLightning;
-    layer.classList.toggle("is-hidden", !hasAtmosphere);
-    if (globe) {
-        globe.classList.toggle("atmosphere-active", hasAtmosphere);
-    }
-}
-
-function clearWeatherAtmosphere() {
-    const layer = document.getElementById("weatherAtmosphere");
-    const globe = document.getElementById("globeBg");
-    if (typeof AtmoRainVideo !== "undefined") {
-        AtmoRainVideo.stop();
-    }
-    if (typeof AtmoLightning !== "undefined") {
-        AtmoLightning.stop();
-    }
-    if (layer) {
-        layer.dataset.effect = "clear";
-        layer.classList.add("is-hidden");
-    }
-    globe?.classList.remove("atmosphere-active");
-}
 
 function degreesToCompass(deg) {
     const directions = [
@@ -335,10 +91,6 @@ function formatCityNow(timezoneOffsetSeconds) {
             timeZone: "UTC",
         }),
     };
-}
-
-function isForecastTabActive() {
-    return activeTab === "forecast";
 }
 
 function loadHistory() {
@@ -393,7 +145,6 @@ function renderHistory({ animate = true } = {}) {
 
     updateHistoryFilter();
 
-    // Wii-style staggered pop-in when history actually changes (skipped under reduced motion)
     if (animate && container.children.length && !prefersReducedMotion()) {
         container.classList.remove("history--enter");
         void container.offsetWidth;
@@ -423,10 +174,15 @@ function selectHistoryCity(city) {
     searchCity();
 }
 
+function activateOnEnterOrSpace(event, action) {
+    if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        action();
+    }
+}
+
 const BACKEND_URL = "https://weatherapp-project-6rms.onrender.com";
 
-// wake the render free-tier backend
-// so the first search doesn't suffer
 fetch(`${BACKEND_URL}/health`).catch(() => {});
 
 const clientCache = {
@@ -544,7 +300,7 @@ function fetchForecastData(city) {
 }
 
 function updateTodayEmptyState() {
-    if (activeTab === "today"
+    if (!CirrusForecast.isForecastTabActive()
         && document.getElementById("weatherDisplay").classList.contains("hidden")) {
         show("todayEmpty");
     } else {
@@ -552,15 +308,26 @@ function updateTodayEmptyState() {
     }
 }
 
-function presentWeather(data, alertsGen) {
-    activeTimezoneOffset = data.timezoneOffset ?? 0;
-    currentWeatherConditionId = data.conditionId;
-    const isNight = data.weatherCode.endsWith("n");
+function applyWeatherContext(weatherData, { showToday = true } = {}) {
+    activeTimezoneOffset = weatherData.timezoneOffset ?? 0;
+    currentWeatherConditionId = weatherData.conditionId;
+    const isNight = weatherData.weatherCode.endsWith("n");
     document.body.classList.toggle("theme-day", !isNight);
-    renderTodayView(data, isNight);
-    setWeatherAtmosphere(data.conditionId);
-    hide("todayEmpty");
-    checkAlerts(data, alertsGen);
+    if (showToday) {
+        renderTodayView(weatherData, isNight);
+        hide("todayEmpty");
+    }
+    CirrusAtmosphere.refresh(weatherData.conditionId);
+    updateGlobe(weatherData.lat, weatherData.lon);
+    CirrusAlerts.checkAlerts(weatherData);
+}
+
+function completeForecastLoad(city, weatherData, forecastData) {
+    set("cityName", formatCityLabel(city));
+    updateHeaderCityVisibility();
+    applyWeatherContext(weatherData, { showToday: false });
+    CirrusForecast.render(forecastData, weatherData.timezoneOffset);
+    addToHistory(city);
 }
 
 function updateHeaderCityVisibility() {
@@ -574,38 +341,11 @@ function updateHeaderCityVisibility() {
     headerCity.classList.toggle("header-city--redundant", isRedundant);
 }
 
-const searchButton = document.querySelector(".search-row button");
-
-function setSearchButtonSearching(isSearching) {
-    if (!searchButton) {
-        return;
-    }
-    searchButton.classList.toggle("is-searching", isSearching);
-}
-
-function playSearchPressGlow() {
-    if (!searchButton || prefersReducedMotion()) {
-        return;
-    }
-    searchButton.classList.remove("search-press-feedback");
-    void searchButton.offsetWidth;
-    searchButton.classList.add("search-press-feedback");
-}
-
-if (searchButton) {
-    searchButton.addEventListener("animationend", (event) => {
-        if (event.target !== searchButton || event.animationName !== "searchPressGlow") {
-            return;
-        }
-        searchButton.classList.remove("search-press-feedback");
-    });
-}
-
 let coldStartTimers = [];
 
 function startColdStartLoading(initialMessage) {
     stopColdStartLoading();
-    setSearchButtonSearching(true);
+    CirrusSearchUI.setSearching(true);
     set("loading", initialMessage);
     show("loading");
 
@@ -637,291 +377,12 @@ function stopColdStartLoading() {
         clearInterval(timerId);
     });
     coldStartTimers = [];
-    setSearchButtonSearching(false);
+    CirrusSearchUI.setSearching(false);
 }
 
-function dismissForecastHint() {
-    hide("forecastHint");
-    localStorage.setItem(FORECAST_HINT_KEY, "1");
-}
-
-function activateOnEnterOrSpace(event, action) {
-    if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        action();
-    }
-}
-
-function onTabKeydown(event, tab) {
-    const otherTab = tab === "today" ? "forecast" : "today";
-    const otherEl = document.getElementById(tab === "today" ? "tabForecast" : "tabToday");
-
-    if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
-        event.preventDefault();
-        switchTab(otherTab);
-        otherEl.focus();
-        return;
-    }
-
-    activateOnEnterOrSpace(event, () => switchTab(tab));
-}
-
-function hasForecastDays() {
-    return document.getElementById("forecastStrip").querySelectorAll(".forecast-day").length > 0;
-}
-
-function updateForecastEmptyState() {
-    const empty = document.getElementById("forecastEmpty");
-    if (!empty) {
-        return;
-    }
-
-    const city = document.getElementById("cityInput").value.trim();
-    if (hasForecastDays()) {
-        hide("forecastEmpty");
-        return;
-    }
-
-    if (!city) {
-        empty.textContent = "Search a city to see the 5-day forecast.";
-        show("forecastEmpty");
-        return;
-    }
-
-    hide("forecastEmpty");
-}
-
-function hideForecastDetails() {
-    const panel = document.getElementById("forecastDetails");
-    if (!panel) {
-        return;
-    }
-    panel.classList.add("hidden");
-    panel.innerHTML = "";
-}
-
-function forecastRainIcon(day) {
-    const chance = day.rainChance ?? 0;
-    if (chance <= 0) {
-        return "partly-cloudy-day.png";
-    }
-
-    const mapped = iconMap[day.conditionId];
-    if (mapped && /rain|thunder|mixed|sleet|snow/.test(mapped)) {
-        return mapped;
-    }
-
-    return "partly-cloudy-with-rain-day.png";
-}
-
-function switchTab(tab) {
-    if (tab === activeTab || tabSwitchPending) {
-        return;
-    }
-
-    bounceTab(document.getElementById(tab === "today" ? "tabToday" : "tabForecast"));
-
-    if (tab === "forecast") {
-        // hide the cards first, then swipe; the pop-in delay lands them
-        // on-screen once the window has settled
-        hideForecastCards();
-        applyTab("forecast");
-        popInForecastCards();
-        loadForecastIfNeeded();
-        return;
-    }
-
-    // Back to Today: the reverse pop-out plays first, THEN the window swipes,
-    // and the big temperature squash-lands as the Today pane settles.
-    tabSwitchPending = true;
-    popOutForecastCards(() => {
-        tabSwitchPending = false;
-        applyTab("today");
-        if (!prefersReducedMotion()) {
-            setTimeout(() => {
-                playAnimation(document.getElementById("tempMain"), "anim-temp-pop");
-            }, CARD_POP_DELAY_MS);
-        }
-    });
-}
-
-function applyTab(tab) {
-    activeTab = tab;
-    const isToday = tab === "today";
-    const todayView    = document.getElementById("todayView");
-    const forecastView = document.getElementById("forecastView");
-    const tabToday     = document.getElementById("tabToday");
-    const tabForecast  = document.getElementById("tabForecast");
-    const globe        = document.getElementById("globeBg");
-
-    // slide the 200%-wide track like switching windows
-    lastSwipeStart = performance.now();
-    document.getElementById("viewTrack").classList.toggle("view-track--forecast", !isToday);
-
-    tabToday.classList.toggle("active", isToday);
-    tabForecast.classList.toggle("active", !isToday);
-    tabToday.setAttribute("aria-selected", String(isToday));
-    tabForecast.setAttribute("aria-selected", String(!isToday));
-    tabToday.tabIndex = isToday ? 0 : -1;
-    tabForecast.tabIndex = isToday ? -1 : 0;
-
-    // both panes stay rendered for the swipe; keep the off-screen one out of
-    // the tab order and away from screen readers
-    todayView.inert = !isToday;
-    todayView.setAttribute("aria-hidden", String(!isToday));
-    forecastView.inert = isToday;
-    forecastView.setAttribute("aria-hidden", String(isToday));
-
-    if (isToday) {
-        updateTodayEmptyState();
-        if (currentWeatherConditionId !== null) {
-            setWeatherAtmosphere(currentWeatherConditionId);
-        }
-    } else {
-        updateForecastEmptyState();
-    }
-
-    if (globe.style.backgroundImage) {
-        globe.classList.remove("globe-hidden");
-    }
-}
-
-function loadForecastIfNeeded() {
-    const city = document.getElementById("cityInput").value.trim();
-    const strip = document.getElementById("forecastStrip");
-    if (!city || strip.innerHTML.trim() !== "") {
-        return;
-    }
-
-    hide("forecastEmpty");
-    hide("errorMsg");
-    const alertsGen = beginAlertsCheckForSearch();
-    startColdStartLoading("Fetching forecast…");
-
-    const cityKey = normalizeCityKey(city);
-    const cachedWeather = getCachedEntry(clientCache.weather, cityKey);
-    const weatherPromise = cachedWeather
-        ? Promise.resolve(cachedWeather)
-        : fetchWeatherData(city);
-
-    Promise.all([fetchForecastData(city), weatherPromise])
-        .then(([forecastData, weatherData]) => {
-            activeTimezoneOffset = weatherData.timezoneOffset ?? 0;
-            currentWeatherConditionId = weatherData.conditionId;
-            set("cityName", formatCityLabel(city));
-            updateHeaderCityVisibility();
-            document.body.classList.toggle(
-                "theme-day",
-                !weatherData.weatherCode.endsWith("n")
-            );
-            setWeatherAtmosphere(weatherData.conditionId);
-            updateGlobe(weatherData.lat, weatherData.lon);
-            renderForecast(forecastData, activeTimezoneOffset);
-            checkAlerts(weatherData, alertsGen);
-            addToHistory(city);
-        })
-        .catch((err) => {
-            console.log("Forecast error:", err);
-            showError(err.message || "Could not load forecast.");
-            updateForecastEmptyState();
-        })
-        .finally(() => {
-            stopColdStartLoading();
-            hide("loading");
-        });
-}
-
-function renderForecast(days, timezoneOffset = activeTimezoneOffset) {
-    const strip = document.getElementById("forecastStrip");
-    const footer = document.getElementById("forecastFooter");
-    const { time: timeText, date: dateText } = formatCityNow(timezoneOffset);
-
-    footer.textContent = `As of ${timeText}, ${dateText}`;
-
-    strip.innerHTML = days.map((day, i) => {
-        const iconKey = day.conditionId;
-        const rainIcon = forecastRainIcon(day);
-        const rainAlt = (day.rainChance ?? 0) > 0
-            ? `${day.rainChance}% chance of rain`
-            : "No rain expected";
-        return `
-    <div class="forecast-day glass-panel" role="button" tabindex="0" aria-label="${day.day} forecast">
-      <div class="forecast-label ${i === 0 ? 'today' : ''}">${day.day}</div>
-      <img class="forecast-icon"
-           src="icons/${iconMap[iconKey] ?? "default.png"}"
-           alt="${day.condition}">
-      <div class="forecast-high">${Math.round(day.high)}°F</div>
-      <div class="forecast-low">${Math.round(day.low)}°F</div>
-      <div class="forecast-rain">
-        <img class="rain-icon" src="icons/${rainIcon}" alt="${rainAlt}">
-        ${day.rainChance}%
-      </div>
-    </div>
-  `;
-    }).join("");
-
-    hide("forecastEmpty");
-
-    if (!localStorage.getItem(FORECAST_HINT_KEY)) {
-        show("forecastHint");
-    }
-
-    const dayEls = strip.querySelectorAll(".forecast-day");
-    dayEls.forEach((el, idx) => {
-        const selectDay = () => {
-            dismissForecastHint();
-            dayEls.forEach((d) => d.classList.remove("active"));
-            el.classList.add("active");
-            showForecastDetails(days[idx]);
-        };
-        el.addEventListener("click", selectDay);
-        el.addEventListener("keydown", (event) => activateOnEnterOrSpace(event, selectDay));
-    });
-
-    // stagger the fresh cards in; if a swipe is mid-flight the shared base
-    // delay holds them until the window lands
-    popInForecastCards();
-}
-
-function showForecastDetails(day) {
-    const panel = document.getElementById('forecastDetails');
-    if (!panel) return;
-
-    const description = day.description || day.condition || '';
-    const rain = (day.rainChance !== undefined) ? `${day.rainChance}%` : '—';
-    // backend sends daily precip volume in mm; display imperial like the rest of the app
-    const precipInches = (day.precipitation ?? 0) / 25.4;
-    const precip = precipInches > 0 ? `${precipInches.toFixed(2)} in` : '0 in';
-    const wind = (day.windSpeed !== undefined) ? `${Math.round(day.windSpeed)} mph` : '—';
-
-    panel.innerHTML = `
-        <div class="details-card glass-panel">
-            <div class="details-left">
-                <div class="details-day">${day.day}</div>
-                <div class="details-desc">${description}</div>
-            </div>
-            <div class="details-right">
-                <div class="details-row"><span class="k">High:</span> <span class="v">${Math.round(day.high)}°</span></div>
-                <div class="details-row"><span class="k">Low:</span> <span class="v">${Math.round(day.low)}°</span></div>
-                <div class="details-row"><span class="k">Precip:</span> <span class="v">${precip}</span></div>
-                <div class="details-row"><span class="k">Rain:</span> <span class="v">${rain}</span></div>
-                <div class="details-row"><span class="k">Wind:</span> <span class="v">${wind}</span></div>
-            </div>
-        </div>
-    `;
-    panel.classList.remove('hidden');
-    const card = panel.querySelector(".details-card");
-    playAnimation(card, "anim-pop");
-    if (day.conditionId !== undefined) {
-        setWeatherAtmosphere(day.conditionId);
-    }
-    panel.scrollIntoView({behavior: 'smooth', block: 'start'});
-}
-
-// shared loading/error choreography for both search paths
 async function withLoading(task, { revealWeather = true, loadingMessage = "Fetching weather…" } = {}) {
-    const alertsGen = beginAlertsCheckForSearch();
-    clearWeatherAtmosphere();
+    CirrusAlerts.resetForSearch();
+    CirrusAtmosphere.clear();
     startColdStartLoading(loadingMessage);
     if (revealWeather) {
         hide("weatherDisplay");
@@ -929,7 +390,7 @@ async function withLoading(task, { revealWeather = true, loadingMessage = "Fetch
     hide("errorMsg");
 
     try {
-        await task(alertsGen);
+        await task();
         if (revealWeather) {
             show("weatherDisplay");
             triggerWeatherReveal();
@@ -937,8 +398,8 @@ async function withLoading(task, { revealWeather = true, loadingMessage = "Fetch
     } catch (err) {
         console.log("Search error:", err);
         showError(err.message || "Could not load weather data.");
-        if (isForecastTabActive()) {
-            updateForecastEmptyState();
+        if (CirrusForecast.isForecastTabActive()) {
+            CirrusForecast.updateForecastEmptyState();
         }
     } finally {
         stopColdStartLoading();
@@ -952,9 +413,9 @@ function searchCity() {
         return;
     }
 
-    playSearchPressGlow();
+    CirrusSearchUI.playPressGlow();
 
-    if (isForecastTabActive()) {
+    if (CirrusForecast.isForecastTabActive()) {
         searchForecast(city);
     } else {
         searchToday(city);
@@ -962,27 +423,21 @@ function searchCity() {
 }
 
 function searchToday(city) {
-    withLoading(async (alertsGen) => {
-        presentWeather(await fetchWeatherData(city), alertsGen);
+    withLoading(async () => {
+        applyWeatherContext(await fetchWeatherData(city), { showToday: true });
         addToHistory(city);
     });
 }
 
 function searchForecast(city) {
-    document.getElementById("forecastStrip").innerHTML = "";
-    hideForecastDetails();
-    hide("forecastEmpty");
+    CirrusForecast.prepareSearch();
 
-    withLoading(async (alertsGen) => {
+    withLoading(async () => {
         const [weatherData, forecastData] = await Promise.all([
             fetchWeatherData(city),
             fetchForecastData(city),
         ]);
-        presentWeather(weatherData, alertsGen);
-        set("cityName", formatCityLabel(city));
-        updateHeaderCityVisibility();
-        renderForecast(forecastData, weatherData.timezoneOffset);
-        addToHistory(city);
+        completeForecastLoad(city, weatherData, forecastData);
     }, { revealWeather: false, loadingMessage: "Fetching forecast…" });
 }
 
@@ -1041,8 +496,6 @@ function updateGlobe(lat, lon) {
     img.src = nasaUrl;
 }
 
-// Temperature mood on the big number: below freezing it chills from yellow
-// to the low-temp cyan and shivers; from 80°F up it shakes harder with heat.
 function applyTempMood(temperature) {
     const temp = document.getElementById("tempMain");
     temp.classList.toggle("temp--freezing", temperature < 32);
@@ -1050,7 +503,7 @@ function applyTempMood(temperature) {
     const hot = temperature >= 95;
     temp.classList.toggle("temp--hot", hot);
     if (hot) {
-        const intensity = Math.min((temperature - 95) / 25, 1); // maxes out at 120°F
+        const intensity = Math.min((temperature - 95) / 25, 1);
         temp.style.setProperty("--heat-amp", (0.3 + intensity * 0.7).toFixed(2) + "px");
         temp.style.setProperty("--heat-speed", (0.5 - intensity * 0.15).toFixed(2) + "s");
     } else {
@@ -1111,6 +564,41 @@ function renderTodayView(data, isNight) {
     updateGlobe(data.lat, data.lon);
 }
 
+CirrusSearchUI.init({ prefersReducedMotionFn: prefersReducedMotion });
+CirrusAlerts.init({
+    backendUrl: BACKEND_URL,
+    show,
+    hide,
+    set,
+    getTimezoneOffset: () => activeTimezoneOffset,
+    formatCityTime,
+    prefersReducedMotion,
+    onAlertsChanged: () => {
+        if (currentWeatherConditionId !== null) {
+            CirrusAtmosphere.refresh(currentWeatherConditionId);
+        }
+    },
+});
+CirrusForecast.init({
+    show,
+    hide,
+    playAnimation,
+    prefersReducedMotion,
+    bounceTab,
+    withLoading,
+    fetchWeatherData,
+    fetchForecastData,
+    getCachedEntry: (cityKey) => getCachedEntry(clientCache.weather, cityKey),
+    normalizeCityKey,
+    completeForecastLoad,
+    getCurrentConditionId: () => currentWeatherConditionId,
+    refreshAtmosphere: (conditionId) => CirrusAtmosphere.refresh(conditionId),
+    updateTodayEmptyState,
+    activateOnEnterOrSpace,
+    formatCityNow,
+    getTimezoneOffset: () => activeTimezoneOffset,
+});
+
 renderHistory();
 updateTodayEmptyState();
 updateHeaderCityVisibility();
@@ -1119,433 +607,3 @@ document.getElementById("cityInput").addEventListener("input", () => {
     updateHistoryFilter();
     updateHeaderCityVisibility();
 });
-
-/* =========================================================================
-   SEVERE WEATHER ALERTS — Wii HOME Menu overlay
-   ========================================================================= */
-
-const ALERT_KNOWN_TIERS = new Set(["warning", "watch", "advisory", "statement"]);
-const ALERT_TIER_LABELS = {
-    warning: "Warning",
-    watch: "Watch",
-    advisory: "Advisory",
-    statement: "Statement",
-    unknown: "Alert",
-};
-
-let activeAlerts = [];
-let alertLastFocused = null;
-let alertAutoPopDismissed = false;
-let alertClosing = false;
-let alertDetailId = null;
-let alertsCheckGeneration = 0;
-
-function beginAlertsCheckForSearch() {
-    alertsCheckGeneration += 1;
-    hideAlertFetchError();
-    alertAutoPopDismissed = false;
-    activeAlerts = [];
-    updateAlertBadge();
-    closeAlertOverlay({ userDismissed: false });
-    return alertsCheckGeneration;
-}
-
-async function fetchAlerts(lat, lon) {
-    if (lat == null || lon == null) {
-        return { alerts: [], error: false };
-    }
-    try {
-        const url = `${BACKEND_URL}/alerts?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        if (!response.ok || data.error) {
-            return { alerts: [], error: true };
-        }
-        const alerts = Array.isArray(data.alerts) ? data.alerts : [];
-        return { alerts, error: false };
-    } catch (e) {
-        console.log("Alerts fetch failed:", e);
-        return { alerts: [], error: true };
-    }
-}
-
-async function checkAlerts(data, generation) {
-    const { alerts, error } = await fetchAlerts(data.lat, data.lon);
-    if (generation !== alertsCheckGeneration) {
-        return;
-    }
-    activeAlerts = error ? [] : alerts;
-    updateAlertBadge();
-    // Alerts arrive after presentWeather ran, so re-apply the atmosphere now —
-    // an active thunderstorm/tornado watch or warning drives the lightning.
-    setWeatherAtmosphere(data.conditionId);
-
-    if (error) {
-        showAlertFetchError("Could not load weather alerts. Badge counts may be unavailable.");
-        closeAlertOverlay({ userDismissed: false });
-        return;
-    }
-
-    hideAlertFetchError();
-
-    if (!alerts.length) {
-        closeAlertOverlay({ userDismissed: false });
-        return;
-    }
-
-    refreshAlertOverlayContent();
-
-    const hasAutoPop = alerts.some(shouldAutoPopAlert);
-    if (hasAutoPop && !alertAutoPopDismissed) {
-        openAlertOverlay();
-    }
-}
-
-function showAlertFetchError(message) {
-    set("alertFetchMsg", message);
-    show("alertFetchMsg");
-}
-
-function hideAlertFetchError() {
-    hide("alertFetchMsg");
-}
-
-function isAlertOverlayOpen() {
-    const overlay = document.getElementById("alertOverlay");
-    return overlay && !overlay.classList.contains("hidden") && !overlay.hidden;
-}
-
-function refreshAlertOverlayContent() {
-    if (!isAlertOverlayOpen() || !activeAlerts.length) {
-        return;
-    }
-    const preservedId = alertDetailId;
-    renderAlertChannels();
-    renderAlertStrip();
-    updateAlertMenuHeader();
-    if (preservedId) {
-        const still = activeAlerts.find((alert) => alert.id === preservedId);
-        if (still) {
-            showAlertDetail(still, { focus: false });
-            return;
-        }
-    }
-    hideAlertDetail();
-}
-
-function normalizeAlertTier(tier) {
-    return ALERT_KNOWN_TIERS.has(tier) ? tier : "unknown";
-}
-
-function shouldAutoPopAlert(alert) {
-    return alert.autoPop === true;
-}
-
-function alertTierLabel(tier) {
-    return ALERT_TIER_LABELS[tier] || "Alert";
-}
-
-function alertShortEvent(event) {
-    return event.replace(/\s+(Warning|Watch|Advisory|Statement)$/i, "").trim() || event;
-}
-
-function alertUntilText(alert) {
-    const epoch = alert.ends > 0 ? alert.ends : alert.expires;
-    if (!epoch) {
-        return "";
-    }
-    return "Until " + formatCityTime(epoch, activeTimezoneOffset);
-}
-
-function renderAlertChannels() {
-    const wrap = document.getElementById("alertChannels");
-    wrap.replaceChildren();
-
-    activeAlerts.forEach((alert) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "pill alert-channel";
-
-        const tier = normalizeAlertTier(alert.tier);
-        const sev = document.createElement("span");
-        sev.className = `alert-sev alert-sev--${tier}`;
-        sev.textContent = alertTierLabel(tier);
-
-        const event = document.createElement("span");
-        event.className = "alert-ch-event";
-        event.textContent = alertShortEvent(alert.event);
-
-        btn.appendChild(sev);
-        btn.appendChild(event);
-
-        const until = alertUntilText(alert);
-        if (until) {
-            const untilEl = document.createElement("span");
-            untilEl.className = "alert-ch-until";
-            untilEl.textContent = until;
-            btn.appendChild(untilEl);
-        }
-
-        btn.setAttribute("aria-label", `${alertTierLabel(tier)}: ${alert.event}`);
-        btn.addEventListener("click", () => showAlertDetail(alert));
-        wrap.appendChild(btn);
-    });
-}
-
-function setAlertCenterDetailMode(active) {
-    const center = document.getElementById("alertCenter");
-    center?.classList.toggle("alert-center--detail", active);
-}
-
-function showAlertDetail(alert, { focus = true } = {}) {
-    alertDetailId = alert.id;
-    const body = document.getElementById("alertDetailBody");
-    body.replaceChildren();
-
-    const title = document.createElement("div");
-    title.className = "alert-detail-event";
-    title.textContent = alert.event;
-    body.appendChild(title);
-
-    const meta = document.createElement("div");
-    meta.className = "alert-detail-meta";
-    const tier = normalizeAlertTier(alert.tier);
-    const sev = document.createElement("span");
-    sev.className = `alert-sev alert-sev--${tier}`;
-    sev.textContent = alertTierLabel(tier);
-    meta.appendChild(sev);
-    const until = alertUntilText(alert);
-    if (until) {
-        const u = document.createElement("span");
-        u.textContent = until;
-        meta.appendChild(u);
-    }
-    body.appendChild(meta);
-
-    if (alert.senderName) {
-        const office = document.createElement("div");
-        office.className = "alert-detail-office";
-        office.textContent = alert.senderName;
-        body.appendChild(office);
-    }
-
-    if (alert.description) {
-        const desc = document.createElement("div");
-        desc.className = "alert-detail-desc";
-        desc.textContent = alert.description;
-        body.appendChild(desc);
-    }
-
-    if (alert.instruction) {
-        const instr = document.createElement("div");
-        instr.className = "alert-detail-instruction";
-        instr.textContent = alert.instruction;
-        body.appendChild(instr);
-    }
-
-    // bottom bar stays visible — it's persistent chrome
-    document.getElementById("alertChannels").classList.add("hidden");
-    const detail = document.getElementById("alertDetail");
-    detail.classList.remove("hidden");
-    detail.hidden = false;
-    setAlertCenterDetailMode(true);
-    if (focus) {
-        document.getElementById("alertBack").focus();
-    }
-}
-
-function hideAlertDetail() {
-    alertDetailId = null;
-    const detail = document.getElementById("alertDetail");
-    detail.classList.add("hidden");
-    detail.hidden = true;
-    setAlertCenterDetailMode(false);
-    document.getElementById("alertChannels").classList.remove("hidden");
-}
-
-const ALERT_SEG_ICONS = {
-    pin: '<svg class="alert-seg-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>',
-    alert: '<svg class="alert-seg-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3 22 20 2 20Z"/><rect x="11" y="9" width="2" height="6" rx="1" fill="#0c3247"/><rect x="11" y="16" width="2" height="2" rx="1" fill="#0c3247"/></svg>',
-    clock: '<svg class="alert-seg-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-    source: '<svg class="alert-seg-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M7.5 7.5a6.5 6.5 0 0 0 0 9M16.5 7.5a6.5 6.5 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
-};
-
-function makeAlertSeg(iconName) {
-    const seg = document.createElement("div");
-    seg.className = "alert-seg";
-    const svg = ALERT_SEG_ICONS[iconName];
-    if (svg) {
-        const ic = document.createElement("span");
-        ic.style.display = "inline-flex";
-        ic.innerHTML = svg; // static markup, no user data
-        seg.appendChild(ic);
-    }
-    return seg;
-}
-
-function appendAlertSegText(seg, text, bold) {
-    if (bold) {
-        const b = document.createElement("b");
-        b.textContent = text;
-        seg.appendChild(b);
-    } else {
-        seg.appendChild(document.createTextNode(text));
-    }
-}
-
-function renderAlertStrip() {
-    const strip = document.getElementById("alertStrip");
-    strip.replaceChildren();
-
-    const first = activeAlerts[0] || {};
-    const county = first.areaDesc ? first.areaDesc.split(";")[0].trim() : "Your area";
-    const count = activeAlerts.length;
-    const until = alertUntilText(first);
-
-    const segCounty = makeAlertSeg("pin");
-    appendAlertSegText(segCounty, county, true);
-    strip.appendChild(segCounty);
-
-    const segCount = makeAlertSeg("alert");
-    appendAlertSegText(segCount, String(count), true);
-    appendAlertSegText(segCount, count === 1 ? " alert" : " alerts", false);
-    strip.appendChild(segCount);
-
-    const segUntil = makeAlertSeg("clock");
-    appendAlertSegText(segUntil, until || "In effect", false);
-    strip.appendChild(segUntil);
-
-    const segSource = makeAlertSeg("source");
-    appendAlertSegText(segSource, "NWS", true);
-    strip.appendChild(segSource);
-}
-
-function updateAlertMenuHeader() {
-    const sub = document.getElementById("alertMenuSub");
-    const n = activeAlerts.length;
-    sub.textContent = `${n} active alert${n === 1 ? "" : "s"}`;
-}
-
-function updateAlertBadge() {
-    const badge = document.getElementById("alertBadge");
-    if (!badge) {
-        return;
-    }
-    if (activeAlerts.length > 0) {
-        document.getElementById("alertBadgeCount").textContent = activeAlerts.length;
-        badge.setAttribute("data-tier", normalizeAlertTier(activeAlerts[0].tier));
-        badge.classList.remove("hidden");
-        badge.hidden = false;
-    } else {
-        badge.classList.add("hidden");
-        badge.hidden = true;
-    }
-}
-
-function openAlertOverlay() {
-    if (!activeAlerts.length) {
-        return;
-    }
-    const overlay = document.getElementById("alertOverlay");
-    const wasClosed = overlay.classList.contains("hidden");
-
-    refreshAlertOverlayContent();
-
-    // cancel an in-progress retract if the user reopens mid-close
-    alertClosing = false;
-    overlay.classList.remove("alert-closing");
-
-    if (wasClosed) {
-        alertLastFocused = document.activeElement;
-        overlay.classList.remove("hidden");
-        overlay.hidden = false;
-        document.addEventListener("keydown", onAlertKeydown);
-    }
-    document.getElementById("alertClose").focus();
-}
-
-function finishCloseAlertOverlay(overlay) {
-    overlay.classList.remove("alert-closing");
-    overlay.classList.add("hidden");
-    overlay.hidden = true;
-    alertClosing = false;
-    document.removeEventListener("keydown", onAlertKeydown);
-    updateAlertBadge();
-    if (alertLastFocused && typeof alertLastFocused.focus === "function") {
-        alertLastFocused.focus();
-    }
-}
-
-function closeAlertOverlay({ userDismissed = true } = {}) {
-    const overlay = document.getElementById("alertOverlay");
-    if (overlay.classList.contains("hidden")) {
-        return;
-    }
-
-    if (userDismissed) {
-        alertAutoPopDismissed = true;
-    }
-
-    // No animation under reduced motion (or if already retracting) — close now.
-    if (prefersReducedMotion() || alertClosing) {
-        finishCloseAlertOverlay(overlay);
-        return;
-    }
-
-    // Play the retract, then hide once the scrim has faded out.
-    alertClosing = true;
-    overlay.classList.add("alert-closing");
-
-    const onClosed = (event) => {
-        if (event.target !== overlay || event.animationName !== "alertScrimOut") {
-            return;
-        }
-        overlay.removeEventListener("animationend", onClosed);
-        finishCloseAlertOverlay(overlay);
-    };
-    overlay.addEventListener("animationend", onClosed);
-}
-
-function onAlertKeydown(event) {
-    if (event.key === "Escape") {
-        closeAlertOverlay();
-        return;
-    }
-    if (event.key !== "Tab") {
-        return;
-    }
-    const menu = document.getElementById("alertOverlay");
-    if (!menu) {
-        return;
-    }
-    const focusable = menu.querySelectorAll(
-        'button:not([hidden]):not(.hidden), [href], [tabindex]:not([tabindex="-1"])'
-    );
-    const visible = [...focusable].filter((el) => el.offsetParent !== null);
-    if (!visible.length) {
-        return;
-    }
-    const first = visible[0];
-    const last = visible[visible.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-    }
-}
-
-(function wireAlertControls() {
-    const close = document.getElementById("alertClose");
-    const back = document.getElementById("alertBack");
-    if (close) {
-        close.addEventListener("click", closeAlertOverlay);
-    }
-    if (back) {
-        back.addEventListener("click", () => {
-            hideAlertDetail();
-            document.getElementById("alertClose").focus();
-        });
-    }
-})();
