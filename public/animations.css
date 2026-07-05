@@ -202,9 +202,34 @@
     transform 0.35s var(--nintendo-spring),
     box-shadow 0.25s var(--nintendo-soft),
     border-color 0.2s var(--nintendo-soft);
+  /* idle "selected channel" glow — soft blue halo breathing around the pill */
+  animation: searchGlowPulse 2.6s var(--nintendo-soft) infinite;
+}
+
+@keyframes searchGlowPulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+      0 0 0 1px rgba(54, 195, 242, 0.35),
+      0 3px 9px rgba(0, 0, 0, 0.32),
+      0 0 4px 1px rgba(120, 170, 255, 0.50),
+      0 0 10px 3px rgba(70, 130, 255, 0.45);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+      0 0 0 1px rgba(54, 195, 242, 0.35),
+      0 3px 9px rgba(0, 0, 0, 0.32),
+      0 0 6px 1px rgba(120, 170, 255, 0.90),
+      0 0 22px 6px rgba(70, 130, 255, 0.80);
+  }
 }
 
 .search-row button:hover {
+  /* pause the halo so the crisp hover rim bloom shows through */
+  animation: none;
   filter: brightness(1.04);
   transform: translateY(-2px) scale(1.03);
   border-color: #4fd0fb;            /* calm rim shimmer */
@@ -244,7 +269,8 @@
       inset 0 -2px 3px rgba(54, 195, 242, 0.25),
       0 0 0 1px rgba(54, 195, 242, 0.35),
       0 3px 9px rgba(0, 0, 0, 0.32),
-      0 0 8px 1px rgba(54, 195, 242, 0.40);
+      0 0 6px 2px rgba(120, 170, 255, 0.60),
+      0 0 14px 4px rgba(70, 130, 255, 0.55);
   }
   50% {
     box-shadow:
@@ -252,7 +278,8 @@
       inset 0 -2px 3px rgba(54, 195, 242, 0.25),
       0 0 0 1px rgba(54, 195, 242, 0.35),
       0 3px 9px rgba(0, 0, 0, 0.32),
-      0 0 18px 3px rgba(54, 195, 242, 0.70);
+      0 0 8px 2px rgba(120, 170, 255, 0.95),
+      0 0 28px 8px rgba(70, 130, 255, 0.85);
   }
 }
 
@@ -593,6 +620,7 @@
   }
 
   /* kill the new Wii motion; keep the static pill + gloss cap intact */
+  .search-row button,
   .search-row button:focus-visible,
   .search-row button:active,
   .history span:active,
