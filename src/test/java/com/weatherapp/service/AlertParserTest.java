@@ -129,10 +129,10 @@ class AlertParserTest {
     }
 
     @Test
-    void advisoriesAreNotAutoPop() {
+    void advisoriesAreAutoPop() {
         String json = geoJson(featureJson("Wind Advisory", "Actual", "Alert", futureIso(), "County C"));
         List<WeatherAlert> alerts = parser.parse(json);
         assertEquals(1, alerts.size());
-        assertEquals(false, alerts.get(0).isAutoPop());
+        assertTrue(alerts.get(0).isAutoPop());
     }
 }
