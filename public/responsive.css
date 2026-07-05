@@ -104,8 +104,24 @@
   }
 
   .alert-bottom-bar {
-    min-height: 96px;
-    padding: 18px 24px 20px;
+    min-height: unset;
+    gap: 8px;
+    padding: 14px 20px 16px;
+  }
+
+  .alert-seg {
+    padding: 8px 4px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .alert-seg-ic {
+    width: 14px;
+    height: 14px;
+  }
+
+  .alert-strip-label {
+    font-size: 12px;
   }
 
   .alert-center {
