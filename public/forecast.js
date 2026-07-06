@@ -5,6 +5,15 @@ const CirrusForecast = (function () {
     const CARD_SLIDE_PX = 44;
     const SPRING_EASING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
     let activeTab = "today";
     let tabSwitchPending = false;
     let lastSwipeStart = -Infinity;
@@ -294,11 +303,11 @@ const CirrusForecast = (function () {
                 ? `${day.rainChance}% chance of rain`
                 : "No rain expected";
             return `
-    <div class="forecast-day glass-panel" role="button" tabindex="0" aria-label="${day.day} forecast">
-      <div class="forecast-label ${i === 0 ? "today" : ""}">${day.day}</div>
+    <div class="forecast-day glass-panel" role="button" tabindex="0" aria-label="${escapeHtml(day.day)} forecast">
+      <div class="forecast-label ${i === 0 ? "today" : ""}">${escapeHtml(day.day)}</div>
       <img class="forecast-icon"
            src="icons/${iconMap[iconKey] ?? "default.png"}"
-           alt="${day.condition}">
+           alt="${escapeHtml(day.condition)}">
       <div class="forecast-high">${Math.round(day.high)}°F</div>
       <div class="forecast-low">${Math.round(day.low)}°F</div>
       <div class="forecast-rain">
@@ -336,7 +345,7 @@ const CirrusForecast = (function () {
             return;
         }
 
-        const description = day.description || day.condition || "";
+        const description = escapeHtml(day.description || day.condition || "");
         const rain = (day.rainChance !== undefined) ? `${day.rainChance}%` : "—";
         const precipInches = (day.precipitation ?? 0) / 25.4;
         const precip = precipInches > 0 ? `${precipInches.toFixed(2)} in` : "0 in";
@@ -345,7 +354,7 @@ const CirrusForecast = (function () {
         panel.innerHTML = `
         <div class="details-card glass-panel">
             <div class="details-left">
-                <div class="details-day">${day.day}</div>
+                <div class="details-day">${escapeHtml(day.day)}</div>
                 <div class="details-desc">${description}</div>
             </div>
             <div class="details-right">
