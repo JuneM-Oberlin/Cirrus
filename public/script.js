@@ -386,7 +386,7 @@ function stopColdStartLoading() {
 
 async function withLoading(task, {
     revealWeather = true,
-    loadingMessage = "Fetching weather…",
+    loadingMessage = "Fetching weather",
     preserveAlertSession = false,
 } = {}) {
     if (!preserveAlertSession) {
@@ -448,7 +448,7 @@ function searchForecast(city) {
             fetchForecastData(city),
         ]);
         completeForecastLoad(city, weatherData, forecastData);
-    }, { revealWeather: false, loadingMessage: "Fetching forecast…" });
+    }, { revealWeather: false, loadingMessage: "Fetching forecast" });
 }
 
 function getFeelsLikeExplanation(temp, feelsLike, windSpeed, humidity) {
