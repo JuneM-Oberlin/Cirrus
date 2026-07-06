@@ -447,6 +447,25 @@
   animation: wiiSquashPress 0.4s var(--nintendo-spring);
 }
 
+/* CRT scan-line drift on the silver dock tray — gentler than alert chrome. */
+.dock-bar::before {
+  animation: dockScanDrift 14s linear infinite;
+}
+
+.dock-bar::after {
+  animation: dockScanStatic 8s steps(8) infinite;
+}
+
+@keyframes dockScanDrift {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(3px); }
+}
+
+@keyframes dockScanStatic {
+  0%, 100% { opacity: 0.24; }
+  50% { opacity: 0.32; }
+}
+
 /* maroon "As of" band pops in when the forecast tab activates */
 .mobile-dock.dock--forecast .dock-band {
   animation: nintendoPop 0.45s var(--nintendo-spring) both;
@@ -667,9 +686,17 @@
 
   /* mobile dock + accordion: static states render identically */
   .dock-btn:active,
+  .dock-bar::before,
+  .dock-bar::after,
   .mobile-dock.dock--forecast .dock-band,
   .forecast-day-detail:not([hidden]) {
     animation: none !important;
+  }
+
+  .dock-bar::before,
+  .dock-bar::after {
+    transform: none !important;
+    opacity: 0.28 !important;
   }
 
   .search-row button.search-press-feedback,
