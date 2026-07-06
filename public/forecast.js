@@ -1,7 +1,7 @@
 const CirrusForecast = (function () {
     const FORECAST_HINT_KEY = "cirrus_forecast_hint_dismissed";
     const CARD_POP_DELAY_MS = 520;
-    const CARD_STAGGER_MS = 150;
+    const CARD_STAGGER_MS = 110;
     const CARD_SLIDE_PX = 44;
     const SPRING_EASING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 
@@ -202,6 +202,18 @@ const CirrusForecast = (function () {
         tabToday.tabIndex = isToday ? 0 : -1;
         tabForecast.tabIndex = isToday ? -1 : 0;
 
+        // mobile dock mirrors the header tabs (only one set is visible at a time)
+        const dock = document.getElementById("mobileDock");
+        if (dock) {
+            dock.classList.toggle("dock--forecast", !isToday);
+            const dockToday = document.getElementById("dockTabToday");
+            const dockForecast = document.getElementById("dockTabForecast");
+            dockToday.setAttribute("aria-selected", String(isToday));
+            dockForecast.setAttribute("aria-selected", String(!isToday));
+            dockToday.tabIndex = isToday ? 0 : -1;
+            dockForecast.tabIndex = isToday ? -1 : 0;
+        }
+
         todayView.inert = !isToday;
         todayView.setAttribute("aria-hidden", String(!isToday));
         forecastView.inert = isToday;
@@ -223,12 +235,20 @@ const CirrusForecast = (function () {
         }
     }
 
+    function tabBounceTarget(tab) {
+        const isMobile = window.matchMedia("(max-width: 767px)").matches;
+        if (isMobile) {
+            return document.getElementById(tab === "today" ? "dockTabToday" : "dockTabForecast");
+        }
+        return document.getElementById(tab === "today" ? "tabToday" : "tabForecast");
+    }
+
     function switchTab(tab) {
         if (tab === activeTab || tabSwitchPending) {
             return;
         }
 
-        bounceTab(document.getElementById(tab === "today" ? "tabToday" : "tabForecast"));
+        bounceTab(tabBounceTarget(tab));
 
         if (tab === "forecast") {
             hideForecastCards();
@@ -250,9 +270,11 @@ const CirrusForecast = (function () {
         });
     }
 
-    function onTabKeydown(event, tab) {
+    function onTabKeydown(event, tab, fromDock = false) {
         const otherTab = tab === "today" ? "forecast" : "today";
-        const otherEl = document.getElementById(tab === "today" ? "tabForecast" : "tabToday");
+        const otherEl = fromDock
+            ? document.getElementById(tab === "today" ? "dockTabForecast" : "dockTabToday")
+            : document.getElementById(tab === "today" ? "tabForecast" : "tabToday");
 
         if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
             event.preventDefault();
@@ -295,6 +317,10 @@ const CirrusForecast = (function () {
         const { time: timeText, date: dateText } = formatCityNow(offset);
 
         footer.textContent = `As of ${timeText}, ${dateText}`;
+        const band = document.getElementById("dockBand");
+        if (band) {
+            band.textContent = `As of ${timeText}, ${dateText}`;
+        }
 
         strip.innerHTML = days.map((day, i) => {
             const iconKey = day.conditionId;
@@ -302,17 +328,36 @@ const CirrusForecast = (function () {
             const rainAlt = (day.rainChance ?? 0) > 0
                 ? `${day.rainChance}% chance of rain`
                 : "No rain expected";
+            const description = escapeHtml(day.description || day.condition || "");
+            const rainPct = (day.rainChance !== undefined) ? `${day.rainChance}%` : "—";
+            const precipInches = (day.precipitation ?? 0) / 25.4;
+            const precip = precipInches > 0 ? `${precipInches.toFixed(2)} in` : "0 in";
+            const wind = (day.windSpeed !== undefined) ? `${Math.round(day.windSpeed)} mph` : "—";
             return `
-    <div class="forecast-day glass-panel" role="button" tabindex="0" aria-label="${escapeHtml(day.day)} forecast">
-      <div class="forecast-label ${i === 0 ? "today" : ""}">${escapeHtml(day.day)}</div>
-      <img class="forecast-icon"
-           src="icons/${iconMap[iconKey] ?? "default.png"}"
-           alt="${escapeHtml(day.condition)}">
-      <div class="forecast-high">${Math.round(day.high)}°F</div>
-      <div class="forecast-low">${Math.round(day.low)}°F</div>
-      <div class="forecast-rain">
-        <img class="rain-icon" src="icons/${rainIcon}" alt="${rainAlt}">
-        ${day.rainChance}%
+    <div class="forecast-day-wrap">
+      <div class="forecast-day glass-panel" role="button" tabindex="0" aria-expanded="false" aria-label="${escapeHtml(day.day)} forecast">
+        <div class="forecast-day-left">
+          <div class="forecast-label ${i === 0 ? "today" : ""}">${escapeHtml(day.day)}</div>
+          <div class="forecast-rain">
+            <img class="rain-icon" src="icons/${rainIcon}" alt="${rainAlt}">
+            ${day.rainChance}%
+          </div>
+        </div>
+        <img class="forecast-icon"
+             src="icons/${iconMap[iconKey] ?? "default.png"}"
+             alt="${escapeHtml(day.condition)}">
+        <div class="forecast-day-temps">
+          <div class="forecast-high">${Math.round(day.high)}°<span class="unit">F</span></div>
+          <div class="forecast-low">${Math.round(day.low)}°<span class="unit">F</span></div>
+        </div>
+      </div>
+      <div class="forecast-day-detail" hidden>
+        <div class="fdd-desc">${description}</div>
+        <div class="fdd-stats">
+          <span class="fdd-stat">Precip <b>${precip}</b></span>
+          <span class="fdd-stat">Wind <b>${wind}</b></span>
+          <span class="fdd-stat">Rain <b>${rainPct}</b></span>
+        </div>
       </div>
     </div>
   `;
@@ -328,8 +373,16 @@ const CirrusForecast = (function () {
         dayEls.forEach((el, idx) => {
             const selectDay = () => {
                 dismissForecastHint();
-                dayEls.forEach((d) => d.classList.remove("active"));
+                if (window.matchMedia("(max-width: 767px)").matches) {
+                    toggleInlineDetail(strip, el, days[idx]);
+                    return;
+                }
+                dayEls.forEach((d) => {
+                    d.classList.remove("active");
+                    d.setAttribute("aria-expanded", "false");
+                });
                 el.classList.add("active");
+                el.setAttribute("aria-expanded", "true");
                 showDetails(days[idx]);
             };
             el.addEventListener("click", selectDay);
@@ -337,6 +390,33 @@ const CirrusForecast = (function () {
         });
 
         popInForecastCards();
+    }
+
+    /* Mobile accordion: one inline detail open at a time; tap again to collapse. */
+    function toggleInlineDetail(strip, dayEl, day) {
+        const wrap = dayEl.closest(".forecast-day-wrap");
+        const detail = wrap ? wrap.querySelector(".forecast-day-detail") : null;
+        if (!detail) {
+            return;
+        }
+
+        const wasOpen = !detail.hidden;
+        strip.querySelectorAll(".forecast-day-detail").forEach((d) => { d.hidden = true; });
+        strip.querySelectorAll(".forecast-day").forEach((d) => {
+            d.classList.remove("open");
+            d.setAttribute("aria-expanded", "false");
+        });
+
+        if (wasOpen) {
+            return;
+        }
+
+        detail.hidden = false;
+        dayEl.classList.add("open");
+        dayEl.setAttribute("aria-expanded", "true");
+        if (day.conditionId !== undefined) {
+            refreshAtmosphere(day.conditionId);
+        }
     }
 
     function showDetails(day) {
@@ -397,6 +477,6 @@ function switchTab(tab) {
     CirrusForecast.switchTab(tab);
 }
 
-function onTabKeydown(event, tab) {
-    CirrusForecast.onTabKeydown(event, tab);
+function onTabKeydown(event, tab, fromDock) {
+    CirrusForecast.onTabKeydown(event, tab, fromDock);
 }

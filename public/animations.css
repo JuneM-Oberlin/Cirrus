@@ -436,6 +436,35 @@
   animation: nintendoWiggle 0.5s var(--nintendo-soft);
 }
 
+.dock-btn {
+  transition:
+    transform 0.35s var(--nintendo-spring),
+    box-shadow 0.3s var(--nintendo-soft),
+    border-color 0.3s ease;
+}
+
+.dock-btn:active {
+  animation: wiiSquashPress 0.4s var(--nintendo-spring);
+}
+
+/* maroon "As of" band pops in when the forecast tab activates */
+.mobile-dock.dock--forecast .dock-band {
+  animation: nintendoPop 0.45s var(--nintendo-spring) both;
+}
+
+/* inline forecast day detail pops open (accordion) */
+.forecast-day-detail:not([hidden]) {
+  animation: nintendoPop 0.45s var(--nintendo-spring) both;
+}
+
+/* accordion row highlight eases in/out */
+.forecast-day {
+  transition:
+    transform 0.35s var(--nintendo-spring),
+    box-shadow 0.35s var(--nintendo-soft),
+    background-color 0.25s ease;
+}
+
 /* =========================================================================
    SEVERE WEATHER ALERTS — motion
    ========================================================================= */
@@ -633,6 +662,13 @@
   .search-row button:active,
   .history span:active,
   .history--enter span {
+    animation: none !important;
+  }
+
+  /* mobile dock + accordion: static states render identically */
+  .dock-btn:active,
+  .mobile-dock.dock--forecast .dock-band,
+  .forecast-day-detail:not([hidden]) {
     animation: none !important;
   }
 

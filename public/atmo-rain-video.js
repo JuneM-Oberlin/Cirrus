@@ -19,7 +19,7 @@ const AtmoRainVideo = (function () {
     }
 
     function isMobileViewport() {
-        return window.matchMedia("(max-width: 768px)").matches;
+        return window.matchMedia("(max-width: 767px)").matches;
     }
 
     function getVideo() {

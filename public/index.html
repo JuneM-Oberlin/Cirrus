@@ -6,10 +6,10 @@
   <title>Cirrus</title>
   <meta name="description" content="A Nintendo inspired weather app with current conditions and a 5-day forecast for any city.">
   <link rel="icon" href="icons/clear-day.png">
-  <link rel="stylesheet" href="style.css?v=20260705d">
-  <link rel="stylesheet" href="animations.css?v=20260705d">
+  <link rel="stylesheet" href="style.css?v=20260706g">
+  <link rel="stylesheet" href="animations.css?v=20260706">
   <link rel="stylesheet" href="weather-atmosphere.css?v=20260705">
-  <link rel="stylesheet" href="responsive.css?v=20260705c">
+  <link rel="stylesheet" href="responsive.css?v=20260706j">
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -20,6 +20,7 @@
 
     <!-- green header bar -->
     <div class="header">
+      <div class="header-brand" aria-hidden="true">CIRRUS</div>
       <div class="header-tabs" role="tablist" aria-label="Weather views">
         <div class="header-tab active" id="tabToday" role="tab" tabindex="0" aria-selected="true"
              aria-controls="todayView" onclick="switchTab('today')" onkeydown="onTabKeydown(event, 'today')">TODAY</div>
@@ -54,7 +55,10 @@
       <div class="search-row">
         <input id="cityInput" type="text" placeholder="Enter city" aria-label="City name"
           onkeydown="if(event.key === 'Enter') searchCity()">
-        <button onclick="searchCity()">Search</button>
+        <button onclick="searchCity()" aria-label="Search">
+          <span class="search-btn-label">Search</span>
+          <svg class="search-btn-glyph" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="#3a3a3a" stroke-width="2.4"></circle><line x1="15" y1="15" x2="20" y2="20" stroke="#3a3a3a" stroke-width="2.4" stroke-linecap="round"></line></svg>
+        </button>
       </div>
 
       <div class="history-row">
@@ -91,6 +95,7 @@
             <div id="condition" class="condition">
               <span id="conditionText">--</span>
               <span id="feelsExplanation" class="feels-expl"></span>
+              <span id="feelsLine" class="feels-line"></span>
             </div>
           </div>
 
@@ -116,7 +121,7 @@
               <span class="detail-val" id="visibility">--</span>
             </div>
             <div class="detail">
-              <span class="detail-label">Cloud Cover</span>
+              <span class="detail-label"><span class="dl-full">Cloud Cover</span><span class="dl-short" aria-hidden="true">Clouds</span></span>
               <span class="detail-val" id="cloudCover">--</span>
             </div>
             <div class="detail">
@@ -128,7 +133,7 @@
           <div class="aux-grid">
             <!-- WIND + TIMESTAMP BAR -->
             <div class="wind-bar glass-panel">
-              <span class="wind-label">Wind Direction</span>
+              <span class="wind-label"><span class="wind-label-full">Wind Direction</span><span class="wind-label-short" aria-hidden="true">Wind Dir</span></span>
               <span class="wind-val" id="windDir">--</span>
               <span class="timestamp" id="timestamp">--</span>
             </div>
@@ -147,6 +152,11 @@
                 <span class="sun-val" id="sunset">--</span>
               </div>
             </div>
+          </div>
+
+          <!-- Mobile-only timestamp pill (desktop shows it inside the wind bar) -->
+          <div class="today-stamp">
+            <span id="timestampMobile" class="timestamp">--</span>
           </div>
 
         </div>
@@ -170,6 +180,34 @@
       </div> <!-- /view-viewport -->
 
     </div> <!-- /page-content -->
+
+    <!-- Mobile bottom dock: tab buttons + live clock (phones only; desktop keeps header tabs) -->
+    <div class="mobile-dock" id="mobileDock">
+      <div class="dock-band" id="dockBand">As of --:-- --, --/--</div>
+      <div class="dock-bar" role="tablist" aria-label="Weather views">
+        <div class="dock-item">
+          <button type="button" id="dockTabToday" class="dock-btn" role="tab" aria-selected="true"
+                  aria-controls="todayView" aria-label="Today"
+                  onclick="switchTab('today')" onkeydown="onTabKeydown(event, 'today', true)">
+            <img class="dock-icon dock-icon--night" src="icons/clear-night.png" alt="">
+            <img class="dock-icon dock-icon--day" src="icons/clear-day.png" alt="">
+          </button>
+          <span class="dock-label" aria-hidden="true">Today</span>
+        </div>
+        <div class="dock-clock">
+          <span class="dock-time" id="dockTime">--:--</span>
+          <span class="dock-date" id="dockDate">--</span>
+        </div>
+        <div class="dock-item">
+          <button type="button" id="dockTabForecast" class="dock-btn" role="tab" aria-selected="false" tabindex="-1"
+                  aria-controls="forecastView" aria-label="5-day forecast"
+                  onclick="switchTab('forecast')" onkeydown="onTabKeydown(event, 'forecast', true)">
+            <img class="dock-icon" src="icons/mostly-cloudy-day.png" alt="">
+          </button>
+          <span class="dock-label" aria-hidden="true">5-Day</span>
+        </div>
+      </div>
+    </div>
 
   </div>
 
@@ -208,12 +246,12 @@
   </div>
 
   <script src="iconMap.js?v=20260701"></script>
-  <script src="atmo-rain-video.js?v=20260623"></script>
+  <script src="atmo-rain-video.js?v=20260706e"></script>
   <script src="atmo-lightning.js?v=20260626c"></script>
   <script src="search-ui.js?v=20260706"></script>
   <script src="alerts.js?v=20260710"></script>
   <script src="atmosphere.js?v=20260706"></script>
-  <script src="forecast.js?v=20260712"></script>
+  <script src="forecast.js?v=20260706e"></script>
   <script src="script.js?v=20260713"></script>
 </body>
 </html>
