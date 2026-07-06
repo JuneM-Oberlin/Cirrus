@@ -285,7 +285,7 @@ const CirrusForecast = (function () {
                 weatherPromise,
             ]);
             completeForecastLoad(city, weatherData, forecastData);
-        }, { revealWeather: false, loadingMessage: "Fetching forecast…", preserveAlertSession: true });
+        }, { revealWeather: false, loadingMessage: "Fetching forecast", preserveAlertSession: true });
     }
 
     function render(days, timezoneOffset) {
