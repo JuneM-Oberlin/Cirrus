@@ -36,14 +36,18 @@
       <video
         id="atmoRainVideo"
         class="atmo-rain-video is-hidden"
-        src="media/rain-overlay.mp4"
         autoplay
         loop
         muted
         playsinline
         preload="auto"
         aria-hidden="true"
-      ></video>
+      >
+        <!-- /stream serves Range responses (required by iOS Safari);
+             /media is the static-server fallback for frontend-only dev -->
+        <source src="stream/rain-overlay.mp4" type="video/mp4">
+        <source src="media/rain-overlay.mp4" type="video/mp4">
+      </video>
       <div class="atmo-precip atmo-precip--snow"></div>
       <div id="atmoLightningLayer" class="atmo-lightning-layer is-hidden" aria-hidden="true"></div>
       <div class="atmo-fog"></div>
