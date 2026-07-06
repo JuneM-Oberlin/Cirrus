@@ -524,7 +524,9 @@ function applyTempMood(temperature) {
 
 function renderTodayView(data, isNight) {
     set("cityName", data.city);
-    set("tempMain", Math.round(data.temperature) + "°F");
+    // unit spans let mobile show bare values while desktop keeps 54
+    document.getElementById("tempMain").innerHTML =
+        `${Math.round(data.temperature)}°<span class="unit">F</span>`;
     applyTempMood(data.temperature);
 
     const conditionFormatted = data.condition
@@ -533,26 +535,36 @@ function renderTodayView(data, isNight) {
         .join(" ");
     const conditionEl = document.getElementById("conditionText");
     const feelsEl = document.getElementById("feelsExplanation");
+    const feelsLineEl = document.getElementById("feelsLine");
+    const expl = getFeelsLikeExplanation(
+        data.temperature, data.feelsLike, data.windSpeed, data.humidity
+    );
     if (conditionEl) conditionEl.textContent = conditionFormatted;
     if (feelsEl) {
-        const expl = getFeelsLikeExplanation(
-            data.temperature, data.feelsLike, data.windSpeed, data.humidity
-        );
         feelsEl.textContent = `— ${expl}`;
     }
+    if (feelsLineEl) {
+        // mobile hero line
+        feelsLineEl.textContent =
+            `Feels like ${Math.round(data.feelsLike)}° — ${expl.replace(/^Feels\s+/, "")}`;
+    }
 
-    set("feelsLike", Math.round(data.feelsLike) + "°F");
+    document.getElementById("feelsLike").innerHTML =
+        `${Math.round(data.feelsLike)}°<span class="unit">F</span>`;
     set("humidity", data.humidity + "%");
     set("wind", Math.round(data.windSpeed) + " mph");
-    set("windDir", degreesToCompass(data.windDeg) + " " + Math.round(data.windSpeed) + " mph");
+    document.getElementById("windDir").innerHTML =
+        `${degreesToCompass(data.windDeg)}<span class="wind-speed-suffix"> ${Math.round(data.windSpeed)} mph</span>`;
     const { time: cityTime } = formatCityNow(data.timezoneOffset);
     set("timestamp", "As of " + cityTime);
+    set("timestampMobile", "As of " + cityTime);
     updateHeaderCityVisibility();
 
     const visibilityMiles = (data.visibility / 1609.34).toFixed(1);
     set("visibility", visibilityMiles + " mi");
     set("cloudCover", data.cloudCover + "%");
-    set("pressure", hpaToInHg(data.pressure) + " inHg");
+    document.getElementById("pressure").innerHTML =
+        `${hpaToInHg(data.pressure)} in<span class="unit">Hg</span>`;
 
     const sunriseTime = formatCityTime(data.sunrise, data.timezoneOffset);
     const sunsetTime = formatCityTime(data.sunset, data.timezoneOffset);
@@ -610,6 +622,15 @@ CirrusForecast.init({
     getTimezoneOffset: () => activeTimezoneOffset,
     onTodayTabActive: () => CirrusAlerts.syncOverlay(),
 });
+
+// Live clock in the mobile dock 
+function updateDockClock() {
+    const now = new Date();
+    set("dockTime", now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
+    set("dockDate", now.toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" }));
+}
+updateDockClock();
+setInterval(updateDockClock, 1000);
 
 renderHistory();
 updateTodayEmptyState();
