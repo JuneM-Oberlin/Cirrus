@@ -8,6 +8,7 @@ import com.weatherapp.service.AlertService;
 import com.weatherapp.service.NwsAlertClient;
 import com.weatherapp.service.OpenWeatherClient;
 import com.weatherapp.service.WeatherService;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +43,7 @@ public class WeatherServer {
     public static void main(String[] args) {
         port(resolvePort(System.getenv("PORT")));
         staticFiles.externalLocation("public");
+        staticFiles.registerMimeType("mp4", "video/mp4");
         enableCors(CorsConfig.fromEnvironment());
 
         RateLimiter rateLimiter = new RateLimiter(Clock.systemUTC());
@@ -73,6 +75,11 @@ public class WeatherServer {
         });
 
         get("/alerts", (req, res) -> handleAlertsRoute(req, res, gson, rateLimiter, alertService));
+
+        // Videos need Range support (iOS Safari refuses to play without it),
+        // which Spark's static file handler doesn't provide.
+        get("/stream/:file", (req, res) ->
+                MediaStreamRoute.handle(req, res, Path.of("public", "media")));
     }
 
     static int resolvePort(String portStr) {
