@@ -355,18 +355,18 @@ function startColdStartLoading(initialMessage) {
 
     const startedAt = Date.now();
     coldStartTimers.push(setTimeout(() => {
-        set("loading", "Waking up the server — first search can take up to a minute…");
+        set("loading", "Waking up the server — first search can take up to a minute");
     }, 4000));
 
     coldStartTimers.push(setTimeout(() => {
         const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-        set("loading", `Still connecting… (${elapsed}s)`);
+        set("loading", `Still connecting (${elapsed}s)`);
     }, 15000));
 
     coldStartTimers.push(setInterval(() => {
         const elapsed = Math.floor((Date.now() - startedAt) / 1000);
         if (elapsed >= 15) {
-            set("loading", `Still connecting… (${elapsed}s)`);
+            set("loading", `Still connecting (${elapsed}s)`);
         }
     }, 1000));
 
