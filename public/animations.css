@@ -545,6 +545,19 @@
   100% { opacity: 0; transform: translateY(100%); }
 }
 
+/* Bottom status strip — pressing squashes the pill like the other controls,
+   and expanding (tap or hold-to-peek) lands with a springy boing. The
+   `--expanded:active` variant keeps the boing winning over the press squash
+   when the hold threshold trips mid-press. */
+.alert-bottom-bar:active .alert-strip {
+  animation: wiiSquashPress 0.35s var(--nintendo-spring);
+}
+
+.alert-bottom-bar--expanded:active .alert-strip,
+.alert-bottom-bar--expanded .alert-strip {
+  animation: nintendoBounce 0.55s var(--nintendo-spring);
+}
+
 /* Alert channels — shared pill press/hover + staggered entrance */
 .alert-channel,
 .alert-close,
@@ -728,7 +741,9 @@
   .alert-tri,
   .alert-channel:active,
   .alert-close:active,
-  .alert-back:active {
+  .alert-back:active,
+  .alert-bottom-bar:active .alert-strip,
+  .alert-bottom-bar--expanded .alert-strip {
     animation: none !important;
   }
 
