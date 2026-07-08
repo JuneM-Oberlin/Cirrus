@@ -145,23 +145,4 @@ public class WeatherData {
     public int getTimezoneOffset() {
         return timezoneOffset;
     }
-
-    @Override
-    public String toString() {
-        return String.format(
-                "City:      %s%n"
-                + "Temperature: %.1f F  (Feels like %.1f F)%n"
-                + "Humidity:  %d%%%n"
-                + "Condition: %s%n"
-                + "Wind:      %.1f mph%n"
-                + "Timezone:  %+d s",
-                city,
-                temperature,
-                feelsLike,
-                humidity,
-                condition,
-                windSpeed,
-                timezoneOffset
-        );
-    }
 }
