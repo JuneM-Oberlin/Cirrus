@@ -10,97 +10,73 @@ import spark.Request;
 class ClientIpResolverTest {
 
     @Test
-    void usesTrueClientIpHeaderOnRender() {
+    void usesXForwardedForWhenProxyTrusted() {
         Request req = mock(Request.class);
-        when(req.headers("True-Client-Ip")).thenReturn("203.0.113.1");
+        when(req.headers("X-Forwarded-For")).thenReturn("203.0.113.1");
 
         assertEquals("203.0.113.1", ClientIpResolver.resolve(req, true));
     }
 
     @Test
-    void usesCfConnectingIpWhenTrueClientIpMissingOnRender() {
+    void takesRightmostHopOfMultiValueXForwardedFor() {
+        // Only the rightmost entry is appended by our own proxy; earlier
+        // entries could be client-supplied and spoofed.
         Request req = mock(Request.class);
-        when(req.headers("True-Client-Ip")).thenReturn(null);
-        when(req.headers("CF-Connecting-IP")).thenReturn("198.51.100.2");
+        when(req.headers("X-Forwarded-For")).thenReturn("203.0.113.99, 198.51.100.7");
 
-        assertEquals("198.51.100.2", ClientIpResolver.resolve(req, true));
+        assertEquals("198.51.100.7", ClientIpResolver.resolve(req, true));
     }
 
     @Test
-    void prefersTrueClientIpOverSpoofedXForwardedForOnRender() {
+    void ignoresXForwardedForWhenProxyNotTrusted() {
         Request req = mock(Request.class);
-        when(req.headers("True-Client-Ip")).thenReturn("81.97.145.24");
-        when(req.headers("X-Forwarded-For")).thenReturn("203.0.113.99, 10.0.0.1");
-
-        assertEquals("81.97.145.24", ClientIpResolver.resolve(req, true));
-    }
-
-    @Test
-    void ignoresTrustedHeadersLocally() {
-        Request req = mock(Request.class);
-        when(req.headers("True-Client-Ip")).thenReturn("203.0.113.1");
-        when(req.headers("CF-Connecting-IP")).thenReturn("198.51.100.2");
+        when(req.headers("X-Forwarded-For")).thenReturn("203.0.113.99");
         when(req.ip()).thenReturn("10.21.157.68");
 
         assertEquals("10.21.157.68", ClientIpResolver.resolve(req, false));
     }
 
     @Test
-    void ignoresSpoofedXForwardedFor() {
+    void fallsBackToRequestIpWhenXForwardedForMissing() {
         Request req = mock(Request.class);
-        when(req.headers("True-Client-Ip")).thenReturn(null);
-        when(req.headers("CF-Connecting-IP")).thenReturn(null);
-        when(req.headers("X-Forwarded-For")).thenReturn("203.0.113.99, 10.0.0.1");
-        when(req.ip()).thenReturn("10.21.157.68");
+        when(req.headers("X-Forwarded-For")).thenReturn(null);
+        when(req.ip()).thenReturn("127.0.0.1");
 
-        assertEquals("10.21.157.68", ClientIpResolver.resolve(req, false));
+        assertEquals("127.0.0.1", ClientIpResolver.resolve(req, true));
+    }
+
+    @Test
+    void rejectsMalformedXForwardedForEntry() {
+        Request req = mock(Request.class);
+        when(req.headers("X-Forwarded-For")).thenReturn("203.0.113.99, not an ip");
+        when(req.ip()).thenReturn("127.0.0.1");
+
+        assertEquals("127.0.0.1", ClientIpResolver.resolve(req, true));
+    }
+
+    @Test
+    void stripsIpv6BracketsFromXForwardedFor() {
+        Request req = mock(Request.class);
+        when(req.headers("X-Forwarded-For")).thenReturn("[2001:db8::1]");
+
+        assertEquals("2001:db8::1", ClientIpResolver.resolve(req, true));
     }
 
     @Test
     void stripsIpv6BracketsFromRequestIp() {
         Request req = mock(Request.class);
-        when(req.headers("True-Client-Ip")).thenReturn(null);
-        when(req.headers("CF-Connecting-IP")).thenReturn(null);
+        when(req.headers("X-Forwarded-For")).thenReturn(null);
         when(req.ip()).thenReturn("[2001:db8::1]");
 
         assertEquals("2001:db8::1", ClientIpResolver.resolve(req, false));
     }
 
     @Test
-    void stripsIpv6BracketsFromTrustedHeaderOnRender() {
-        Request req = mock(Request.class);
-        when(req.headers("True-Client-Ip")).thenReturn("[2001:db8::1]");
-
-        assertEquals("2001:db8::1", ClientIpResolver.resolve(req, true));
-    }
-
-    @Test
-    void fallsBackToRequestIpWhenTrustedHeadersMissing() {
-        Request req = mock(Request.class);
-        when(req.headers("True-Client-Ip")).thenReturn(null);
-        when(req.headers("CF-Connecting-IP")).thenReturn(null);
-        when(req.ip()).thenReturn("127.0.0.1");
-
-        assertEquals("127.0.0.1", ClientIpResolver.resolve(req, false));
-    }
-
-    @Test
     void returnsUnknownWhenNoIpAvailable() {
         Request req = mock(Request.class);
-        when(req.headers("True-Client-Ip")).thenReturn(" ");
-        when(req.headers("CF-Connecting-IP")).thenReturn(null);
+        when(req.headers("X-Forwarded-For")).thenReturn(" ");
         when(req.ip()).thenReturn(null);
 
-        assertEquals("unknown", ClientIpResolver.resolve(req, false));
-    }
-
-    @Test
-    void rejectsMalformedHeaderValuesOnRender() {
-        Request req = mock(Request.class);
-        when(req.headers("True-Client-Ip")).thenReturn("not an ip, injected");
-        when(req.headers("CF-Connecting-IP")).thenReturn(null);
-        when(req.ip()).thenReturn("127.0.0.1");
-
-        assertEquals("127.0.0.1", ClientIpResolver.resolve(req, true));
+        assertEquals("unknown", ClientIpResolver.resolve(req, true));
     }
 }

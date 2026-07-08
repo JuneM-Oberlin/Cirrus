@@ -2,6 +2,13 @@ package com.weatherapp.server;
 
 import spark.Request;
 
+/**
+ * Resolves the real client IP for rate limiting. Behind the EC2 Caddy
+ * reverse proxy every request's remote address is Caddy itself, so with
+ * TRUST_PROXY=true we read Caddy's X-Forwarded-For header instead. Only
+ * the rightmost entry is used — it's the hop appended by our own proxy;
+ * anything to its left could be client-supplied and spoofed.
+ */
 final class ClientIpResolver {
 
     private static final String UNKNOWN_IP = "unknown";
@@ -15,14 +22,9 @@ final class ClientIpResolver {
 
     static String resolve(Request req, boolean trustProxyHeaders) {
         if (trustProxyHeaders) {
-            String trueClientIp = sanitizeIp(req.headers("True-Client-Ip"));
-            if (trueClientIp != null) {
-                return trueClientIp;
-            }
-
-            String cfConnectingIp = sanitizeIp(req.headers("CF-Connecting-IP"));
-            if (cfConnectingIp != null) {
-                return cfConnectingIp;
+            String forwardedFor = lastForwardedHop(req.headers("X-Forwarded-For"));
+            if (forwardedFor != null) {
+                return forwardedFor;
             }
         }
 
@@ -35,7 +37,15 @@ final class ClientIpResolver {
     }
 
     private static boolean trustProxyHeaders() {
-        return "true".equalsIgnoreCase(System.getenv("RENDER"));
+        return "true".equalsIgnoreCase(System.getenv("TRUST_PROXY"));
+    }
+
+    private static String lastForwardedHop(String header) {
+        if (header == null || header.isBlank()) {
+            return null;
+        }
+        String[] hops = header.split(",");
+        return sanitizeIp(hops[hops.length - 1]);
     }
 
     private static String sanitizeIp(String raw) {
