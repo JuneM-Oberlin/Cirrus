@@ -28,10 +28,6 @@ public class OpenWeatherClient {
         this.apiKey = resolveApiKey();
     }
 
-    OpenWeatherClient(String apiKey) {
-        this.apiKey = apiKey;
-    }
-
     private static String resolveApiKey() {
         String apiKey = System.getenv("WEATHER_API_KEY");
         if (apiKey == null || apiKey.isEmpty()) {

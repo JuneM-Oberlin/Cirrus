@@ -44,10 +44,6 @@ final class CorsConfig {
         return origin != null && !origin.isBlank() && allowedOrigins.contains(origin);
     }
 
-    Set<String> allowedOrigins() {
-        return allowedOrigins;
-    }
-
     void apply(Request request, Response response) {
         String origin = request.headers("Origin");
         if (!isAllowed(origin)) {
