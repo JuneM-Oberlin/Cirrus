@@ -614,9 +614,14 @@
   }
 
   .alert-seg {
+    flex: 0 0 auto; /* short segs keep their content readable... */
     padding: 7px 4px;
     font-size: 12px;
     gap: 4px;
+  }
+
+  .alert-seg:first-child {
+    flex: 1 1 0; /* ...and the long area name takes what's left, truncating */
   }
 
   .alert-seg-ic {
