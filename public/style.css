@@ -125,6 +125,7 @@ body.theme-day::after {
   .alert-close,
   .alert-back,
   .alert-channel,
+  .alert-bottom-bar,
   .dock-btn
 ):focus-visible {
   outline: 3px solid var(--focus-ring);
@@ -1294,7 +1295,8 @@ body.theme-day::after {
   }
 }
 
-/* Bottom bar — P1-P4-style status strip */
+/* Bottom bar — P1-P4-style status strip. Tap toggles the full (untruncated)
+   text; press-and-hold peeks at it. */
 .alert-bottom-bar {
   display: flex;
   flex-direction: column;
@@ -1304,6 +1306,11 @@ body.theme-day::after {
   min-height: max(156px, 19vh);
   padding: 30px 32px 34px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 }
 
 .alert-strip {
@@ -1321,6 +1328,7 @@ body.theme-day::after {
 
 .alert-seg {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1331,10 +1339,31 @@ body.theme-day::after {
   color: #eef3f8;
   border-right: 1px solid rgba(255, 255, 255, 0.3);
   text-align: center;
+  overflow: hidden;
 }
 
 .alert-seg:last-child { border-right: 0; }
 .alert-seg b { color: var(--alert-seg-accent); font-weight: 800; }
+
+/* Keep each segment to a single line — long area names truncate, never wrap */
+.alert-seg b,
+.alert-seg .alert-seg-txt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Expanded (tap / hold-to-peek): segments wrap to show the full text */
+.alert-bottom-bar--expanded .alert-strip {
+  border-radius: 20px;
+}
+
+.alert-bottom-bar--expanded .alert-seg b,
+.alert-bottom-bar--expanded .alert-seg .alert-seg-txt {
+  white-space: normal;
+  overflow: visible;
+}
 
 .alert-seg-ic {
   width: 16px;

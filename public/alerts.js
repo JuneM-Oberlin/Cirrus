@@ -350,8 +350,20 @@ const CirrusAlerts = (function () {
             b.textContent = text;
             seg.appendChild(b);
         } else {
-            seg.appendChild(document.createTextNode(text));
+            const s = document.createElement("span");
+            s.className = "alert-seg-txt";
+            s.textContent = text;
+            seg.appendChild(s);
         }
+    }
+
+    function setAlertStripExpanded(expanded) {
+        const wrap = document.getElementById("alertStripWrap");
+        if (!wrap) {
+            return;
+        }
+        wrap.classList.toggle("alert-bottom-bar--expanded", expanded);
+        wrap.setAttribute("aria-expanded", expanded ? "true" : "false");
     }
 
     function renderAlertStrip() {
@@ -359,6 +371,7 @@ const CirrusAlerts = (function () {
         if (!strip) {
             return;
         }
+        setAlertStripExpanded(false);
         strip.replaceChildren();
 
         const first = session.alerts[0] || {};
@@ -552,6 +565,68 @@ const CirrusAlerts = (function () {
                 document.getElementById("alertClose")?.focus();
             });
         }
+        wireAlertStrip();
+    }
+
+    function wireAlertStrip() {
+        const wrap = document.getElementById("alertStripWrap");
+        if (!wrap || wrap.dataset.alertWired) {
+            return;
+        }
+        wrap.dataset.alertWired = "1";
+        wrap.setAttribute("role", "button");
+        wrap.setAttribute("tabindex", "0");
+        wrap.setAttribute("aria-expanded", "false");
+        wrap.setAttribute("aria-label", "Alert summary — activate to show the full text");
+
+        const isExpanded = () => wrap.classList.contains("alert-bottom-bar--expanded");
+
+        // Press-and-hold peeks at the full text; releasing collapses it again.
+        // The click that fires after a hold-release must not re-toggle.
+        const HOLD_MS = 350;
+        let holdTimer = null;
+        let holdPeek = false;
+        let suppressClick = false;
+
+        const endHold = () => {
+            clearTimeout(holdTimer);
+            holdTimer = null;
+            if (holdPeek) {
+                holdPeek = false;
+                suppressClick = true;
+                setTimeout(() => { suppressClick = false; }, 0);
+                setAlertStripExpanded(false);
+            }
+        };
+
+        wrap.addEventListener("pointerdown", (e) => {
+            if (e.pointerType === "mouse" && e.button !== 0) {
+                return;
+            }
+            clearTimeout(holdTimer);
+            holdTimer = setTimeout(() => {
+                holdPeek = true;
+                setAlertStripExpanded(true);
+            }, HOLD_MS);
+        });
+        wrap.addEventListener("pointerup", endHold);
+        wrap.addEventListener("pointercancel", endHold);
+        wrap.addEventListener("pointerleave", endHold);
+        wrap.addEventListener("contextmenu", (e) => e.preventDefault());
+
+        wrap.addEventListener("click", () => {
+            if (suppressClick) {
+                suppressClick = false;
+                return;
+            }
+            setAlertStripExpanded(!isExpanded());
+        });
+        wrap.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setAlertStripExpanded(!isExpanded());
+            }
+        });
     }
 
     return {
