@@ -656,6 +656,110 @@
   87% { opacity: 0.52; }
 }
 
+@keyframes channelColonBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.2; }
+}
+
+@media (min-width: 768px) {
+  .channel-letterbox {
+    animation: alertBarDown 0.7s var(--nintendo-spring) both;
+  }
+
+  .channel-letterbox::before {
+    animation: dockScanDrift 10s linear infinite;
+  }
+
+  .channel-tray {
+    animation: alertBarUp 0.7s var(--nintendo-spring) both;
+  }
+
+  .channel-tray-crt {
+    animation: dockScanStatic 8s steps(8) infinite;
+  }
+
+  .channel-grid--enter .channel-tile {
+    animation: nintendoPop 0.5s var(--nintendo-spring) backwards;
+  }
+
+  .channel-grid--enter .channel-tile:nth-child(1) { animation-delay: 0.06s; }
+  .channel-grid--enter .channel-tile:nth-child(2) { animation-delay: 0.12s; }
+  .channel-grid--enter .channel-tile:nth-child(3) { animation-delay: 0.18s; }
+  .channel-grid--enter .channel-tile:nth-child(4) { animation-delay: 0.24s; }
+  .channel-grid--enter .channel-tile:nth-child(5) { animation-delay: 0.30s; }
+  .channel-grid--enter .channel-tile:nth-child(6) { animation-delay: 0.36s; }
+  .channel-grid--enter .channel-tile:nth-child(7) { animation-delay: 0.47s; }
+  .channel-grid--enter .channel-tile:nth-child(8) { animation-delay: 0.52s; }
+  .channel-grid--enter .channel-tile:nth-child(9) { animation-delay: 0.57s; }
+  .channel-grid--enter .channel-tile:nth-child(10) { animation-delay: 0.62s; }
+  .channel-grid--enter .channel-tile:nth-child(11) { animation-delay: 0.67s; }
+  .channel-grid--enter .channel-tile:nth-child(12) { animation-delay: 0.72s; }
+
+  .channel-tile--live {
+    transition: transform 0.35s var(--nintendo-spring), box-shadow 0.3s var(--nintendo-soft);
+  }
+
+  .channel-tile--live:hover {
+    z-index: 2;
+    transform: scale(1.06);
+    box-shadow: 0 0 0 3px #34beed, 0 0 18px 4px rgba(52, 190, 237, 0.5);
+  }
+
+  .channel-tile--live:active,
+  .channel-search button:active,
+  .channel-back:active,
+  .channel-tray-button:active {
+    animation: wiiSquashPress 0.4s var(--nintendo-spring);
+  }
+
+  .channel-today-icon,
+  .channel-takeover-icon {
+    animation: iconBob 3.2s var(--nintendo-soft) infinite;
+  }
+
+  .channel-grid-hint {
+    animation: hintBounce 2s var(--nintendo-soft) infinite;
+  }
+
+  .channel-takeover:not(.hidden) {
+    animation: nintendoPop 0.5s var(--nintendo-spring) both;
+  }
+
+  .channel-search button,
+  .channel-back,
+  .channel-tray-button {
+    transition: transform 0.35s var(--nintendo-spring), box-shadow 0.3s var(--nintendo-soft), border-color 0.2s var(--nintendo-soft);
+  }
+
+  .channel-search button:hover,
+  .channel-back:hover {
+    border-color: #4fd0fb;
+    transform: translateY(-2px) scale(1.03);
+  }
+
+  .channel-tray-button:not(:disabled):hover {
+    transform: translateY(-3px) scale(1.05);
+  }
+
+  .channel-search button.search-press-feedback {
+    animation: searchPressGlow 0.62s var(--nintendo-spring) both;
+  }
+
+  .channel-search button.is-searching {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+      0 0 0 1.5px rgba(52, 190, 237, 0.55),
+      0 2px 8px rgba(0, 0, 0, 0.28),
+      0 0 10px 2px rgba(52, 190, 237, 0.42),
+      0 0 18px 4px rgba(52, 190, 237, 0.26);
+  }
+
+  .channel-clock-colon {
+    animation: channelColonBlink 2s steps(1) infinite;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -772,5 +876,30 @@
     transition: none !important;
     transform: none !important;
     opacity: 1 !important;
+  }
+
+  /* Variant C: keep every desktop state visible and static. */
+  .channel-letterbox,
+  .channel-letterbox::before,
+  .channel-tray,
+  .channel-tray-crt,
+  .channel-grid--enter .channel-tile,
+  .channel-today-icon,
+  .channel-takeover-icon,
+  .channel-grid-hint,
+  .channel-takeover:not(.hidden),
+  .channel-search button:active,
+  .channel-back:active,
+  .channel-tray-button:active,
+  .channel-search button.search-press-feedback,
+  .channel-clock-colon {
+    animation: none !important;
+  }
+
+  .channel-tile--live:hover,
+  .channel-search button:hover,
+  .channel-back:hover,
+  .channel-tray-button:not(:disabled):hover {
+    transform: none !important;
   }
 }

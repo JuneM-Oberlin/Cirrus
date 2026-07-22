@@ -238,6 +238,8 @@ function normalizeBackendWeatherData(data) {
         pressure: data.pressure,
         sunrise: data.sunrise,
         sunset: data.sunset,
+        tempMin: data.tempMin,
+        tempMax: data.tempMax,
         lat: data.lat,
         lon: data.lon,
         timezoneOffset: data.timezoneOffset ?? 0,
@@ -326,12 +328,22 @@ function applyWeatherContext(weatherData, { showToday = true } = {}) {
     CirrusAlerts.checkAlerts(weatherData);
 }
 
-function completeForecastLoad(city, weatherData, forecastData) {
+function completeForecastLoad(city, weatherData, forecastData, {
+    showToday = false,
+    renderChannels = false,
+} = {}) {
+    if (renderChannels && (!Array.isArray(forecastData) || forecastData.length < 5)) {
+        throw new Error("Forecast data is incomplete.");
+    }
+
     set("cityName", formatCityLabel(city));
     updateHeaderCityVisibility();
-    applyWeatherContext(weatherData, { showToday: false });
+    applyWeatherContext(weatherData, { showToday });
     CirrusForecast.render(forecastData, weatherData.timezoneOffset);
     addToHistory(city);
+    if (renderChannels) {
+        CirrusDesktopChannels.render(weatherData, forecastData);
+    }
 }
 
 function updateHeaderCityVisibility() {
@@ -350,6 +362,7 @@ let coldStartTimers = [];
 function startColdStartLoading(initialMessage) {
     stopColdStartLoading();
     CirrusSearchUI.setSearching(true);
+    CirrusDesktopChannels.setSearching(true);
     set("loading", initialMessage);
     show("loading");
 
@@ -382,6 +395,7 @@ function stopColdStartLoading() {
     });
     coldStartTimers = [];
     CirrusSearchUI.setSearching(false);
+    CirrusDesktopChannels.setSearching(false);
 }
 
 async function withLoading(task, {
@@ -417,7 +431,12 @@ async function withLoading(task, {
     }
 }
 
-function searchCity() {
+function searchCity(cityOverride) {
+    if (typeof cityOverride === "string") {
+        searchDesktopChannels(cityOverride);
+        return;
+    }
+
     const city = document.getElementById("cityInput").value.trim();
     if (!city) {
         return;
@@ -430,6 +449,22 @@ function searchCity() {
     } else {
         searchToday(city);
     }
+}
+
+function searchDesktopChannels(city) {
+    document.getElementById("cityInput").value = city;
+    updateHistoryFilter();
+
+    withLoading(async () => {
+        const [weatherData, forecastData] = await Promise.all([
+            fetchWeatherData(city),
+            fetchForecastData(city),
+        ]);
+        completeForecastLoad(city, weatherData, forecastData, {
+            showToday: true,
+            renderChannels: true,
+        });
+    }, { revealWeather: false, loadingMessage: "Fetching forecast" });
 }
 
 function searchToday(city) {
@@ -499,9 +534,11 @@ function updateGlobe(lat, lon) {
     img.onload = () => {
         globe.style.backgroundImage = `url('${nasaUrl}')`;
         globe.classList.remove("globe-hidden");
+        CirrusDesktopChannels.setGlobeImage(nasaUrl);
     };
     img.onerror = () => {
         globe.classList.add("globe-hidden");
+        CirrusDesktopChannels.setGlobeImage(null);
     };
     img.src = nasaUrl;
 }
@@ -621,6 +658,12 @@ CirrusForecast.init({
     formatCityNow,
     getTimezoneOffset: () => activeTimezoneOffset,
     onTodayTabActive: () => CirrusAlerts.syncOverlay(),
+});
+CirrusDesktopChannels.init({
+    formatCityNow,
+    degreesToCompass,
+    refreshAtmosphere: (conditionId) => CirrusAtmosphere.refresh(conditionId),
+    onSearch: searchCity,
 });
 
 // Live clock in the mobile dock 

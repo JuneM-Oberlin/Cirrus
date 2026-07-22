@@ -185,6 +185,162 @@
 
     </div> <!-- /page-content -->
 
+    <!-- Variant C: desktop-only Wii channel menu. Mobile keeps the interface above. -->
+    <main class="desktop-channels" id="desktopChannels" aria-label="Weather channels">
+      <section class="channel-letterbox" aria-labelledby="channelMenuTitle">
+        <div class="channel-letterbox-copy">
+          <h2 id="channelMenuTitle">Weather Channels</h2>
+          <p>Pick a channel · <span id="channelAsOf">As of --:-- --, --/--</span></p>
+        </div>
+        <div class="channel-search">
+          <input id="desktopCityInput" type="text" placeholder="Enter city" aria-label="City name">
+          <button type="button" id="desktopSearchButton" aria-label="Search">
+            <span>Search</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="channel-stage" aria-live="polite">
+        <p class="channel-prompt" id="channelPrompt">Search a city to tune the channels</p>
+
+        <div class="channel-grid-wrap hidden" id="channelGridWrap">
+          <div class="channel-grid" id="channelGrid">
+            <button type="button" class="channel-tile channel-tile--live channel-tile--today"
+                    data-channel-target="today" aria-label="Open today channel">
+              <span class="channel-screen channel-screen--today">
+                <span class="channel-today-title" id="channelTodayTitle">Today Channel · --</span>
+                <span class="channel-today-weather">
+                  <span class="channel-today-temp" id="channelTodayTemp">--°</span>
+                  <img class="channel-today-icon" id="channelTodayIcon" src="icons/default.png" alt="">
+                </span>
+              </span>
+            </button>
+
+            <button type="button" class="channel-tile channel-tile--live channel-tile--day"
+                    data-channel-target="0" aria-label="Open forecast channel 1">
+              <span class="channel-screen channel-screen--day">
+                <span class="channel-day-label">--</span>
+                <span class="channel-day-weather">
+                  <img class="channel-day-icon" src="icons/default.png" alt="">
+                  <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
+                </span>
+              </span>
+            </button>
+            <button type="button" class="channel-tile channel-tile--live channel-tile--day"
+                    data-channel-target="1" aria-label="Open forecast channel 2">
+              <span class="channel-screen channel-screen--day">
+                <span class="channel-day-label">--</span>
+                <span class="channel-day-weather">
+                  <img class="channel-day-icon" src="icons/default.png" alt="">
+                  <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
+                </span>
+              </span>
+            </button>
+            <button type="button" class="channel-tile channel-tile--live channel-tile--day"
+                    data-channel-target="2" aria-label="Open forecast channel 3">
+              <span class="channel-screen channel-screen--day">
+                <span class="channel-day-label">--</span>
+                <span class="channel-day-weather">
+                  <img class="channel-day-icon" src="icons/default.png" alt="">
+                  <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
+                </span>
+              </span>
+            </button>
+            <button type="button" class="channel-tile channel-tile--live channel-tile--day"
+                    data-channel-target="3" aria-label="Open forecast channel 4">
+              <span class="channel-screen channel-screen--day">
+                <span class="channel-day-label">--</span>
+                <span class="channel-day-weather">
+                  <img class="channel-day-icon" src="icons/default.png" alt="">
+                  <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
+                </span>
+              </span>
+            </button>
+            <button type="button" class="channel-tile channel-tile--live channel-tile--day"
+                    data-channel-target="4" aria-label="Open forecast channel 5">
+              <span class="channel-screen channel-screen--day">
+                <span class="channel-day-label">--</span>
+                <span class="channel-day-weather">
+                  <img class="channel-day-icon" src="icons/default.png" alt="">
+                  <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
+                </span>
+              </span>
+            </button>
+
+            <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
+            <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
+            <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
+            <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
+            <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
+            <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
+          </div>
+          <p class="channel-grid-hint">Pick a channel to open it</p>
+        </div>
+
+        <div class="channel-takeover hidden" id="channelTakeover">
+          <button type="button" class="channel-back" id="channelBack" aria-label="Back to channels">Back</button>
+          <div class="channel-takeover-screen" id="channelTakeoverScreen">
+            <div class="channel-takeover-body">
+              <div class="channel-takeover-left">
+                <div class="channel-takeover-temps">
+                  <span class="channel-takeover-high" id="channelTakeoverHigh">--°</span>
+                  <span class="channel-takeover-low" id="channelTakeoverLow">--°</span>
+                </div>
+                <div class="channel-takeover-summary">
+                  <h3 id="channelTakeoverTitle">--</h3>
+                  <p id="channelTakeoverDescription">--</p>
+                </div>
+              </div>
+              <div class="channel-takeover-right">
+                <img class="channel-takeover-icon" id="channelTakeoverIcon" src="icons/default.png" alt="">
+                <div class="channel-takeover-stats">
+                  <strong id="channelTakeoverWind">Wind -- mph</strong>
+                  <span id="channelTakeoverExtra">--</span>
+                </div>
+              </div>
+            </div>
+            <span class="channel-nasa-credit hidden" id="channelNasaCredit">Image owned by NASA</span>
+            <div class="channel-takeover-asof" id="channelTakeoverAsOf">As of --:-- --, --/--</div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="channel-tray" aria-label="Channel controls">
+        <svg class="channel-tray-wave" viewBox="0 0 1440 150" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <pattern id="channelTrayCrt" width="6" height="4" patternUnits="userSpaceOnUse">
+              <rect x="0" y="0" width="6" height="1.2" fill="rgba(0,0,0,0.16)"></rect>
+              <rect x="0" y="2" width="6" height="0.8" fill="rgba(255,255,255,0.35)"></rect>
+            </pattern>
+          </defs>
+          <path d="M0,13 C300,13 400,78 720,78 C1040,78 1140,13 1440,13 L1440,150 L0,150 Z" fill="rgb(225,226,230)"></path>
+          <path class="channel-tray-crt" d="M0,13 C300,13 400,78 720,78 C1040,78 1140,13 1440,13 L1440,150 L0,150 Z" fill="url(#channelTrayCrt)"></path>
+          <path d="M0,24 C300,24 400,89 720,89 C1040,89 1140,24 1440,24" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="16"></path>
+          <path d="M0,13 C300,13 400,78 720,78 C1040,78 1140,13 1440,13" fill="none" stroke="rgb(54,191,237)" stroke-width="5"></path>
+        </svg>
+        <div class="channel-tray-controls">
+          <div class="channel-tray-corner channel-tray-corner--left">
+            <div class="channel-tray-groove" aria-hidden="true"></div>
+            <button type="button" class="channel-tray-button is-active" id="channelTrayGrid" aria-label="All channels" title="All channels">
+              <svg class="channel-tray-crescent" aria-hidden="true" viewBox="0 0 131 128"><path d="M 103.15 52.253 C 118.738 37.646 120.095 11.919 100.046 4.543 C 92.058 1.604 83.428 0 74.425 0 C 33.321 0 0 33.435 0 74.679 C 0 81.851 1.008 88.788 2.889 95.353 C 8.8 115.984 34.686 116.41 50.346 101.735 L 103.15 52.253 Z"></path></svg>
+              <span>Cirrus</span>
+            </button>
+          </div>
+          <div class="channel-clock" aria-label="Current local time">
+            <div class="channel-clock-time"><span id="channelClockHour">--</span><span class="channel-clock-colon">:</span><span id="channelClockMinute">--</span><b id="channelClockMeridiem">--</b></div>
+            <div class="channel-clock-date" id="channelClockDate">--</div>
+          </div>
+          <div class="channel-tray-corner channel-tray-corner--right">
+            <div class="channel-tray-groove" aria-hidden="true"></div>
+            <button type="button" class="channel-tray-button" id="channelTrayToday" aria-label="Open today" title="Open today" disabled>
+              <svg class="channel-tray-crescent" aria-hidden="true" viewBox="0 0 131 128"><path d="M 103.15 52.253 C 118.738 37.646 120.095 11.919 100.046 4.543 C 92.058 1.604 83.428 0 74.425 0 C 33.321 0 0 33.435 0 74.679 C 0 81.851 1.008 88.788 2.889 95.353 C 8.8 115.984 34.686 116.41 50.346 101.735 L 103.15 52.253 Z"></path></svg>
+              <img src="icons/clear-night.png" alt="">
+            </button>
+          </div>
+        </div>
+      </nav>
+    </main>
+
     <!-- Mobile bottom dock: tab buttons + live clock (phones only; desktop keeps header tabs) -->
     <div class="mobile-dock" id="mobileDock">
       <div class="dock-band" id="dockBand">As of --:-- --, --/--</div>
@@ -256,6 +412,7 @@
   <script src="alerts.js?v=20260710a"></script>
   <script src="atmosphere.js?v=20260706"></script>
   <script src="forecast.js?v=20260706e"></script>
-  <script src="script.js?v=20260713a"></script>
+  <script src="channels.js?v=20260721a"></script>
+  <script src="script.js?v=20260721a"></script>
 </body>
 </html>
