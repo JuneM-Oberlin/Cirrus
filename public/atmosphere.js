@@ -7,47 +7,31 @@ const CirrusAtmosphere = (function () {
         thunderstorm: "rain-heavy",
     };
 
+    const WEATHER_EFFECT_RANGES = [
+        [200, 232, "thunderstorm"],
+        [300, 321, "drizzle"],
+        [500, 501, "rain"],
+        [502, 504, "rain-heavy"],
+        [510, 511, "sleet"],
+        [520, 531, "rain"],
+        [600, 602, "snow"],
+        [611, 613, "sleet"],
+        [615, 616, "sleet"],
+        [620, 622, "snow"],
+        [701, 762, "fog"],
+        [771, 771, "thunderstorm"],
+        [781, 781, "thunderstorm"],
+        [801, 802, "clouds"],
+        [803, Infinity, "clouds-heavy"],
+    ];
+
     function getWeatherEffect(conditionId) {
         const id = Number(conditionId);
         if (!Number.isFinite(id)) {
             return "clear";
         }
-
-        if (id >= 200 && id <= 232) {
-            return "thunderstorm";
-        }
-        if (id >= 300 && id <= 321) {
-            return "drizzle";
-        }
-        if (id >= 500 && id <= 501) {
-            return "rain";
-        }
-        if (id >= 502 && id <= 504) {
-            return "rain-heavy";
-        }
-        if (id === 510 || id === 511 || id === 611 || id === 612 || id === 613
-            || id === 615 || id === 616) {
-            return "sleet";
-        }
-        if (id >= 520 && id <= 531) {
-            return "rain";
-        }
-        if ((id >= 600 && id <= 602) || (id >= 620 && id <= 622)) {
-            return "snow";
-        }
-        if (id === 771 || id === 781) {
-            return "thunderstorm";
-        }
-        if (id >= 701 && id <= 762) {
-            return "fog";
-        }
-        if (id === 801 || id === 802) {
-            return "clouds";
-        }
-        if (id >= 803) {
-            return "clouds-heavy";
-        }
-        return "clear";
+        const match = WEATHER_EFFECT_RANGES.find(([min, max]) => id >= min && id <= max);
+        return match ? match[2] : "clear";
     }
 
     function stormLightningProfile(conditionId) {

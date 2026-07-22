@@ -1,0 +1,62 @@
+{
+  "entry": [
+    "public/index.html",
+    "test/*.test.js"
+  ],
+  "rules": {
+    "security-client-server-leak": "warn",
+    "security-sink": "warn"
+  },
+  "security": {
+    "categories": {
+      "include": [
+        "dangerous-html",
+        "template-escape-bypass",
+        "command-injection",
+        "code-injection",
+        "dynamic-regex",
+        "redos-regex",
+        "resource-amplification",
+        "dynamic-module-load",
+        "sql-injection",
+        "ssrf",
+        "path-traversal",
+        "header-injection",
+        "open-redirect",
+        "postmessage-wildcard-origin",
+        "tls-validation-disabled",
+        "cleartext-transport",
+        "electron-unsafe-webpreferences",
+        "world-writable-permission",
+        "insecure-temp-file",
+        "mysql-multiple-statements",
+        "permissive-cors",
+        "insecure-cookie",
+        "mass-assignment",
+        "weak-crypto",
+        "deprecated-cipher",
+        "insecure-randomness",
+        "jwt-alg-none",
+        "jwt-verify-missing-algorithms",
+        "unsafe-buffer-alloc",
+        "unsafe-deserialization",
+        "angular-trusted-html",
+        "nextjs-open-redirect",
+        "dom-document-write",
+        "jquery-html",
+        "route-send-file",
+        "webview-injection",
+        "prototype-pollution",
+        "zip-slip",
+        "nosql-injection",
+        "ssti",
+        "xxe",
+        "secret-pii-log",
+        "hardcoded-secret",
+        "secret-to-network",
+        "llm-call-injection",
+        "xpath-injection"
+      ]
+    }
+  }
+}
