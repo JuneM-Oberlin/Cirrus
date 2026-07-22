@@ -4,6 +4,13 @@
   --nintendo-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --nintendo-soft: cubic-bezier(0.32, 0.72, 0, 1);
   --nintendo-press: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --wii-searching-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+    0 0 0 1.5px rgba(52, 190, 237, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.28),
+    0 0 10px 2px rgba(52, 190, 237, 0.42),
+    0 0 18px 4px rgba(52, 190, 237, 0.26);
 }
 
 @keyframes nintendoPop {
@@ -232,13 +239,7 @@
       0 0 22px 6px rgba(52, 190, 237, 0.55);
   }
   100% {
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.95),
-      inset 0 -2px 3px rgba(54, 195, 242, 0.25),
-      0 0 0 1.5px rgba(52, 190, 237, 0.55),
-      0 2px 8px rgba(0, 0, 0, 0.28),
-      0 0 10px 2px rgba(52, 190, 237, 0.42),
-      0 0 18px 4px rgba(52, 190, 237, 0.26);
+    box-shadow: var(--wii-searching-shadow);
   }
 }
 
@@ -256,13 +257,7 @@
 
 /* Softer cyan halo while a search is in flight (matches searchPressGlow 100%) */
 .search-row button.is-searching {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -2px 3px rgba(54, 195, 242, 0.25),
-    0 0 0 1.5px rgba(52, 190, 237, 0.55),
-    0 2px 8px rgba(0, 0, 0, 0.28),
-    0 0 10px 2px rgba(52, 190, 237, 0.42),
-    0 0 18px 4px rgba(52, 190, 237, 0.26);
+  box-shadow: var(--wii-searching-shadow);
   transition: box-shadow 0.35s var(--nintendo-soft);
 }
 
@@ -746,13 +741,7 @@
   }
 
   .channel-search button.is-searching {
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.95),
-      inset 0 -2px 3px rgba(54, 195, 242, 0.25),
-      0 0 0 1.5px rgba(52, 190, 237, 0.55),
-      0 2px 8px rgba(0, 0, 0, 0.28),
-      0 0 10px 2px rgba(52, 190, 237, 0.42),
-      0 0 18px 4px rgba(52, 190, 237, 0.26);
+    box-shadow: var(--wii-searching-shadow);
   }
 
   .channel-clock-colon {
@@ -820,11 +809,7 @@
   .search-row button.is-searching {
     animation: none !important;
     filter: none !important;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.95),
-      inset 0 -2px 3px rgba(54, 195, 242, 0.25),
-      0 0 0 1px rgba(54, 195, 242, 0.35),
-      0 3px 9px rgba(0, 0, 0, 0.32) !important;
+    box-shadow: var(--wii-pill-rest-shadow) !important;
   }
 
   .search-row button.search-press-feedback::before,

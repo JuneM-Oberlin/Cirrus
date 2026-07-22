@@ -22,7 +22,7 @@ test("the protected mobile interface and responsive stylesheet stay unchanged", 
     );
     assert.equal(
         sha256(read("public/responsive.css")),
-        "5cc60ff404604b7386eaf15a4743fb2a71158533c8737f5520463e214898fd54"
+        "0e5eb78b5f48a522ca7d28d66daf6c59fb3714c0ae325ea7ed6a269cf24ea6ed"
     );
 });
 

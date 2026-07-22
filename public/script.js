@@ -187,6 +187,7 @@ const BACKEND_URL = location.hostname.endsWith(".github.io")
     ? "https://cirrus-project1.duckdns.org"
     : "";
 
+// fallow-ignore-next-line security-sink -- BACKEND_URL is same-origin or the pinned HTTPS API, and /health is a fixed path.
 fetch(`${BACKEND_URL}/health`).catch(() => {});
 
 const clientCache = {
@@ -283,6 +284,7 @@ async function fetchCached(path, city, cache, normalize = (d) => d) {
 
     let response;
     try {
+        // fallow-ignore-next-line security-sink -- callers pass only weather or forecast, and the city query value is percent-encoded.
         response = await fetch(`${BACKEND_URL}/${path}?city=${encodeURIComponent(city)}`);
     } catch (fetchError) {
         throw new Error(networkErrorMessage());

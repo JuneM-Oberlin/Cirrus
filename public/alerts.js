@@ -101,6 +101,7 @@ const CirrusAlerts = (function () {
         }
         try {
             const url = `${backendUrl}/alerts?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+            // fallow-ignore-next-line security-sink -- backendUrl is same-origin or pinned HTTPS, and both coordinates are percent-encoded.
             const response = await fetch(url);
             const data = await response.json();
             if (!response.ok || data.error) {
@@ -338,6 +339,7 @@ const CirrusAlerts = (function () {
         if (svg) {
             const ic = document.createElement("span");
             ic.style.display = "inline-flex";
+            // fallow-ignore-next-line security-sink -- svg is selected only from the static ALERT_SEG_ICONS table above.
             ic.innerHTML = svg;
             seg.appendChild(ic);
         }

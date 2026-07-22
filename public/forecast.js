@@ -322,6 +322,7 @@ const CirrusForecast = (function () {
             band.textContent = `As of ${timeText}, ${dateText}`;
         }
 
+        // fallow-ignore-next-line security-sink -- string fields are escaped; icons are local mappings and weather metrics are numeric.
         strip.innerHTML = days.map((day, i) => {
             const iconKey = day.conditionId;
             const rainIcon = forecastRainIcon(day);
@@ -431,6 +432,7 @@ const CirrusForecast = (function () {
         const precip = precipInches > 0 ? `${precipInches.toFixed(2)} in` : "0 in";
         const wind = (day.windSpeed !== undefined) ? `${Math.round(day.windSpeed)} mph` : "—";
 
+        // fallow-ignore-next-line security-sink -- string fields are escaped and the remaining interpolations are formatted weather metrics.
         panel.innerHTML = `
         <div class="details-card glass-panel">
             <div class="details-left">
