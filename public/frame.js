@@ -258,6 +258,11 @@ const CirrusFrame = (function () {
             onClose: options.onClose || null,
         };
         byId("frame").dataset.screen = name;
+        if (element && element.classList.contains("screen--clear")) {
+            byId("frame").dataset.clear = "true";
+        } else {
+            delete byId("frame").dataset.clear;
+        }
         byId("panelViewport").inert = true;
         renderChrome();
     }
@@ -286,6 +291,7 @@ const CirrusFrame = (function () {
             element.classList.add("hidden");
         }
         delete byId("frame").dataset.screen;
+        delete byId("frame").dataset.clear;
         byId("panelViewport").inert = false;
         if (closing.onClose) {
             closing.onClose();

@@ -385,6 +385,90 @@
   filter: var(--hero-icon-shadow);
 }
 
+/* ---------- 5-Day forecast: five equal columns ---------- */
+
+.view--fiveday {
+  display: flex;
+  align-items: center;
+  padding-right: var(--space-4);
+  padding-bottom: var(--panel-footer-slim);
+  padding-left: var(--space-4);
+}
+
+.fiveday {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--fiveday-gap);
+  width: 100%;
+  height: min(100%, var(--fiveday-max-height));
+  list-style: none;
+}
+
+.fiveday-col {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+  justify-items: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 0 var(--space-3);
+  overflow: hidden;
+  background: var(--fiveday-col-face);
+  border: var(--hairline) solid var(--fiveday-col-border);
+  box-shadow: var(--fiveday-col-shadow);
+  color: var(--panel-text);
+  text-shadow: var(--panel-text-shadow);
+}
+
+.fiveday-col:hover {
+  background: var(--fiveday-col-face-hover);
+}
+
+.fiveday-col:focus-visible {
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+.fiveday-day {
+  align-self: stretch;
+  justify-self: stretch;
+  padding: var(--space-2) 0;
+  background: var(--fiveday-head-face);
+  font-size: var(--fiveday-head-font);
+  font-weight: var(--fw-heavy);
+  letter-spacing: var(--tracking-caps);
+  text-align: center;
+}
+
+.fiveday-day.is-weekend {
+  color: var(--weekend-text);
+}
+
+.fiveday-icon {
+  width: var(--fiveday-icon-size);
+  height: var(--fiveday-icon-size);
+  object-fit: contain;
+  filter: var(--hero-icon-shadow);
+}
+
+.fiveday-high,
+.fiveday-low {
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-tight);
+}
+
+.fiveday-high {
+  color: var(--temp-high);
+  font-size: var(--fiveday-high-font);
+  text-shadow: var(--temp-high-shadow);
+}
+
+.fiveday-low {
+  color: var(--temp-low);
+  font-size: var(--fiveday-low-font);
+  text-shadow: var(--temp-shadow);
+}
+
 /* ---------- Empty state ---------- */
 
 /* Until a city loads, every view shows its empty message instead. */
@@ -593,6 +677,21 @@
 
 .chip-btn:focus-visible {
   outline-offset: var(--focus-offset);
+}
+
+/* Clear screens (a single forecast day) keep the satellite panel behind
+   them and hide the view stack instead. */
+.screen--clear {
+  overflow: hidden;
+  background: none;
+}
+
+.frame[data-clear] .panel-viewport {
+  visibility: hidden;
+}
+
+.frame[data-clear] .panel-footer {
+  z-index: var(--z-status);
 }
 
 /* ---------- Desktop Home menu vs frame ---------- */

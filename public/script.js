@@ -390,15 +390,14 @@ function openChannel(target) {
         CirrusFrame.showView("current");
         return;
     }
-    let view = "current";
-    if (target === 0 && CirrusFrame.hasView("today")) {
-        view = "today";
-    } else if (target === 1 && CirrusFrame.hasView("tomorrow")) {
-        view = "tomorrow";
-    } else if (CirrusFrame.hasView("fiveday")) {
-        view = "fiveday";
+    if (target === 0) {
+        CirrusFrame.showView("today");
+    } else if (target === 1) {
+        CirrusFrame.showView("tomorrow");
+    } else {
+        CirrusFrame.showView("fiveday");
+        CirrusViews.openDay(target);
     }
-    CirrusFrame.showView(view);
 }
 
 /* ---------- Start up ---------- */

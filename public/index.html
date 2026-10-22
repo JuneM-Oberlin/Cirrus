@@ -246,6 +246,13 @@
             </div>
           </section>
 
+          <section class="view view--fiveday" data-view="fiveday" id="viewFiveday" aria-label="5-day forecast">
+            <div class="view-empty">
+              <p class="view-empty-text">Choose a city to see the 5-day forecast.</p>
+            </div>
+            <ol class="view-body fiveday" id="fivedayList"></ol>
+          </section>
+
         </div>
       </div>
 
@@ -253,6 +260,17 @@
         <h3 class="screen-heading" id="recentHeading">Recent cities</h3>
         <ul class="chip-list" id="recentList"></ul>
         <p class="screen-note">Type a city in the green bar above and press Go. Cirrus remembers the cities you pick.</p>
+      </section>
+
+      <section class="screen screen--clear hidden" id="screenDay" aria-label="Forecast day">
+        <div class="hero hero--day">
+          <div class="hero-temps">
+            <span class="hero-temp" id="dayHigh">--</span>
+            <span class="hero-low" id="dayLow">--</span>
+          </div>
+          <p class="hero-cond" id="dayCond">--</p>
+          <img class="hero-icon" id="dayIcon" src="icons/default.png" alt="">
+        </div>
       </section>
 
       <p id="loading" class="panel-status hidden" role="status" aria-live="polite">Fetching weather</p>

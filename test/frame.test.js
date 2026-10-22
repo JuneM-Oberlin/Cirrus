@@ -381,3 +381,39 @@ test("views fill Current, Today, and Tomorrow and hand readouts to the frame", (
     assert.equal(document.getElementById("framePanel").classList.contains("has-data"), false);
     assert.equal(readouts.today, null);
 });
+
+test("the 5-day view builds five columns with weekend names marked", () => {
+    const document = documentStub();
+    const opened = [];
+    const frame = {
+        setReadout() {},
+        setAsOf() {},
+        openScreen: (name, options) => opened.push([name, options.title]),
+    };
+    const unitsContext = runClassicScript("public/units.js", { console: quietConsole, localStorage: storageStub() });
+    const context = runClassicScript("public/views.js", { document, iconMap: { 800: "clear-day.png" } });
+    const views = lexical(context, "CirrusViews");
+    views.init({ frame, units: lexical(unitsContext, "CirrusUnits") });
+
+    const names = ["Fri", "Sat", "Sun", "Mon", "Tue"];
+    const forecast = names.map((day, i) => ({
+        day, high: 79 - i, low: 48 + i, condition: "<b>clear</b> sky", conditionId: 800, windSpeed: 5,
+    }));
+    views.render({ loadedAt: 0, weather: { temperature: 70, feelsLike: 70, condition: "clear", windDeg: 0,
+        windSpeed: 1, weatherCode: "01d", conditionId: 800, visibility: 1000, pressure: 1000, timezoneOffset: 0 },
+        forecast });
+
+    const columns = document.getElementById("fivedayList").children.map((item) => item.children[0]);
+    assert.equal(columns.length, 5);
+    const [name, , high, low] = columns[1].children;
+    assert.equal(name.textContent, "SAT");
+    assert.equal(name.classList.contains("is-weekend"), true);
+    assert.equal(columns[0].children[0].classList.contains("is-weekend"), false);
+    assert.equal(high.textContent, "78");
+    assert.equal(low.textContent, "49");
+    assert.match(columns[1].getAttribute("aria-label"), /^Saturday: <b>clear<\/b> Sky, high 78°, low 49°/);
+
+    columns[2].dispatch("click");
+    assert.deepEqual(opened, [["day", "Sunday"]]);
+    assert.equal(document.getElementById("dayHigh").textContent, "77°");
+});

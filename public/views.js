@@ -9,8 +9,19 @@ const CirrusViews = (function () {
         "W", "WNW", "NW", "NNW",
     ];
 
+    const WEEKDAYS = {
+        Sun: "Sunday",
+        Mon: "Monday",
+        Tue: "Tuesday",
+        Wed: "Wednesday",
+        Thu: "Thursday",
+        Fri: "Friday",
+        Sat: "Saturday",
+    };
+
     let frame = null;
     let units = null;
+    let forecastDays = [];
 
     function byId(id) {
         return document.getElementById(id);
@@ -94,13 +105,38 @@ const CirrusViews = (function () {
         });
     }
 
-    // Today and Tomorrow share one layout: yellow high, cyan low, the
-    // condition, a daytime icon, and wind plus rain chance in the readout.
-    function renderDay(prefix, viewId, day) {
-        if (!day) {
-            frame.setReadout(viewId, null);
-            return;
+    function fullWeekday(shortName) {
+        if (WEEKDAYS[shortName]) {
+            return WEEKDAYS[shortName];
         }
+        return shortName || "Forecast";
+    }
+
+    function isWeekend(shortName) {
+        return shortName === "Sat" || shortName === "Sun";
+    }
+
+    function dayReadout(day) {
+        let rainChance = day.rainChance;
+        if (rainChance === undefined || rainChance === null) {
+            rainChance = 0;
+        }
+        let precipInches = 0;
+        if (day.precipitation) {
+            precipInches = day.precipitation / 25.4;
+        }
+        return {
+            main: "Wind " + units.wind(day.windSpeed || 0),
+            stats: [
+                { text: "Chance of rain " + rainChance + "%" },
+                { text: "Precipitation " + units.precip(precipInches) },
+            ],
+        };
+    }
+
+    // Today, Tomorrow, and the day screen share one layout: yellow high,
+    // cyan low, the condition, and a daytime icon.
+    function fillDay(prefix, day) {
         const high = byId(prefix + "High");
         high.textContent = units.temp(day.high);
         high.setAttribute("aria-label", "High " + units.tempNumber(day.high) + " " + units.tempUnitName());
@@ -111,21 +147,66 @@ const CirrusViews = (function () {
         const condition = titleCase(day.condition);
         byId(prefix + "Cond").textContent = condition;
         setIcon(byId(prefix + "Icon"), day.conditionId, "", condition);
+    }
 
-        let rainChance = day.rainChance;
-        if (rainChance === undefined || rainChance === null) {
-            rainChance = 0;
+    function renderDay(prefix, viewId, day) {
+        if (!day) {
+            frame.setReadout(viewId, null);
+            return;
         }
-        let precipInches = 0;
-        if (day.precipitation) {
-            precipInches = day.precipitation / 25.4;
+        fillDay(prefix, day);
+        frame.setReadout(viewId, dayReadout(day));
+    }
+
+    // Opens one forecast day full-panel, titled with its weekday name.
+    function openDay(index) {
+        const day = forecastDays[index];
+        if (!day) {
+            return;
         }
-        frame.setReadout(viewId, {
-            main: "Wind " + units.wind(day.windSpeed || 0),
-            stats: [
-                { text: "Chance of rain " + rainChance + "%" },
-                { text: "Precipitation " + units.precip(precipInches) },
-            ],
+        fillDay("day", day);
+        frame.openScreen("day", {
+            title: fullWeekday(day.day),
+            readout: dayReadout(day),
+        });
+    }
+
+    function renderFiveDay(days) {
+        const list = byId("fivedayList");
+        list.replaceChildren();
+        days.slice(0, 5).forEach((day, index) => {
+            const item = document.createElement("li");
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "fiveday-col";
+            const condition = titleCase(day.condition);
+            button.setAttribute("aria-label",
+                fullWeekday(day.day) + ": " + condition + ", high " + units.temp(day.high)
+                + ", low " + units.temp(day.low) + ". Open details");
+
+            const name = document.createElement("span");
+            name.className = "fiveday-day";
+            if (isWeekend(day.day)) {
+                name.classList.add("is-weekend");
+            }
+            name.textContent = String(day.day || "").toUpperCase();
+
+            const icon = document.createElement("img");
+            icon.className = "fiveday-icon";
+            setIcon(icon, day.conditionId, "", "");
+
+            const high = document.createElement("span");
+            high.className = "fiveday-high";
+            high.textContent = String(units.tempNumber(day.high));
+
+            const low = document.createElement("span");
+            low.className = "fiveday-low";
+            low.textContent = String(units.tempNumber(day.low));
+
+            button.append(name, icon, high, low);
+            button.addEventListener("click", () => openDay(index));
+            item.appendChild(button);
+            list.appendChild(item);
         });
     }
 
@@ -135,6 +216,8 @@ const CirrusViews = (function () {
         renderCurrent(data.weather);
         renderDay("today", "today", data.forecast[0]);
         renderDay("tomorrow", "tomorrow", data.forecast[1]);
+        forecastDays = data.forecast;
+        renderFiveDay(data.forecast);
         frame.setAsOf(units.asOf(data.loadedAt, data.weather.timezoneOffset));
     }
 
@@ -142,6 +225,7 @@ const CirrusViews = (function () {
         init,
         render,
         showEmpty,
+        openDay,
         iconPath,
         degreesToCompass,
         titleCase,

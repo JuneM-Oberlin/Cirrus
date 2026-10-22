@@ -71,6 +71,9 @@ function element(ownerDocument, id = "") {
             node.children.push(child);
             return child;
         },
+        append(...children) {
+            children.forEach((child) => node.appendChild(child));
+        },
         replaceChildren(...children) {
             node.children = children;
             children.forEach((child) => { child.parentNode = node; });
