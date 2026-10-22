@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.weatherapp.error.CityNotFoundException;
 import com.weatherapp.model.ForecastDay;
+import com.weatherapp.model.SixHourForecast;
 import com.weatherapp.model.WeatherData;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -187,6 +188,53 @@ class WeatherServiceTest {
         } finally {
             pool.shutdownNow();
         }
+    }
+
+    @Test
+    void sixHourSharesTheForecastUpstreamCall() {
+        OpenWeatherClient client = mock(OpenWeatherClient.class);
+        when(client.getForecastJSON("Denver")).thenReturn("""
+                {
+                  "city": {"timezone": 0},
+                  "list": [
+                    {
+                      "dt": 1792627200,
+                      "dt_txt": "2026-10-22 00:00:00",
+                      "main": {"temp": 60.0, "temp_max": 61.0, "temp_min": 59.0},
+                      "weather": [{"description": "clear sky", "icon": "01n", "id": 800}],
+                      "wind": {"speed": 5.0},
+                      "pop": 0.1
+                    }
+                  ]
+                }
+                """);
+
+        AtomicInteger rateLimitCalls = new AtomicInteger();
+        Runnable enforceRateLimit = rateLimitCalls::incrementAndGet;
+        WeatherService service = new WeatherService(client);
+
+        List<ForecastDay> days = service.getForecast("Denver", enforceRateLimit);
+        SixHourForecast sixHour = service.getSixHour("Denver", enforceRateLimit);
+
+        assertEquals(1, days.size());
+        assertEquals(1, sixHour.getBlocks().size());
+        assertEquals(0, sixHour.getBlocks().get(0).getStartHour());
+        verify(client, times(1)).getForecastJSON("Denver");
+        assertEquals(1, rateLimitCalls.get());
+    }
+
+    @Test
+    void malformedForecastIsNotCached() {
+        OpenWeatherClient client = mock(OpenWeatherClient.class);
+        when(client.getForecastJSON("Lima"))
+                .thenReturn("{\"list\": [{\"dt\": 1, \"dt_txt\": \"2026-10-22 00:00:00\", \"weather\": []}]}")
+                .thenReturn(VALID_FORECAST_JSON);
+
+        WeatherService service = new WeatherService(client);
+
+        assertThrows(RuntimeException.class, () -> service.getSixHour("Lima", () -> {}));
+        assertEquals(1, service.getForecast("Lima", () -> {}).size());
+        verify(client, times(2)).getForecastJSON("Lima");
     }
 
     @Test

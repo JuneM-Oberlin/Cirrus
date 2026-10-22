@@ -74,6 +74,17 @@ public class WeatherServer {
                     service.getForecast(c, rateLimitCheck(rateLimiter, ip)));
         });
 
+        // Six-hour blocks come from the same cached forecast response, so this
+        // route never makes an extra upstream call on top of /forecast.
+        get("/sixhour", (req, res) -> {
+            String city = req.queryParams("city");
+            if (city == null || city.isBlank()) {
+                return badRequest(res, gson, "city parameter is required.");
+            }
+            return handleCityRoute(req, res, gson, city, "Forecast not found.", (c, ip) ->
+                    service.getSixHour(c, rateLimitCheck(rateLimiter, ip)));
+        });
+
         get("/alerts", (req, res) -> handleAlertsRoute(req, res, gson, rateLimiter, alertService));
 
         // Videos need Range support (iOS Safari refuses to play without it),

@@ -2,6 +2,7 @@ package com.weatherapp.service;
 
 import com.weatherapp.error.CityNotFoundException;
 import com.weatherapp.model.ForecastDay;
+import com.weatherapp.model.SixHourForecast;
 import com.weatherapp.model.WeatherData;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,20 +14,24 @@ public class WeatherService {
     private static final int NOT_FOUND_CACHE_TTL_SECONDS = 60;
 
     private final WeatherCache<WeatherData> weatherCache;
-    private final WeatherCache<List<ForecastDay>> forecastCache;
+    // Raw 3-hour forecast JSON, shared by the daily and six-hour views so
+    // both cost a single upstream call per city.
+    private final WeatherCache<String> forecastJsonCache;
     private final NotFoundCache notFoundCache;
     private final OpenWeatherClient client;
     private final WeatherResponseParser weatherParser;
     private final ForecastParser forecastParser;
+    private final SixHourParser sixHourParser;
     private final ConcurrentHashMap<String, Object> loadLocks = new ConcurrentHashMap<>();
 
     public WeatherService(OpenWeatherClient client) {
         this.client = client;
         this.weatherCache = new WeatherCache<>(CACHE_TTL_SECONDS);
-        this.forecastCache = new WeatherCache<>(CACHE_TTL_SECONDS);
+        this.forecastJsonCache = new WeatherCache<>(CACHE_TTL_SECONDS);
         this.notFoundCache = new NotFoundCache(NOT_FOUND_CACHE_TTL_SECONDS);
         this.weatherParser = new WeatherResponseParser();
         this.forecastParser = new ForecastParser();
+        this.sixHourParser = new SixHourParser();
     }
 
     public WeatherData getWeather(String city, Runnable enforceRateLimit) {
@@ -40,13 +45,28 @@ public class WeatherService {
     }
 
     public List<ForecastDay> getForecast(String city, Runnable enforceRateLimit) {
+        return forecastParser.parseForecast(getForecastJson(city, enforceRateLimit));
+    }
+
+    public SixHourForecast getSixHour(String city, Runnable enforceRateLimit) {
+        return sixHourParser.parse(getForecastJson(city, enforceRateLimit));
+    }
+
+    private String getForecastJson(String city, Runnable enforceRateLimit) {
         return fetchCached(
                 city,
-                forecastCache,
+                forecastJsonCache,
                 "forecast:",
                 enforceRateLimit,
                 client::getForecastJSON,
-                forecastParser::parseForecast);
+                this::validateForecastJson);
+    }
+
+    // Parse once before caching so a malformed response is never cached.
+    private String validateForecastJson(String json) {
+        forecastParser.parseForecast(json);
+        sixHourParser.parse(json);
+        return json;
     }
 
     private <T> T fetchCached(
