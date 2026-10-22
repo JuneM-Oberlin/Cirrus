@@ -426,6 +426,14 @@ test("views fill Current, Today, and Tomorrow and hand readouts to the frame", (
     assert.equal(readouts.tomorrow.stats[1].text, "Precipitation 0.01 in");
     assert.equal(asOf, "As of 7:30 p.m., 10/21");
 
+    // every icon gets a small idle motion picked from its picture
+    assert.equal(document.getElementById("currentIcon").dataset.motion, "cloud");
+    assert.equal(views.motionFor("icons/clear-day.png"), "sun");
+    assert.equal(views.motionFor("icons/clear-night.png"), "moon");
+    assert.equal(views.motionFor("icons/mostly-cloudy-with-rain-night.png"), "rain");
+    assert.equal(views.motionFor("icons/partly-cloudy-with-snow-day.png"), "snow");
+    assert.equal(views.motionFor("icons/fog.png"), "fog");
+
     // readings become bubbles inside the views, label first for screen readers
     const bubbles = document.getElementById("currentReadings").children;
     assert.equal(bubbles.length, 7, "all seven readings show, on phones too");

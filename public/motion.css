@@ -281,9 +281,151 @@
   transition: opacity var(--dur-fast) var(--nintendo-soft);
 }
 
-/* floating weather icon on the big-number views */
-.hero-icon {
-  animation: iconBob var(--dur-bob) var(--nintendo-soft) infinite;
+/* ---------- Weather icons: small idle animations ----------
+   Each motion uses the rotate / scale / translate properties, so two can
+   run at once (the sun turns and pulses). The big icons' wrapper adds a
+   glow behind the sun or moon and drops or flakes below rain and snow. */
+
+@keyframes sunTurn {
+  to { rotate: 360deg; }
+}
+
+@keyframes sunPulse {
+  0%, 100% { scale: 1; }
+  50% { scale: var(--motion-sun-pulse); }
+}
+
+@keyframes cloudDrift {
+  0%, 100% { translate: 0 0; }
+  50% { translate: var(--motion-drift) 0; }
+}
+
+@keyframes moonGlow {
+  0%, 100% { opacity: var(--moon-dim); }
+  50% { opacity: 1; }
+}
+
+@keyframes fogDrift {
+  0%, 100% { translate: 0 0; opacity: 1; }
+  50% { translate: var(--motion-fog-drift) 0; opacity: var(--fog-dim); }
+}
+
+@keyframes snowSway {
+  0%, 100% { rotate: calc(-1 * var(--motion-snow-sway)); }
+  50% { rotate: var(--motion-snow-sway); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: var(--glow-dim); scale: var(--glow-small); }
+  50% { opacity: 1; scale: var(--glow-big); }
+}
+
+@keyframes dripFall {
+  0% { opacity: 0; translate: 0 0; }
+  25% { opacity: 1; }
+  100% { opacity: 0; translate: 0 var(--motion-drip-fall); }
+}
+
+img[data-motion="sun"] {
+  animation:
+    sunTurn var(--dur-sun-turn) linear infinite,
+    sunPulse var(--dur-sun-pulse) ease-in-out infinite;
+}
+
+img[data-motion="cloud"],
+img[data-motion="rain"] {
+  animation: cloudDrift var(--dur-cloud-drift) ease-in-out infinite;
+}
+
+img[data-motion="moon"] {
+  animation: moonGlow var(--dur-moon-glow) ease-in-out infinite;
+}
+
+img[data-motion="fog"] {
+  animation: fogDrift var(--dur-fog-drift) ease-in-out infinite;
+}
+
+img[data-motion="snow"] {
+  animation: snowSway var(--dur-snow-sway) ease-in-out infinite;
+}
+
+/* small icons in a row start at different points, so they don't move in step */
+.fiveday li:nth-child(2) img,
+.sixhour-list li:nth-child(2) img {
+  animation-delay: calc(-0.2 * var(--dur-sun-pulse));
+}
+
+.fiveday li:nth-child(3) img,
+.sixhour-list li:nth-child(3) img {
+  animation-delay: calc(-0.45 * var(--dur-sun-pulse));
+}
+
+.fiveday li:nth-child(4) img,
+.sixhour-list li:nth-child(4) img {
+  animation-delay: calc(-0.7 * var(--dur-sun-pulse));
+}
+
+.fiveday li:nth-child(5) img {
+  animation-delay: calc(-0.9 * var(--dur-sun-pulse));
+}
+
+/* a soft glow breathes behind a big sun or moon */
+.wx-icon[data-motion="sun"]::before,
+.wx-icon[data-motion="moon"]::before {
+  content: "";
+  position: absolute;
+  inset: var(--glow-inset);
+  z-index: -1;
+  border-radius: var(--radius-pill);
+  background: var(--sun-glow);
+  animation: glowPulse var(--dur-sun-pulse) ease-in-out infinite;
+  pointer-events: none;
+}
+
+.wx-icon[data-motion="moon"]::before {
+  background: var(--moon-glow);
+  animation-duration: var(--dur-moon-glow);
+}
+
+/* two sets of drops (or flakes) take turns falling from under the cloud */
+.wx-icon[data-motion="rain"]::before,
+.wx-icon[data-motion="rain"]::after,
+.wx-icon[data-motion="snow"]::before,
+.wx-icon[data-motion="snow"]::after {
+  content: "";
+  position: absolute;
+  top: var(--drip-top);
+  right: var(--drip-side);
+  left: var(--drip-side);
+  height: var(--drip-height);
+  background: var(--rain-drops);
+  opacity: 0;
+  animation: dripFall var(--dur-drip) ease-in infinite;
+  pointer-events: none;
+}
+
+.wx-icon[data-motion="rain"]::after,
+.wx-icon[data-motion="snow"]::after {
+  background: var(--rain-drops-2);
+  animation-delay: calc(var(--dur-drip) / -2);
+}
+
+.wx-icon[data-motion="snow"]::before {
+  background: var(--snow-flakes);
+  animation-duration: var(--dur-flake);
+}
+
+.wx-icon[data-motion="snow"]::after {
+  background: var(--snow-flakes-2);
+  animation-duration: var(--dur-flake);
+  animation-delay: calc(var(--dur-flake) / -2);
+}
+
+/* views out of sight rest */
+.view[aria-hidden="true"] img[data-motion],
+.view[aria-hidden="true"] .wx-icon::before,
+.view[aria-hidden="true"] .wx-icon::after {
+  animation-play-state: paused;
 }
 
 /* temperature moods on the current temperature (classes set from views.js) */
@@ -415,7 +557,7 @@
     transition: none !important;
   }
 
-  .hero-icon,
+  img[data-motion],
   .alert-bar,
   .alert-bar .alert-icon,
   .temp--freezing,
@@ -439,7 +581,9 @@
   }
 
   /* no shine and nothing grows; highlights still change color */
-  .shine {
+  .shine,
+  .wx-icon::before,
+  .wx-icon::after {
     display: none;
   }
 

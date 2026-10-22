@@ -532,6 +532,45 @@
   --dur-squash: 460ms;
   --dur-press-glow: 620ms;
   --dur-bob: 3.2s;
+  /* weather icon idle motion */
+  --dur-sun-turn: 80s;
+  --dur-sun-pulse: 3.2s;
+  --motion-sun-pulse: 1.06;
+  --dur-cloud-drift: 6s;
+  --motion-drift: 6px;
+  --dur-moon-glow: 4.5s;
+  --moon-dim: 0.86;
+  --dur-fog-drift: 9s;
+  --motion-fog-drift: 8px;
+  --fog-dim: 0.8;
+  --dur-snow-sway: 5s;
+  --motion-snow-sway: 2.5deg;
+  --glow-inset: 14%;
+  --glow-dim: 0.5;
+  --glow-small: 0.92;
+  --glow-big: 1.1;
+  --sun-glow: radial-gradient(circle, rgba(255, 224, 110, 0.6) 0%, rgba(255, 200, 70, 0.22) 45%, rgba(255, 200, 70, 0) 70%);
+  --moon-glow: radial-gradient(circle, rgba(225, 238, 255, 0.55) 0%, rgba(200, 220, 255, 0.2) 45%, rgba(200, 220, 255, 0) 70%);
+  --dur-drip: 1.7s;
+  --dur-flake: 3.4s;
+  --motion-drip-fall: 120%;
+  --drip-top: 62%;
+  --drip-side: 26%;
+  --drip-height: 26%;
+  --rain-drops:
+    radial-gradient(ellipse 2px 7px at 15% 10%, rgba(185, 225, 255, 0.95) 55%, rgba(185, 225, 255, 0) 100%),
+    radial-gradient(ellipse 2px 7px at 55% 30%, rgba(185, 225, 255, 0.95) 55%, rgba(185, 225, 255, 0) 100%),
+    radial-gradient(ellipse 2px 7px at 88% 5%, rgba(185, 225, 255, 0.95) 55%, rgba(185, 225, 255, 0) 100%);
+  --rain-drops-2:
+    radial-gradient(ellipse 2px 7px at 32% 25%, rgba(185, 225, 255, 0.95) 55%, rgba(185, 225, 255, 0) 100%),
+    radial-gradient(ellipse 2px 7px at 72% 0%, rgba(185, 225, 255, 0.95) 55%, rgba(185, 225, 255, 0) 100%);
+  --snow-flakes:
+    radial-gradient(circle 3px at 18% 15%, #ffffff 55%, rgba(255, 255, 255, 0) 100%),
+    radial-gradient(circle 3px at 60% 35%, #ffffff 55%, rgba(255, 255, 255, 0) 100%),
+    radial-gradient(circle 3px at 90% 10%, #ffffff 55%, rgba(255, 255, 255, 0) 100%);
+  --snow-flakes-2:
+    radial-gradient(circle 3px at 38% 25%, #ffffff 55%, rgba(255, 255, 255, 0) 100%),
+    radial-gradient(circle 3px at 76% 5%, #ffffff 55%, rgba(255, 255, 255, 0) 100%);
   --dur-hint: 2s;
   --dur-blink: 2s;
   --dur-scan-drift: 10s;

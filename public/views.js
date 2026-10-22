@@ -68,9 +68,40 @@ const CirrusViews = (function () {
         return "icons/" + (iconMap[key] || "default.png");
     }
 
+    // Which little idle animation an icon gets, from its picture's name.
+    function motionFor(path) {
+        if (path.includes("clear-day")) {
+            return "sun";
+        }
+        if (path.includes("clear-night")) {
+            return "moon";
+        }
+        if (path.includes("snow")) {
+            return "snow";
+        }
+        if (path.includes("rain") || path.includes("thunder") || path.includes("sleet")
+            || path.includes("ice") || path.includes("mixed")) {
+            return "rain";
+        }
+        if (path.includes("fog") || path.includes("mist") || path.includes("haze")) {
+            return "fog";
+        }
+        if (path.includes("cloudy")) {
+            return "cloud";
+        }
+        return "";
+    }
+
     function setIcon(img, conditionId, weatherCode, alt) {
         img.src = iconPath(conditionId, weatherCode);
         img.alt = alt || "";
+        const motion = motionFor(img.src);
+        img.dataset.motion = motion;
+        // the big icons' wrapper adds a glow, drops, or flakes to match
+        const wrapper = img.parentNode;
+        if (wrapper && wrapper.classList && wrapper.classList.contains("wx-icon")) {
+            wrapper.dataset.motion = motion;
+        }
     }
 
     // Temperature moods on the current temperature: shiver below freezing,
@@ -388,6 +419,7 @@ const CirrusViews = (function () {
         showEmpty,
         openDay,
         iconPath,
+        motionFor,
         degreesToCompass,
         titleCase,
     };

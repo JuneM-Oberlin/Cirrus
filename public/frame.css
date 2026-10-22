@@ -571,9 +571,20 @@
   text-align: center;
 }
 
-.hero-icon {
+/* the big icon sits in a wrapper that can glow behind it or drip below it */
+.wx-icon {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+}
+
+.hero > .wx-icon {
   grid-area: icon;
   justify-self: center;
+}
+
+.hero-icon {
   width: var(--hero-icon-size);
   height: var(--hero-icon-size);
   object-fit: contain;
