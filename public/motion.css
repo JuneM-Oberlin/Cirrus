@@ -475,6 +475,81 @@ img[data-motion="snow"] {
   opacity: 0;
 }
 
+/* ---------- Easter eggs ---------- */
+
+/* the winking sun: a face fades onto the sun, then the right eye winks */
+.sun-face {
+  position: absolute;
+  width: var(--sun-face-size);
+  height: var(--sun-face-size);
+  pointer-events: none;
+  animation: fadeIn var(--dur-medium) var(--ease-fade) both;
+}
+
+.sun-face-eye {
+  fill: var(--sun-face-ink);
+}
+
+.sun-face-cheek {
+  fill: var(--sun-face-cheek);
+}
+
+.sun-face-smile,
+.sun-face-wink {
+  fill: none;
+  stroke: var(--sun-face-ink);
+  stroke-linecap: round;
+  stroke-width: var(--sun-face-stroke);
+}
+
+.sun-face-wink {
+  opacity: 0;
+}
+
+@keyframes winkClose {
+  0%, 30%, 70%, 100% { opacity: 1; }
+  40%, 60% { opacity: 0; }
+}
+
+@keyframes winkLine {
+  0%, 30%, 70%, 100% { opacity: 0; }
+  40%, 60% { opacity: 1; }
+}
+
+.sun-face .sun-face-eye--open {
+  animation: winkClose var(--dur-wink) linear var(--dur-medium) both;
+}
+
+.sun-face .sun-face-wink {
+  animation: winkLine var(--dur-wink) linear var(--dur-medium) both;
+}
+
+/* snow piles up on the frame's ledges while it snows (body.is-snowing) */
+@keyframes snowSettle {
+  from { transform: scaleY(0); }
+}
+
+body.is-snowing .frame-row--bottom .frame-btn::after,
+body.is-snowing .frame-title-block::after,
+body.is-snowing .frame-location::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: var(--snow-cap-inset);
+  left: var(--snow-cap-inset);
+  height: var(--snow-cap-height);
+  background: var(--snow-cap);
+  filter: var(--snow-cap-shadow);
+  transform-origin: top center;
+  animation: snowSettle var(--dur-snow-settle) var(--ease-fade) both;
+  pointer-events: none;
+}
+
+body.is-snowing .frame-location::after {
+  right: var(--snow-cap-pill-inset);
+  left: var(--snow-cap-pill-inset);
+}
+
 /* views out of sight rest */
 .view[aria-hidden="true"] img[data-motion],
 .view[aria-hidden="true"] .wx-icon::before,
@@ -647,6 +722,11 @@ img[data-motion="snow"] {
 
   img[data-motion],
   .frame-panel.is-attract .panel-sat,
+  .sun-face,
+  .sun-face *,
+  body.is-snowing .frame-btn::after,
+  body.is-snowing .frame-title-block::after,
+  body.is-snowing .frame-location::after,
   .alert-bar,
   .alert-bar .alert-icon,
   .temp--freezing,

@@ -168,6 +168,7 @@
 
 /* the green block stays put while the title text inside it moves */
 .frame-title-block {
+  position: relative;
   display: flex;
   flex: 0 0 var(--title-block-width);
   align-items: center;

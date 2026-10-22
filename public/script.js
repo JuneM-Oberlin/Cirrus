@@ -418,6 +418,7 @@ function applyCity(city, weather, forecast, sixHour, { visit = false } = {}) {
     CirrusViews.render(appState);
     CirrusCountUp.playIn(document.querySelector('.view[data-view="' + CirrusFrame.currentViewId() + '"]'));
     CirrusAtmosphere.refresh(weather.conditionId);
+    CirrusEggs.setWeather(weather.conditionId);
     updateGlobe(weather.lat, weather.lon);
     CirrusAlerts.checkAlerts(weather);
     if (!visit) {
@@ -603,6 +604,7 @@ CirrusGlobe.init({
 CirrusFrame.setHandlers({
     onEndVisit: () => openGlobe({ keepCamera: true }),
 });
+CirrusEggs.init({ sound: CirrusSound });
 CirrusIdle.init({
     globe: CirrusGlobe,
     // the weather views are showing, with no screen or Home over them

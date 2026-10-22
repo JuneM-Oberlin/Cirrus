@@ -71,6 +71,15 @@ const CirrusConfig = Object.freeze({
         globeFps: 30,
     },
 
+    // The easter eggs: tap a big sun this many times quickly to see it wink.
+    eggs: {
+        sunTaps: 5,
+        sunTapWindowMs: 2000,
+        winkShowMs: 2200,
+        spinMs: 900,
+        spinDelayMs: 500,
+    },
+
     // A tiny buzz on press, on phones that support vibration.
     haptics: {
         pressMs: 8,
@@ -99,6 +108,13 @@ const CirrusConfig = Object.freeze({
         ],
         back: [
             { freq: 420, toFreq: 250, wave: "sine", at: 0, ms: 130, volume: 0.11 },
+        ],
+        // the winking sun: a quick rising C-major sparkle
+        sparkle: [
+            { freq: 1046.5, wave: "sine", at: 0, ms: 160, volume: 0.04 },
+            { freq: 1318.5, wave: "sine", at: 70, ms: 160, volume: 0.04 },
+            { freq: 1568, wave: "sine", at: 140, ms: 160, volume: 0.04 },
+            { freq: 2093, wave: "sine", at: 210, ms: 300, volume: 0.035 },
         ],
         // a gentle falling two-tone, played twice
         alert: [

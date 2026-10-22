@@ -100,6 +100,20 @@
   --ease-slide: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-settle: cubic-bezier(0.45, 0, 0.55, 1);
   --dur-view-slide: 640ms;
+  /* easter eggs: the winking sun and snow caps on the frame */
+  --sun-face-size: 34%;
+  --sun-face-ink: #6b3a00;
+  --sun-face-cheek: rgba(255, 120, 90, 0.55);
+  --sun-face-stroke: 2.2;
+  --dur-wink: 900ms;
+  --snow-cap-height: 9px;
+  --snow-cap-inset: 7%;
+  --snow-cap-pill-inset: 20%;
+  --snow-cap:
+    linear-gradient(#ffffff, #ffffff) top / 100% 45% no-repeat,
+    radial-gradient(circle at 50% 30%, #ffffff 62%, rgba(255, 255, 255, 0) 66%) 0 0 / 14px 100% repeat-x;
+  --snow-cap-shadow: drop-shadow(0 1px 1px rgba(60, 90, 130, 0.6)) drop-shadow(0 2px 2px rgba(60, 90, 130, 0.25));
+  --dur-snow-settle: 6s;
   /* idle attract: the satellite picture slowly zooms in and pans, then back */
   --dur-attract-pan: 40s;
   --attract-zoom: 1.12;
