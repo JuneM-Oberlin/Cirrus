@@ -290,7 +290,8 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
         },
         CirrusUnits: { temp: (f) => f + "°", asOf: () => "As of", cityClockTime: () => "--", onChange: noop },
         CirrusSettings: { init: noop },
-        CirrusFrame: { init: noop, showView: noop, hasView: () => false },
+        CirrusFrame: { init: noop, showView: noop, hasView: () => false, setVisiting: noop, setHandlers: noop },
+        CirrusGlobe: { init: noop },
         CirrusViews: {
             init: noop,
             showEmpty: noop,
@@ -537,4 +538,33 @@ test("settings switch units with buttons or arrow keys and remember the choice",
     assert.equal(units.getSettings().wind, "kmh");
     assert.equal(document.activeElement, buttons[3]);
     assert.equal(localStorage.getItem("cirrus_units"), JSON.stringify({ temp: "C", wind: "kmh" }));
+});
+
+test("globe projection centres the look point and hides the far side", () => {
+    const context = runClassicScript("public/globe.js", { document: documentStub() });
+    const globe = lexical(context, "CirrusGlobe");
+    const DEG = Math.PI / 180;
+    // camera facing 40N 100W, disc centred at (500, 400), radius 300
+    const cam = {
+        radius: 300, cx: 500, cy: 400,
+        sinLat0: Math.sin(40 * DEG), cosLat0: Math.cos(40 * DEG), lon0: -100,
+    };
+
+    const centre = globe.project(40, -100, cam);
+    assert.equal(centre.visible, true);
+    assert.ok(Math.abs(centre.x - 500) < 1e-9);
+    assert.ok(Math.abs(centre.y - 400) < 1e-9);
+
+    const north = globe.project(50, -100, cam);
+    assert.ok(north.y < 400, "north of the centre is higher on screen");
+    const east = globe.project(40, -90, cam);
+    assert.ok(east.x > 500, "east of the centre is to the right");
+
+    const farSide = globe.project(-40, 80, cam);
+    assert.equal(farSide.visible, false, "the antipode is behind the globe");
+
+    assert.equal(globe.nearestRegion(39.7, -105).id, "north-america");
+    assert.equal(globe.nearestRegion(48.9, 2.3).id, "europe");
+    assert.equal(globe.nearestRegion(-33.9, 151.2).id, "oceania");
+    assert.equal(globe.nearestRegion(35.7, 139.7).id, "asia");
 });

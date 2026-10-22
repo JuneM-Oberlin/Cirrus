@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="frame.css?v=20261022a">
   <link rel="stylesheet" href="channels.css?v=20261022a">
   <link rel="stylesheet" href="alerts.css?v=20261022a">
+  <link rel="stylesheet" href="globe.css?v=20261022a">
   <link rel="stylesheet" href="weather-atmosphere.css?v=20261022a">
   <link rel="stylesheet" href="motion.css?v=20261022a">
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
@@ -171,6 +172,19 @@
       <button type="button" class="frame-btn" id="settingsButton">
         <span class="frame-btn-label"></span>
       </button>
+      <!-- globe mode -->
+      <button type="button" class="frame-btn globe-only" id="globeZoomOut" aria-label="Zoom out">
+        <span>Zoom</span>
+        <svg class="frame-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.5"></circle><path d="M7 12H17"></path></svg>
+      </button>
+      <button type="button" class="frame-btn frame-btn--nav globe-only" id="globeNext" aria-label="Next region">
+        <span>Next</span>
+        <svg class="frame-tri" viewBox="0 0 10 12" aria-hidden="true" focusable="false"><path d="M0 0 10 6 0 12Z"></path></svg>
+      </button>
+      <button type="button" class="frame-btn globe-only" id="globeZoomIn" aria-label="Zoom in">
+        <span>Zoom</span>
+        <svg class="frame-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.5"></circle><path d="M7 12H17M12 7V17"></path></svg>
+      </button>
     </nav>
 
     <header class="frame-header" id="frameHeader">
@@ -325,6 +339,13 @@
         <article class="alert-detail hidden" id="alertDetail" aria-live="polite"></article>
       </section>
 
+      <section class="screen screen--globe hidden" id="screenGlobe" aria-label="Globe">
+        <canvas class="globe-canvas" id="globeCanvas" role="img" aria-label="Satellite globe"></canvas>
+        <div class="globe-markers" id="globeMarkers"></div>
+        <p class="globe-badge" aria-hidden="true">Current Weather</p>
+        <p class="globe-status hidden" id="globeStatus" role="status"></p>
+      </section>
+
       <section class="screen screen--clear hidden" id="screenDay" aria-label="Forecast day">
         <div class="hero hero--day">
           <div class="hero-temps">
@@ -363,6 +384,17 @@
       <button type="button" class="frame-btn" id="globeButton">
         <span class="frame-btn-label"></span>
       </button>
+      <!-- globe mode -->
+      <button type="button" class="frame-btn globe-only" id="globeEnd">End</button>
+      <div class="frame-btn-pair globe-only">
+        <button type="button" class="frame-btn" id="globeRotateLeft" aria-label="Spin west">
+          <svg class="frame-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 15A8 8 0 0 0 5.5 9.5"></path><path d="M4 4.5V10H9.5"></path></svg>
+        </button>
+        <button type="button" class="frame-btn" id="globeRotateRight" aria-label="Spin east">
+          <svg class="frame-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 15A8 8 0 0 1 18.5 9.5"></path><path d="M20 4.5V10H14.5"></path></svg>
+        </button>
+      </div>
+      <button type="button" class="frame-btn globe-only" id="globeRestore">Restore</button>
     </nav>
   </div>
 
@@ -376,6 +408,7 @@
   <script src="views.js?v=20261022a"></script>
   <script src="search.js?v=20261022a"></script>
   <script src="settings.js?v=20261022a"></script>
+  <script src="globe.js?v=20261022a"></script>
   <script src="channels.js?v=20261022a"></script>
   <script src="script.js?v=20261022a"></script>
 </body>

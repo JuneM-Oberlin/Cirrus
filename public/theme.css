@@ -286,6 +286,23 @@
   --uv-band-font: 15px;
   --uv-advice-font: clamp(17px, 2.6vh, 22px);
 
+  /* ---- Globe ---- */
+  --globe-space: radial-gradient(ellipse at 50% 120%, #1d4fc4 0%, #0b2a86 45%, #04124a 100%);
+  --globe-ocean: #1d4ea8;
+  --globe-glow: rgba(120, 190, 255, 0.55);
+  --globe-glow-edge: rgba(120, 190, 255, 0);
+  --globe-badge-font: clamp(16px, 2.6vh, 24px);
+  --globe-label-font: 15px;
+  --globe-label-bg: rgba(4, 18, 70, 0.72);
+  --globe-label-bg-hover: #0d76bd;
+  --globe-dot-size: 12px;
+  --globe-dot: #ffe14a;
+  --globe-dot-glow: 0 0 6px 3px rgba(255, 225, 74, 0.75);
+  --globe-dot-pending: rgba(255, 255, 255, 0.65);
+  --globe-marker-icon: 34px;
+  --globe-temp: var(--temp-high);
+  --globe-status-bottom: 56px;
+
   /* ---- Panel status pills (loading / error) ---- */
   --status-face: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.06) 55%), rgba(6, 24, 92, 0.82);
   --status-border: rgba(255, 255, 255, 0.35);
@@ -354,6 +371,10 @@
     --alert-bar-font: 14px;
     --alert-icon-size: 18px;
     --alert-tile-height: 64px;
+    --globe-label-font: 13px;
+    --globe-badge-font: 15px;
+    --globe-marker-icon: 28px;
+    --globe-dot-size: 10px;
     --sixhour-icon-size: clamp(60px, 10vh, 84px);
     --sixhour-time-font: 14px;
     --sixhour-temp-font: 18px;

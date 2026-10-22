@@ -225,6 +225,16 @@ async function fetchUvData(lat, lon) {
     }
 }
 
+// One region of globe markers; the server caps and caches upstream calls.
+async function fetchGlobeRegion(regionId) {
+    // fallow-ignore-next-line security-sink -- fixed /globe path; the region id comes from a fixed list and is percent-encoded.
+    const response = await fetch(`${BACKEND_URL}/globe?region=${encodeURIComponent(regionId)}`);
+    if (!response.ok) {
+        throw new Error(await readBackendError(response));
+    }
+    return response.json();
+}
+
 /* ---------- Loading + error status ---------- */
 
 let coldStartTimers = [];
@@ -357,6 +367,7 @@ function updateGlobe(lat, lon) {
 
 const appState = {
     city: "",
+    homeCity: "",
     weather: null,
     forecast: [],
     sixHour: null,
@@ -379,6 +390,8 @@ function applyCity(city, weather, forecast, sixHour, { visit = false } = {}) {
     updateGlobe(weather.lat, weather.lon);
     CirrusAlerts.checkAlerts(weather);
     if (!visit) {
+        appState.homeCity = city;
+        CirrusFrame.setVisiting(false);
         addToHistory(city);
     }
     if (Array.isArray(forecast) && forecast.length >= 5) {
@@ -417,6 +430,38 @@ async function searchCity(city) {
         CirrusSearch.close();
         CirrusFrame.showView("current");
     }
+}
+
+/* ---------- Globe visits ---------- */
+
+function openGlobe(options = {}) {
+    let lat = 38;
+    let lon = -100;
+    if (appState.weather) {
+        lat = appState.weather.lat;
+        lon = appState.weather.lon;
+    }
+    CirrusGlobe.open(Object.assign({ lat, lon }, options));
+}
+
+// Choosing a city on the globe shows its views; Back returns to the globe.
+async function visitCity(name) {
+    const ok = await loadCity(name, { visit: true });
+    if (ok) {
+        CirrusGlobe.closeForVisit();
+        CirrusFrame.setVisiting(true);
+        CirrusFrame.showView("current");
+    }
+}
+
+// End leaves the globe; after a visit, your own city comes back.
+function endGlobe() {
+    const wasVisiting = appState.homeCity && normalizeCityKey(appState.city) !== normalizeCityKey(appState.homeCity);
+    CirrusFrame.setVisiting(false);
+    if (wasVisiting) {
+        loadCity(appState.homeCity);
+    }
+    CirrusFrame.showView("current");
 }
 
 /* ---------- Desktop Home ---------- */
@@ -489,6 +534,19 @@ CirrusAlerts.init({
     },
 });
 CirrusSettings.init({ frame: CirrusFrame, units: CirrusUnits });
+CirrusGlobe.init({
+    frame: CirrusFrame,
+    fetchRegion: fetchGlobeRegion,
+    onOpen: () => openGlobe(),
+    onVisit: visitCity,
+    onEnd: endGlobe,
+    formatTemp: (fahrenheit) => CirrusUnits.temp(fahrenheit),
+    iconPath: (conditionId, weatherCode) => CirrusViews.iconPath(conditionId, weatherCode),
+    prefersReducedMotion,
+});
+CirrusFrame.setHandlers({
+    onEndVisit: () => openGlobe({ keepCamera: true }),
+});
 
 // New units re-render everything already on screen.
 CirrusUnits.onChange(() => {
