@@ -1035,6 +1035,8 @@
 }
 
 .loader-dot {
+  /* squashes against the floor, not around its middle */
+  transform-origin: 50% 100%;
   width: var(--loader-dot-size);
   height: var(--loader-dot-size);
   background: var(--loader-dot-1);
@@ -1048,6 +1050,15 @@
 
 .loader-dot:nth-child(3) {
   background: var(--loader-dot-3);
+}
+
+.loader-dots--small {
+  gap: var(--loader-dot-gap-small);
+}
+
+.loader-dots--small .loader-dot {
+  width: var(--loader-dot-size-small);
+  height: var(--loader-dot-size-small);
 }
 
 .panel-loading-text {

@@ -169,7 +169,7 @@ const CirrusGlobe = (function () {
         if (base) {
             return;
         }
-        setStatus("Loading satellite imagery");
+        setStatus("Fetching the satellite view…", { busy: true });
         const bounds = { minLon: -180, minLat: -90, maxLon: 180, maxLat: 90 };
         loadTexture(gibsUrl(-180, -90, 180, 90, BASE_SIZE), bounds)
             .then((texture) => {
@@ -177,7 +177,7 @@ const CirrusGlobe = (function () {
                 setStatus("");
                 render(1);
             })
-            .catch(() => setStatus("Satellite imagery is unavailable right now."));
+            .catch(() => setStatus("The satellite view isn't available right now."));
     }
 
     // A sharper image of the area in view once you zoom in.
@@ -448,7 +448,7 @@ const CirrusGlobe = (function () {
                 })
                 .catch(() => {
                     regions[region.id] = { cities: [], fetchedAt: Date.now(), hasPending: true, loading: false };
-                    setStatus("Couldn't load city weather — trying again shortly.");
+                    setStatus("Some cities are still tuning in. Trying again shortly…", { busy: true });
                     setTimeout(() => setStatus(""), 4000);
                 });
         });
@@ -530,9 +530,11 @@ const CirrusGlobe = (function () {
         moveTo(home.lat, home.lon, DEFAULT_LEVEL);
     }
 
-    function setStatus(text) {
+    // busy shows the little bouncing dots beside the text
+    function setStatus(text, { busy = false } = {}) {
         const status = byId("globeStatus");
-        status.textContent = text;
+        byId("globeStatusText").textContent = text;
+        status.classList.toggle("is-busy", busy);
         status.classList.toggle("hidden", !text);
     }
 

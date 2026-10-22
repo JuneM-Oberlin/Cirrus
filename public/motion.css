@@ -61,6 +61,40 @@
   }
 }
 
+/* the loading dots hop like little balls and squash when they land */
+@keyframes dotBounce {
+  0%, 100% {
+    transform: none;
+    animation-timing-function: var(--ease-dot-up);
+  }
+  45% {
+    transform: translateY(var(--motion-dot-jump)) var(--motion-dot-stretch);
+    animation-timing-function: var(--ease-dot-down);
+  }
+  82% {
+    transform: var(--motion-dot-squash);
+  }
+}
+
+/* reduced motion: the dots glow in turn instead of hopping */
+@keyframes dotGlow {
+  0%, 100% { opacity: var(--dot-dim); }
+  50% { opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+}
+
+/* a small side-to-side "nope" */
+@keyframes nopeShake {
+  0%, 100% { transform: none; }
+  15% { transform: translateX(calc(-1 * var(--motion-shake))); }
+  35% { transform: translateX(var(--motion-shake)); }
+  55% { transform: translateX(calc(-0.6 * var(--motion-shake))); }
+  75% { transform: translateX(calc(0.3 * var(--motion-shake))); }
+}
+
 /* a soft band of light crossing a glossy face */
 @keyframes shineSweep {
   0% {
@@ -444,6 +478,40 @@ img[data-motion="snow"] {
   animation: nintendoPop var(--dur-spring-pop) var(--spring-pop) both;
 }
 
+/* ---------- Loading and errors ---------- */
+
+.loader-dot {
+  animation: dotBounce var(--dur-dot) infinite;
+}
+
+.loader-dot:nth-child(2) {
+  animation-delay: calc(var(--dur-dot) * 0.15);
+}
+
+.loader-dot:nth-child(3) {
+  animation-delay: calc(var(--dur-dot) * 0.3);
+}
+
+/* the dimmed panel waits a moment, so quick loads never flicker */
+.panel-loading:not(.hidden) {
+  animation: fadeIn var(--dur-fade-quick) var(--ease-fade) var(--loading-delay) backwards;
+}
+
+.panel-error:not(.hidden) {
+  animation: nintendoPop var(--dur-spring-pop) var(--spring-pop) both;
+}
+
+.is-shaking {
+  animation: nopeShake var(--dur-shake) ease-in-out;
+}
+
+/* the search field keeps its opening animation while it shakes */
+.frame-search:not(.hidden) .frame-search-well.is-shaking {
+  animation:
+    fieldOpen var(--dur-spring-pop) var(--spring-pop) both,
+    nopeShake var(--dur-shake) ease-in-out;
+}
+
 /* the alert bar springs down out of the header when alerts arrive */
 .alert-bar {
   animation: alertBarDown var(--dur-spring-pop) var(--spring-pop) both;
@@ -576,8 +644,17 @@ img[data-motion="snow"] {
   .channel-search button.search-press-feedback,
   .channel-clock-colon,
   .frame-search:not(.hidden) .frame-search-well,
-  .frame-search:not(.hidden) .frame-search-go {
+  .frame-search:not(.hidden) .frame-search-go,
+  .panel-error:not(.hidden),
+  .is-shaking {
     animation: none !important;
+  }
+
+  /* the loading dots glow in turn instead of hopping */
+  .loader-dot {
+    animation-name: dotGlow !important;
+    animation-duration: var(--dur-dot) !important;
+    animation-iteration-count: infinite !important;
   }
 
   /* no shine and nothing grows; highlights still change color */

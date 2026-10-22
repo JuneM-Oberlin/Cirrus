@@ -67,7 +67,21 @@ const CirrusFeel = (function () {
         button.classList.add("is-squashing");
     }
 
+    // A quick side-to-side "nope" (a town that wasn't found).
+    function shake(element) {
+        if (!element || reducedMotion()) {
+            return;
+        }
+        element.classList.remove("is-shaking");
+        void element.offsetWidth;
+        element.classList.add("is-shaking");
+    }
+
     function onAnimationEnd(event) {
+        if (event.animationName === "nopeShake") {
+            event.target.classList.remove("is-shaking");
+            return;
+        }
         if (event.animationName !== "wiiSquashPress") {
             return;
         }
@@ -128,5 +142,5 @@ const CirrusFeel = (function () {
         document.addEventListener("animationend", onAnimationEnd);
     }
 
-    return { init, squash };
+    return { init, squash, shake };
 })();

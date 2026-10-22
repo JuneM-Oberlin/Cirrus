@@ -310,7 +310,7 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
         },
         CirrusUnits: { temp: (f) => f + "°", asOf: () => "As of", cityClockTime: () => "--", onChange: noop },
         CirrusSettings: { init: noop },
-        CirrusFeel: { init: noop },
+        CirrusFeel: { init: noop, shake: noop },
         CirrusSound: { init: noop, play: noop },
         CirrusPointer: { init: noop },
         CirrusConfig,
@@ -360,9 +360,9 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
     assert.deepEqual(JSON.parse(localStorage.getItem("cirrus_city_history")).slice(0, 2), ["New York & Co", "Boston"]);
 
     for (const [status, message] of [
-        [404, "City not found — check the spelling and try again."],
-        [429, "Too many searches — please wait a minute and try again."],
-        [500, "Server error — try again in a moment."],
+        [404, "Couldn't find that town. Try another spelling?"],
+        [429, "Whoa, that's a lot of searches! Take a short breather and try again in a minute."],
+        [500, "The weather station is having a moment. Try again shortly?"],
     ]) {
         context.errorResponse = { status, json: async () => ({}) };
         assert.equal(await lexical(context, "readBackendError(errorResponse)"), message);
@@ -371,7 +371,7 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
     failNext = true;
     const failed = await lexical(context, 'loadCity("Nowhere")');
     assert.equal(failed, false);
-    assert.equal(document.getElementById("errorMsg").textContent, "City not found — check the spelling and try again.");
+    assert.equal(document.getElementById("errorMsg").textContent, "Couldn't find that town. Try another spelling?");
     assert.equal(document.getElementById("errorMsg").classList.contains("hidden"), false);
     assert.equal(document.getElementById("loading").classList.contains("hidden"), true);
     assert.equal(document.getElementById("errorCard").classList.contains("hidden"), false, "the error card shows");

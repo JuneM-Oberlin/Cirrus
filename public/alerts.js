@@ -158,7 +158,7 @@ const CirrusAlerts = (function () {
     function applyAlertSnapshot(snapshot) {
         if (snapshot.error) {
             session.alerts = [];
-            deps.set("alertFetchMsg", "Could not load weather alerts right now.");
+            deps.set("alertFetchMsg", "Couldn't check for weather alerts just now.");
             deps.show("alertFetchMsg");
         } else {
             session.alerts = snapshot.alerts;

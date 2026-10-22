@@ -6,14 +6,14 @@
   <title>Cirrus</title>
   <meta name="description" content="A console-inspired weather channel: current conditions, today, tomorrow, and a 5-day forecast for any city.">
   <link rel="icon" href="icons/clear-day.png">
-  <link rel="stylesheet" href="theme.css?v=20261022l1">
+  <link rel="stylesheet" href="theme.css?v=20261022m1">
   <link rel="stylesheet" href="base.css?v=20261022k1">
-  <link rel="stylesheet" href="frame.css?v=20261022l1">
+  <link rel="stylesheet" href="frame.css?v=20261022m1">
   <link rel="stylesheet" href="channels.css?v=20261022a">
   <link rel="stylesheet" href="alerts.css?v=20261022h1">
-  <link rel="stylesheet" href="globe.css?v=20261022a">
+  <link rel="stylesheet" href="globe.css?v=20261022m1">
   <link rel="stylesheet" href="weather-atmosphere.css?v=20261022a">
-  <link rel="stylesheet" href="motion.css?v=20261022l1">
+  <link rel="stylesheet" href="motion.css?v=20261022m1">
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -320,7 +320,7 @@
       <section class="screen hidden" id="screenSearch" aria-label="Choose a city">
         <h3 class="screen-heading" id="recentHeading">Recent cities</h3>
         <ul class="chip-list" id="recentList"></ul>
-        <p class="screen-note">Type a city in the green bar above and press Go. Cirrus remembers the cities you pick.</p>
+        <p class="screen-note">Type a town in the green bar and press Go. Your recent picks wait here for next time.</p>
       </section>
 
       <section class="screen hidden" id="screenSettings" aria-label="Settings">
@@ -376,7 +376,10 @@
         <canvas class="globe-canvas" id="globeCanvas" role="img" aria-label="Satellite globe"></canvas>
         <div class="globe-markers" id="globeMarkers"></div>
         <p class="globe-badge" aria-hidden="true">Current Weather</p>
-        <p class="globe-status hidden" id="globeStatus" role="status"></p>
+        <p class="globe-status hidden" id="globeStatus" role="status">
+          <span class="loader-dots loader-dots--small" aria-hidden="true"><span class="loader-dot"></span><span class="loader-dot"></span><span class="loader-dot"></span></span>
+          <span id="globeStatusText"></span>
+        </p>
       </section>
 
       <section class="screen screen--clear hidden" id="screenDay" aria-label="Forecast day">
@@ -393,7 +396,7 @@
 
       <div class="panel-loading hidden" id="loading" role="status" aria-live="polite">
         <span class="loader-dots" aria-hidden="true"><span class="loader-dot"></span><span class="loader-dot"></span><span class="loader-dot"></span></span>
-        <p class="panel-loading-text" id="loadingText">Fetching weather</p>
+        <p class="panel-loading-text" id="loadingText">Tuning in…</p>
       </div>
       <div class="panel-error hidden" id="errorCard" role="alert">
         <p class="panel-error-text" id="errorMsg"></p>
@@ -442,18 +445,18 @@
   <script src="units.js?v=20261022a"></script>
   <script src="atmo-rain-video.js?v=20260706e"></script>
   <script src="atmo-lightning.js?v=20260626c"></script>
-  <script src="alerts.js?v=20261022i1"></script>
+  <script src="alerts.js?v=20261022m1"></script>
   <script src="atmosphere.js?v=20260706"></script>
   <script src="sound.js?v=20261022i1"></script>
   <script src="pointer.js?v=20261022k1"></script>
-  <script src="feel.js?v=20261022i1"></script>
+  <script src="feel.js?v=20261022m1"></script>
   <script src="frame.js?v=20261022i1"></script>
-  <script src="views.js?v=20261022l1"></script>
+  <script src="views.js?v=20261022m1"></script>
   <script src="search.js?v=20261022h1"></script>
   <script src="settings.js?v=20261022i1"></script>
-  <script src="globe.js?v=20261022i1"></script>
+  <script src="globe.js?v=20261022m1"></script>
   <script src="channels.js?v=20261022a"></script>
   <script src="countup.js?v=20261022h1"></script>
-  <script src="script.js?v=20261022k1"></script>
+  <script src="script.js?v=20261022m1"></script>
 </body>
 </html>

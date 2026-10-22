@@ -321,13 +321,13 @@ const CirrusViews = (function () {
 
         if (uv === undefined) {
             value.textContent = "--";
-            category.textContent = "Loading";
+            category.textContent = "Tuning in…";
             advice.textContent = "";
             value.removeAttribute("aria-label");
         } else if (uv === null) {
             value.textContent = "--";
-            category.textContent = "UV data unavailable";
-            advice.textContent = "The UV service didn't answer. Try again later.";
+            category.textContent = "UV index unavailable";
+            advice.textContent = "The UV service didn't answer this time. It'll try again next time you tune in.";
             value.removeAttribute("aria-label");
         } else {
             const rounded = Math.round(uv.value);

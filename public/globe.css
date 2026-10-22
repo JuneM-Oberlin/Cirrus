@@ -191,6 +191,9 @@
   position: absolute;
   bottom: var(--globe-status-bottom);
   left: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   max-width: calc(100% - 2 * var(--space-5));
   padding: var(--space-2) var(--space-5);
   background: var(--status-face);
@@ -200,4 +203,12 @@
   font-weight: var(--fw-bold);
   text-align: center;
   transform: translateX(-50%);
+}
+
+.globe-status.hidden {
+  display: none;
+}
+
+.globe-status:not(.is-busy) .loader-dots {
+  display: none;
 }

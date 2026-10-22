@@ -387,6 +387,18 @@
   --loader-dot-2: #ffffff;
   --loader-dot-3: var(--temp-low);
   --loader-dot-shadow: 0 4px 8px rgba(0, 10, 50, 0.45), inset 0 -3px 3px rgba(0, 30, 80, 0.2);
+  --loader-dot-size-small: 8px;
+  --loader-dot-gap-small: 5px;
+  --loading-delay: 150ms;
+  --dur-dot: 900ms;
+  --motion-dot-jump: -16px;
+  --motion-dot-stretch: scale(0.9, 1.1);
+  --motion-dot-squash: scale(1.2, 0.8);
+  --ease-dot-up: cubic-bezier(0.25, 0.7, 0.45, 1);
+  --ease-dot-down: cubic-bezier(0.55, 0, 0.85, 0.35);
+  --dot-dim: 0.35;
+  --dur-shake: 420ms;
+  --motion-shake: 9px;
   --error-card-width: 520px;
   --error-card-face: linear-gradient(180deg, #ffffff 0%, #f1f5f8 60%, #e1e8ee 100%);
   --error-card-border: rgba(255, 255, 255, 0.9);
@@ -674,6 +686,7 @@
     --settings-label-font: 15px;
     --loader-dot-size: 14px;
     --loader-dot-gap: 11px;
+    --motion-dot-jump: -12px;
     --fiveday-gap: 5px;
     --fiveday-head-font: 15px;
     --fiveday-icon-size: clamp(48px, 8vh, 64px);

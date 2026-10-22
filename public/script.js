@@ -134,16 +134,16 @@ function normalizeBackendWeatherData(data) {
 
 async function readBackendError(response) {
     if (response.status === 404) {
-        return "City not found — check the spelling and try again.";
+        return "Couldn't find that town. Try another spelling?";
     }
     if (response.status === 429) {
-        return "Too many searches — please wait a minute and try again.";
+        return "Whoa, that's a lot of searches! Take a short breather and try again in a minute.";
     }
     if (response.status >= 500) {
-        return "Server error — try again in a moment.";
+        return "The weather station is having a moment. Try again shortly?";
     }
 
-    let errorMessage = "Something went wrong.";
+    let errorMessage = "Something went sideways. Try again?";
     try {
         const err = await response.json();
         if (err.error) {
@@ -157,9 +157,9 @@ async function readBackendError(response) {
 
 function networkErrorMessage() {
     if (!navigator.onLine) {
-        return "You're offline — check your connection and try again.";
+        return "Looks like you're offline. Check your connection and try again.";
     }
-    return "Couldn't reach the server — check your connection and try again.";
+    return "Couldn't reach the weather station. Try again in a moment?";
 }
 
 async function fetchCached(path, city, cache, normalize = (d) => d) {
@@ -291,18 +291,18 @@ function startColdStartLoading(initialMessage) {
 
     const startedAt = Date.now();
     coldStartTimers.push(setTimeout(() => {
-        setLoadingText("Waking up the server — first search can take up to a minute");
+        setLoadingText("Waking up the weather station… the first search can take up to a minute.");
     }, 4000));
 
     coldStartTimers.push(setInterval(() => {
         const elapsed = Math.floor((Date.now() - startedAt) / 1000);
         if (elapsed >= 15 && elapsed < 30) {
-            setLoadingText(`Still connecting (${elapsed}s)`);
+            setLoadingText(`Still tuning in… (${elapsed}s)`);
         }
     }, 1000));
 
     coldStartTimers.push(setTimeout(() => {
-        setLoadingText("Almost there — free-tier servers can be slow on cold start.");
+        setLoadingText("Almost there! Free servers can be sleepy on the first visit.");
     }, 30000));
 }
 
@@ -319,7 +319,7 @@ function stopColdStartLoading() {
 // Runs a fetch task with the panel loader showing. Resolves true on success.
 // retry is what "Try again" runs if this load fails for a reason other than
 // a city that doesn't exist.
-async function withLoading(task, { loadingMessage = "Fetching weather", retry = null } = {}) {
+async function withLoading(task, { loadingMessage = "Tuning in…", retry = null } = {}) {
     clearStatus();
     startColdStartLoading(loadingMessage);
     let ok = false;
@@ -331,10 +331,14 @@ async function withLoading(task, { loadingMessage = "Fetching weather", retry = 
         console.log("Search error:", err);
         let message = err.message;
         if (!message) {
-            message = "Could not load weather data.";
+            message = "Something went sideways. Try again?";
         }
         lastFailure = { status: err.status, retry };
         showError(message);
+        // a town that doesn't exist gets a little "nope" shake in the field
+        if (err.status === 404) {
+            CirrusFeel.shake(document.querySelector(".frame-search-well"));
+        }
     } finally {
         stopColdStartLoading();
         hide("loading");
@@ -452,7 +456,7 @@ async function loadCity(city, options = {}) {
             fetchSixHourData(trimmed),
         ]);
         applyCity(trimmed, weather, forecast, sixHour, options);
-    }, { retry });
+    }, { retry, loadingMessage: "Tuning in to " + trimmed + "…" });
 }
 
 // Search from the location pill or a recent-city button.

@@ -101,3 +101,17 @@ test("buttons tick on hover, pop on press, and buzz under a finger", () => {
     document.dispatch("pointerdown", { target: back, pointerType: "mouse" });
     assert.deepEqual(played, ["tick", "pop", "pop"]);
 });
+
+test("a not-found town shakes the field once", () => {
+    const { document, feel } = loadFeel();
+    const field = element(document, "field");
+    feel.shake(field);
+    assert.equal(field.classList.contains("is-shaking"), true);
+    document.dispatch("animationend", { target: field, animationName: "nopeShake" });
+    assert.equal(field.classList.contains("is-shaking"), false);
+
+    const calm = loadFeel({ reduced: true });
+    const still = element(calm.document, "still");
+    calm.feel.shake(still);
+    assert.equal(still.classList.contains("is-shaking"), false, "reduced motion doesn't shake");
+});
