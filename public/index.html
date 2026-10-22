@@ -6,14 +6,14 @@
   <title>Cirrus</title>
   <meta name="description" content="A console-inspired weather channel: current conditions, today, tomorrow, and a 5-day forecast for any city.">
   <link rel="icon" href="icons/clear-day.png">
-  <link rel="stylesheet" href="theme.css?v=20261022g1">
+  <link rel="stylesheet" href="theme.css?v=20261022h1">
   <link rel="stylesheet" href="base.css?v=20261022a">
-  <link rel="stylesheet" href="frame.css?v=20261022g1">
+  <link rel="stylesheet" href="frame.css?v=20261022h1">
   <link rel="stylesheet" href="channels.css?v=20261022a">
-  <link rel="stylesheet" href="alerts.css?v=20261022g1">
+  <link rel="stylesheet" href="alerts.css?v=20261022h1">
   <link rel="stylesheet" href="globe.css?v=20261022a">
   <link rel="stylesheet" href="weather-atmosphere.css?v=20261022a">
-  <link rel="stylesheet" href="motion.css?v=20261022g1">
+  <link rel="stylesheet" href="motion.css?v=20261022h1">
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -188,7 +188,9 @@
     </nav>
 
     <header class="frame-header" id="frameHeader">
-      <h2 class="frame-title" id="frameTitle" aria-live="polite">Current</h2>
+      <div class="frame-title-block">
+        <h2 class="frame-title" id="frameTitle" aria-live="polite">Current</h2>
+      </div>
       <button type="button" class="frame-location" id="locationPill" aria-label="Choose a city">
         <span class="frame-location-text" id="locationName">Choose a city</span>
       </button>
@@ -418,6 +420,7 @@
     </nav>
   </div>
 
+  <script src="config.js?v=20261022h1"></script>
   <script src="iconMap.js?v=20260701"></script>
   <script src="units.js?v=20261022a"></script>
   <script src="atmo-rain-video.js?v=20260706e"></script>
@@ -425,12 +428,13 @@
   <script src="alerts.js?v=20261022a"></script>
   <script src="atmosphere.js?v=20260706"></script>
   <script src="feel.js?v=20261022g1"></script>
-  <script src="frame.js?v=20261022d1"></script>
-  <script src="views.js?v=20261022c1"></script>
-  <script src="search.js?v=20261022ab"></script>
+  <script src="frame.js?v=20261022h1"></script>
+  <script src="views.js?v=20261022h1"></script>
+  <script src="search.js?v=20261022h1"></script>
   <script src="settings.js?v=20261022a"></script>
-  <script src="globe.js?v=20261022a"></script>
+  <script src="globe.js?v=20261022h1"></script>
   <script src="channels.js?v=20261022a"></script>
-  <script src="script.js?v=20261022g1"></script>
+  <script src="countup.js?v=20261022h1"></script>
+  <script src="script.js?v=20261022h1"></script>
 </body>
 </html>

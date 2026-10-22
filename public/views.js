@@ -215,7 +215,8 @@ const CirrusViews = (function () {
     }
 
     // Opens one forecast day full-panel, titled with its weekday name.
-    function openDay(index) {
+    // origin is the 5-Day column it grows out of, when there is one.
+    function openDay(index, origin) {
         const day = forecastDays[index];
         if (!day) {
             return;
@@ -226,6 +227,7 @@ const CirrusViews = (function () {
         frame.openScreen("day", {
             title: fullWeekday(day.day),
             readout,
+            origin: origin || null,
         });
     }
 
@@ -262,7 +264,7 @@ const CirrusViews = (function () {
             low.textContent = String(units.tempNumber(day.low));
 
             button.append(name, icon, high, low);
-            button.addEventListener("click", () => openDay(index));
+            button.addEventListener("click", () => openDay(index, button));
             item.appendChild(button);
             list.appendChild(item);
         });

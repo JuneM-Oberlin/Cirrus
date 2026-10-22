@@ -166,13 +166,19 @@
   border-bottom: var(--rule) solid var(--header-strip-edge);
 }
 
-.frame-title {
+/* the green block stays put while the title text inside it moves */
+.frame-title-block {
   display: flex;
   flex: 0 0 var(--title-block-width);
   align-items: center;
   min-width: 0;
   padding: 0 var(--space-5);
+  overflow: hidden;
   background: var(--title-block);
+}
+
+.frame-title {
+  min-width: 0;
   color: var(--title-text);
   font-size: var(--title-font);
   font-weight: var(--fw-heavy);
@@ -415,10 +421,10 @@
   touch-action: pan-x pinch-zoom;
 }
 
+/* frame.js slides the track with a small bounce; this is where it rests */
 .panel-track {
   height: 100%;
   transform: translateY(calc(var(--view-index, 0) * -100%));
-  transition: transform var(--dur-slow) var(--nintendo-soft);
 }
 
 .view {
@@ -468,9 +474,9 @@
   box-shadow: var(--dot-shadow);
 }
 
+/* the current dot grows with a spring (transform, so hover can still scale it) */
 .view-dot.is-current::before {
-  width: var(--dot-size-current);
-  height: var(--dot-size-current);
+  transform: scale(var(--dot-current-scale));
   background: var(--dot-current-face);
   border-color: var(--dot-current-border);
   box-shadow: var(--dot-current-glow);
@@ -1266,6 +1272,11 @@
   outline-offset: var(--focus-offset);
 }
 
+/* a closing screen stays on top while it shrinks away, but takes no clicks */
+.screen.is-leaving {
+  pointer-events: none;
+}
+
 /* Clear screens (a single forecast day) keep the satellite panel behind
    them and hide the view stack instead. */
 .screen--clear {
@@ -1308,7 +1319,7 @@ body.is-home .frame {
     padding-right: var(--space-2);
   }
 
-  .frame-title {
+  .frame-title-block {
     padding: 0 var(--space-3);
   }
 

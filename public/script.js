@@ -412,6 +412,7 @@ function applyCity(city, weather, forecast, sixHour, { visit = false } = {}) {
     document.body.classList.toggle("theme-day", !weather.weatherCode.endsWith("n"));
     CirrusSearch.setLocation(weather.city);
     CirrusViews.render(appState);
+    CirrusCountUp.playIn(document.querySelector('.view[data-view="' + CirrusFrame.currentViewId() + '"]'));
     CirrusAtmosphere.refresh(weather.conditionId);
     updateGlobe(weather.lat, weather.lon);
     CirrusAlerts.checkAlerts(weather);
@@ -527,6 +528,7 @@ function openChannel(target) {
 CirrusFeel.init();
 CirrusFrame.init({
     onHome: openHome,
+    onEnter: (element) => CirrusCountUp.playIn(element),
     prefersReducedMotion,
 });
 CirrusViews.init({ frame: CirrusFrame, units: CirrusUnits });

@@ -121,6 +121,7 @@ function documentStub() {
         },
         createElement: (tagName) => element(document, tagName),
         createElementNS: (namespace, tagName) => element(document, tagName),
+        querySelector: () => null,
         querySelectorAll: () => [],
         contains: () => true,
         addEventListener(type, handler) {

@@ -538,11 +538,45 @@ const CirrusGlobe = (function () {
 
     /* ---------- Drag to spin, keys to steer ---------- */
 
+    // After a drag the globe keeps turning at the speed you let go of it,
+    // slowing a little every frame until it stops.
+    function glide(velocity) {
+        const settings = CirrusConfig.globeGlide;
+        let speedLon = Math.max(-settings.maxDegPerMs, Math.min(settings.maxDegPerMs, velocity.lon));
+        let speedLat = Math.max(-settings.maxDegPerMs, Math.min(settings.maxDegPerMs, velocity.lat));
+        let before = performance.now();
+        const step = (now) => {
+            const elapsed = now - before;
+            before = now;
+            view.lon = wrapLon(view.lon + speedLon * elapsed);
+            view.lat = clampLat(view.lat + speedLat * elapsed);
+            // friction is per 60fps frame, so it slows the same on any screen
+            const slowdown = Math.pow(settings.frictionPerFrame, elapsed / (1000 / 60));
+            speedLon *= slowdown;
+            speedLat *= slowdown;
+            if (Math.hypot(speedLon, speedLat) < settings.stopBelowDegPerMs) {
+                settle();
+                return;
+            }
+            render(0.5);
+            animation = requestAnimationFrame(step);
+        };
+        animation = requestAnimationFrame(step);
+    }
+
     function wireDrag() {
         const canvas = byId("globeCanvas");
         let last = null;
+        // how fast the globe was turning, in degrees per millisecond
+        let velocity = { lon: 0, lat: 0 };
         canvas.addEventListener("pointerdown", (event) => {
-            last = { x: event.clientX, y: event.clientY };
+            // grabbing a gliding globe stops it
+            if (animation) {
+                cancelAnimationFrame(animation);
+                animation = null;
+            }
+            last = { x: event.clientX, y: event.clientY, time: performance.now() };
+            velocity = { lon: 0, lat: 0 };
             canvas.setPointerCapture(event.pointerId);
         });
         canvas.addEventListener("pointermove", (event) => {
@@ -551,17 +585,30 @@ const CirrusGlobe = (function () {
             }
             const dx = event.clientX - last.x;
             const dy = event.clientY - last.y;
-            last = { x: event.clientX, y: event.clientY };
+            const now = performance.now();
+            const elapsed = Math.max(1, now - last.time);
+            last = { x: event.clientX, y: event.clientY, time: now };
             const cosLat = Math.max(0.2, Math.cos(view.lat * DEG));
-            view.lon = wrapLon(view.lon - dx / view.radius / DEG / cosLat);
-            view.lat = clampLat(view.lat + dy / view.radius / DEG);
+            const dLon = -dx / view.radius / DEG / cosLat;
+            const dLat = dy / view.radius / DEG;
+            view.lon = wrapLon(view.lon + dLon);
+            view.lat = clampLat(view.lat + dLat);
+            velocity = { lon: dLon / elapsed, lat: dLat / elapsed };
             render(0.5);
         });
         const end = () => {
-            if (last) {
-                last = null;
-                settle();
+            if (!last) {
+                return;
             }
+            // a pause before letting go means the globe should stay put
+            const stillFor = performance.now() - last.time;
+            last = null;
+            const speed = Math.hypot(velocity.lon, velocity.lat);
+            if (deps.prefersReducedMotion() || stillFor > 80 || speed < CirrusConfig.globeGlide.stopBelowDegPerMs) {
+                settle();
+                return;
+            }
+            glide(velocity);
         };
         canvas.addEventListener("pointerup", end);
         canvas.addEventListener("pointercancel", end);

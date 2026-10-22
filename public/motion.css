@@ -143,9 +143,35 @@
 .frame-location-text,
 .alert-bar-more,
 .alert-bar .alert-icon,
-.globe-marker > *,
-.view-dot::before {
+.globe-marker > * {
   transition: scale var(--dur-spring-hover) var(--spring-hover);
+}
+
+.view-dot::before {
+  transition:
+    scale var(--dur-spring-hover) var(--spring-hover),
+    transform var(--dur-spring-pop) var(--spring-pop);
+}
+
+/* opening the search: the field stretches out and Go pops in after it */
+@keyframes fieldOpen {
+  0% {
+    opacity: 0;
+    transform: var(--motion-field-from);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.frame-search:not(.hidden) .frame-search-well {
+  transform-origin: right center;
+  animation: fieldOpen var(--dur-spring-pop) var(--spring-pop) both;
+}
+
+.frame-search:not(.hidden) .frame-search-go {
+  animation: nintendoPop var(--dur-spring-pop) var(--spring-pop) var(--stagger-gap) both;
 }
 
 /* a pointer (not a finger) makes things grow and shine */
@@ -225,8 +251,7 @@
 .frame-btn.is-squashing > :not(.shine),
 .frame-location.is-squashing .frame-location-text,
 .alert-bar.is-squashing > :not(.shine),
-.globe-marker.is-squashing > *,
-.view-dot.is-squashing::before {
+.globe-marker.is-squashing > * {
   animation: wiiSquashPress var(--dur-squash) linear;
 }
 
@@ -393,7 +418,9 @@
   .channel-today-icon,
   .channel-grid-hint,
   .channel-search button.search-press-feedback,
-  .channel-clock-colon {
+  .channel-clock-colon,
+  .frame-search:not(.hidden) .frame-search-well,
+  .frame-search:not(.hidden) .frame-search-go {
     animation: none !important;
   }
 

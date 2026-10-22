@@ -75,9 +75,22 @@ const CirrusSearch = (function () {
         }
     }
 
+    // A new city's name slides into the pill from the right.
     function setLocation(name) {
-        byId("locationName").textContent = name;
+        const label = byId("locationName");
+        const changed = label.textContent !== name;
+        label.textContent = name;
         byId("locationPill").setAttribute("aria-label", "Location: " + name + ". Change city");
+        const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (changed && !calm && label.animate) {
+            label.animate([
+                { opacity: 0, transform: "translateX(" + CirrusConfig.chrome.windShiftPx + "px)" },
+                { opacity: 1, transform: "none" },
+            ], {
+                duration: deps.frame.cssDuration("--dur-spring-pop"),
+                easing: getComputedStyle(document.documentElement).getPropertyValue("--spring-pop").trim(),
+            });
+        }
     }
 
     function init(dependencies) {

@@ -40,9 +40,13 @@ function frameDocument(viewIds) {
     return { document, views };
 }
 
+// The real feel settings, as the page loads them before frame.js.
+const CirrusConfig = lexical(runClassicScript("public/config.js"), "CirrusConfig");
+
 function loadFrame(viewIds, { desktop = false } = {}) {
     const { document, views } = frameDocument(viewIds);
     const context = runClassicScript("public/frame.js", {
+        CirrusConfig,
         document,
         window: { matchMedia: () => ({ matches: desktop, addEventListener() {} }) },
         getComputedStyle: () => ({ getPropertyValue: () => "350ms" }),
@@ -307,7 +311,8 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
         CirrusUnits: { temp: (f) => f + "°", asOf: () => "As of", cityClockTime: () => "--", onChange: noop },
         CirrusSettings: { init: noop },
         CirrusFeel: { init: noop },
-        CirrusFrame: { init: noop, showView: noop, hasView: () => false, setVisiting: noop, setHandlers: noop },
+        CirrusFrame: { init: noop, showView: noop, hasView: () => false, setVisiting: noop, setHandlers: noop, currentViewId: () => "current" },
+        CirrusCountUp: { playIn: noop },
         CirrusGlobe: { init: noop },
         CirrusViews: {
             init: noop,

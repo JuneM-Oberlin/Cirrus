@@ -64,7 +64,7 @@
   border-bottom-color: var(--alert-warning-edge);
 }
 
-.frame-header--warning .frame-title {
+.frame-header--warning .frame-title-block {
   background: var(--alert-warning-face);
 }
 
@@ -73,7 +73,7 @@
   border-bottom-color: var(--alert-watch-edge);
 }
 
-.frame-header--watch .frame-title {
+.frame-header--watch .frame-title-block {
   background: var(--alert-watch-face);
 }
 

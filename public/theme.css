@@ -96,6 +96,10 @@
   --ease-fade: cubic-bezier(0.4, 0, 0.2, 1);
   --dur-exit: 180ms;
   --dur-fade-quick: 200ms;
+  /* a view slide: fast away, a little past the spot, then settle back */
+  --ease-slide: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-settle: cubic-bezier(0.45, 0, 0.55, 1);
+  --dur-view-slide: 640ms;
   --dur-none: 0.01ms;
   --dur-fast: 200ms;
   --dur-medium: 350ms;
@@ -269,7 +273,7 @@
   --dot-hit-width: 40px;
   --dot-hit-height: 40px;
   --dot-size: 11px;
-  --dot-size-current: 18px;
+  --dot-current-scale: 1.65;
   --dot-face: rgba(255, 255, 255, 0.75);
   --dot-border: rgba(0, 20, 80, 0.35);
   --dot-shadow: 0 1px 3px rgba(0, 10, 50, 0.45);
@@ -529,6 +533,7 @@
   --stagger-step: 60ms;
   --stagger-gap: 110ms;
   --motion-pop-from: translateY(10px) scale(0.82);
+  --motion-field-from: scaleX(0.9);
   --motion-bob: translateY(-8px);
   --motion-hint: translateY(-4px);
   --motion-squash-down: translateY(3px) scale(1.06, 0.9);
@@ -606,7 +611,6 @@
     --dot-hit-width: 12px;
     --dot-hit-height: 16px;
     --dot-size: 6px;
-    --dot-size-current: 10px;
     --reading-gap: 8px;
     --reading-top: 18px;
     --reading-pad-x: 12px;
