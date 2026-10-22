@@ -8,7 +8,7 @@ Cirrus is a short personal project designed to demonstrate a complete end-to-end
 
 I built it to practice HTTP networking, JSON parsing, and connecting a backend service to a web UI in a single, easy-to-understand codebase.
 
-The interface is styled after a retro console weather channel: silver button rows above and below a royal-blue panel, a green title block with a lime location pill, and big friendly numbers. All artwork, icons, and the pointing-hand cursor are original.
+The interface is styled after a retro console weather channel: silver button rows above and below a royal-blue panel, a green title block with a lime location pill, and big friendly numbers. It is built to feel tactile and playful: springy buttons, bouncing view changes, soft synthesized sounds, and a friendly hand cursor. All artwork, sounds, icons, and the cursor are original.
 
 ## Tech Stack
 
@@ -28,18 +28,20 @@ The interface is styled after a retro console weather channel: silver button row
 - A spinning globe of major cities with their current weather
 - °F/°C and mph/km/h settings, remembered between visits
 - Recent cities remembered between visits
-- Keyboard, swipe, and screen-reader friendly; honors reduced-motion
+- Original UI sounds and optional calm music, with a mute switch that is remembered
+- Springy, tactile motion throughout (see [Feel](#feel))
+- Keyboard, swipe, and screen-reader friendly; honors reduced motion with simple fades
 - API keys managed through environment variables
 
 ## Views
 
-The frame has a silver button row at the top and bottom. The middle buttons step up and down through the view stack and name the neighboring view. Arrow keys, Page Up/Down, and vertical swipes on the panel do the same.
+The frame has a silver button row at the top and bottom. The middle buttons step up and down through the view stack and name the neighboring view. Arrow keys, Page Up/Down, and vertical swipes on the panel do the same. A column of page dots on the panel's right edge shows where you are in the stack; on desktop, pointing at a dot shows its view's name and clicking jumps straight there.
 
 | View | Shows |
 |------|-------|
 | UV Index | Today's UV value, its WHO band (Low → Extreme) on a color scale, and advice |
-| Current | Temperature, condition, icon (a moon at night), wind, and feels-like/humidity/clouds/visibility/pressure/sunrise/sunset |
-| Today | Today's high and low, condition, wind, rain chance, precipitation |
+| Current | Temperature, condition, icon (a moon at night), and wind, with feels-like, humidity, clouds, visibility, pressure, sunrise, and sunset in rounded reading bubbles |
+| Today | Today's high and low, condition, and wind, with rain chance and precipitation bubbles |
 | Tomorrow | The same for tomorrow |
 | 5-Day Forecast | Five columns of day, icon, high, and low; weekend names in yellow. Pick a day to open its detail |
 | 6-Hour Weather | Tomorrow in four blocks (12–6 a.m., 6 a.m.–12 p.m., 12–6 p.m., 6 p.m.–12 a.m.) |
@@ -47,10 +49,37 @@ The frame has a silver button row at the top and bottom. The middle buttons step
 Other screens:
 
 - **Location**: tap the lime pill to search; recent cities are listed as buttons.
-- **Settings** (top right): temperature in °F or °C, wind in mph or km/h.
+- **Settings** (top right): a Units card (°F or °C, mph or km/h) and a Sound card (sound effects on or off, music on or off).
 - **Globe** (bottom right): zoom out/in, Next region, rotate left/right, Restore, End. Picking a city opens its weather; Back returns to the globe.
 - **Weather Alert**: when the NWS has an active alert, the header turns red (warnings) or orange (watches), a bar shows under the header, and the alert screen lists the details.
-- **Home** (desktop only): the channel menu shown at launch. Each tile opens a view.
+- **Home** (desktop only): the channel menu shown at launch. Each tile zooms open into its view.
+
+Loading shows bouncing dots in the middle of the panel ("Tuning in to Tokyo…"); problems show a friendly card with a **Try again** button ("Couldn't find that town. Try another spelling?").
+
+## Feel
+
+Cirrus aims to feel like a console channel: charming, tactile, and polished. Every bit of it is original and only inspired by that feel.
+
+- **Buttons** grow with a spring and catch a sweep of light when you point at them, and squash and bounce back when pressed, even on a quick click. Phones that support it give a tiny buzz.
+- **Views** slide in from the side they come from and land with a small bounce. Titles, labels, and the wind line arrive with them, big numbers count up, and screens pop in (a 5-Day day grows out of its column).
+- **Weather icons** idle gently: the sun turns and its rays breathe, clouds drift, rain drips, snow sways, the moon glows.
+- **Launching**: on desktop a Home tile grows into the frame, and Home zooms back into it; phones open with a Cirrus tile that grows into the frame. Each takes under a second.
+- **Cursor**: on computers Cirrus draws its own hand that leans as it moves, hops onto buttons, and pokes when you click; touch screens get a soft ripple instead.
+- **Sound** is made on the spot from plain tones (nothing is a recording): a light tick on hover, a pop on press, a two-note chime as a view opens, a lower blip for Back, a soft tone for NWS warnings, and optional slow music. Sound starts only after your first click, tap, or key press.
+- **Idle**: after a quiet minute the globe turns by itself or the satellite picture slowly pans; any input brings things back at once.
+- **Surprises**: a sun clicked five times quickly winks at you, and on snowy days snow piles up on the frame's ledges.
+
+**Reduced motion** turns off the bounces, idle animation, count-ups, launch zooms, drawn cursor, and easter-egg spin, and swaps them for short fades. High contrast mode keeps the system cursor.
+
+All CSS timings, spring curves, and colors are tokens in `public/theme.css`; everything only JavaScript needs (sound pitches and volumes, the count-up length, the idle delay, cursor lean) is in `public/feel-config.js`.
+
+### Libraries
+
+None were added. Each of these was weighed and done by hand instead:
+
+- **Springs:** CSS `linear()` timing curves sampled from a damped spring (with overshooting `cubic-bezier` fallbacks) give the bounce without a motion library such as Motion, and run off the main thread.
+- **Sound:** a few Web Audio oscillators with volume envelopes cover every sound; Tone.js would add roughly 90 KB gzipped for scheduling features these sounds don't need.
+- **Globe idle and glide:** the existing hand-built canvas globe already moves its camera, so no globe or map library is needed.
 
 ## Running locally
 
@@ -68,7 +97,7 @@ When the frontend is served from GitHub Pages it calls the hosted backend instea
 
 ```bash
 mvn test                   # backend: 105 JUnit tests
-node --test test/*.test.js # frontend: 21 Node tests, no install needed
+node --test test/*.test.js # frontend: 38 Node tests, no install needed
 ```
 
 The frontend tests run the plain scripts against a small DOM stub. They also include a lint that fails if any CSS file outside `theme.css` contains a literal color, length, duration, or easing curve.
@@ -194,20 +223,28 @@ Each upstream source follows the same layering: client → parser → service �
 
 | File | Owns |
 |------|------|
-| `theme.css` | Every color, gradient, shadow, radius, spacing, and duration, as CSS custom properties (mobile overrides at the bottom) |
-| `base.css` | Reset, fonts, page sky, cursor, focus ring |
-| `frame.css` | Button rows, header, panel, and all six views |
+| `theme.css` | Every color, gradient, shadow, radius, spacing, duration, and spring curve, as CSS custom properties (mobile overrides at the bottom) |
+| `base.css` | Reset, fonts, page sky, cursor (and the drawn hand and tap ripple), focus ring |
+| `frame.css` | Button rows, header, panel, page dots, reading bubbles, loading dots, error card, all six views, and the launch zoom |
 | `channels.css` | Desktop Home menu |
 | `alerts.css` | Alert bar, header variants, alert screen |
 | `globe.css` | Globe screen and markers |
 | `weather-atmosphere.css` | Rain, snow, fog, and lightning overlays |
-| `motion.css` | Keyframes, hover/press motion, and the reduced-motion overrides |
+| `motion.css` | Keyframes, button feel (grow, shine, squash), icon idle motion, loader, easter eggs, and the reduced-motion overrides |
+| `feel-config.js` | The timings and amounts only JavaScript uses: sounds, count-up, view-slide overshoot, globe glide, cursor lean, idle delay, easter eggs |
 | `units.js` | °F/°C and mph/km/h formatting, city-local dates and times, saved settings |
-| `frame.js` | Button rows, view stack, screens, clock, keys and swipe |
+| `feel.js` | Button press squash, shine layers, hover tick and press pop, phone buzz |
+| `sound.js` | The sound engine: synthesized effects, the music loop, and the remembered switches |
+| `pointer.js` | The drawn hand cursor (lean, hop, poke) and the touch ripple |
+| `frame.js` | Button rows, view stack and its bouncing slide, screens popping in and out, page dots, clock, keys and swipe |
+| `countup.js` | Big numbers rolling up when a view opens |
+| `launch.js` | Channel launch zoom from a Home tile (and back), and the phone intro |
+| `idle.js` | Attract mode after a quiet minute |
+| `eggs.js` | The winking sun and snow caps |
 | `views.js` | Renders Current, Today, Tomorrow, 5-Day, 6-Hour, UV, and day detail |
 | `search.js` | Location screen and recent cities |
-| `settings.js` | Settings screen |
-| `globe.js` | Canvas globe (orthographic projection of NASA GIBS imagery) and city markers |
+| `settings.js` | Settings screen (Units and Sound cards) |
+| `globe.js` | Canvas globe (orthographic projection of NASA GIBS imagery), city markers, glide after a flick, idle spin |
 | `alerts.js` | Alert bar, badge, and alert screen |
 | `channels.js` | Desktop Home menu |
 | `atmosphere.js`, `atmo-*.js` | Weather overlays |

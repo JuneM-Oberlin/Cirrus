@@ -35,7 +35,11 @@ Loaded in this order from `public/index.html`:
 | `alerts.css` | Alert bar, red/orange header variants, alert screen |
 | `globe.css` | Globe screen, canvas, markers, globe-mode button rows |
 | `weather-atmosphere.css` | Rain video / snow / fog / lightning overlays inside the panel |
-| `motion.css` | Every keyframe, hover/press motion, and the reduced-motion block |
+| `motion.css` | Every keyframe, hover/press motion, icon idle motion, and the reduced-motion block |
+
+Scripts with motion or sound: `feel-config.js` (their settings), `feel.js` (button
+press, shine, tick and pop), `sound.js`, `pointer.js`, `frame.js` (slides, screens),
+`countup.js`, `launch.js`, `idle.js`, and `eggs.js`.
 
 **Conventions:**
 
@@ -66,8 +70,8 @@ Loaded in this order from `public/index.html`:
 - **Button rows** are three silver faces (`--frame-btn-face`). The middle buttons step through the view stack and are labeled with the neighbor's name. A slot with nothing to do is disabled and drawn blank (`.is-empty`). The middle buttons light up cyan (`--frame-btn-face-active`) on hover. Corner buttons brighten on hover and turn cyan while pressed. Keyboard focus draws `--focus-ring-on-light` inside the button.
 - **Corners:** clock top-left (DSEG7 digits, `--font-digital`), Settings top-right, Back/Home bottom-left, Globe bottom-right. On the globe the rows become Zoom − / Next / Zoom + and End / ↶ ↷ / Restore.
 - **Header:** the green title block (`--title-block`) names the view; long names drop to `--title-font-long`. The lime pill (`--pill-face`) names the city and opens the Location screen.
-- **Panel:** `--panel-face` plus `--panel-streaks` over a GIBS satellite image of the city at `--panel-sat-opacity`. The footer always carries the credit (bottom-left), the wind band, and the "As of" strip (bottom-right).
-- **View stack:** UV Index → Current → Today → Tomorrow → 5-Day → 6-Hour. The track moves by `--view-index` with `--dur-slow` / `--nintendo-soft`.
+- **Panel:** `--panel-face` plus `--panel-streaks` over a GIBS satellite image of the city at `--panel-sat-opacity`. The footer always carries the credit (bottom-left), the wind band, and the "As of" strip (bottom-right); other readings (feels like, humidity, rain chance, ...) sit in rounded bubbles inside the views.
+- **View stack:** UV Index → Current → Today → Tomorrow → 5-Day → 6-Hour. The track rests at `--view-index`; frame.js slides it there with a small bounce. Page dots on the right edge show the current view.
 - **Screens** (Location, Settings, Weather Alert, Globe, day detail) open over the panel with `CirrusFrame.openScreen()`. Back closes them.
 
 ---
@@ -137,48 +141,71 @@ toward the middle so its white large text clears 3:1. Muted button text
 
 ## 7. Motion
 
-Easings (`theme.css`):
+The goal is a console channel's feel: tactile, springy, playful, never dead or instant.
 
-```
---nintendo-spring: cubic-bezier(0.34, 1.56, 0.64, 1)   /* overshoot: entrances, presses */
---nintendo-soft:   cubic-bezier(0.32, 0.72, 0, 1)      /* smooth: view slides, hovers, fades */
-```
+**Springs** (`theme.css`) are damped-spring curves sampled into CSS `linear()`, with
+overshooting `cubic-bezier` fallbacks for browsers without it. No motion library.
 
-Durations:
+| Token | Overshoot | Used for |
+|-------|-----------|----------|
+| `--spring-pop` / `--dur-spring-pop` | ~13% | things landing: screens, cards, the error card, the press bounce-back |
+| `--spring-slide` | ~5% | screens zooming out of a 5-Day column |
+| `--spring-hover` / `--dur-spring-hover` | ~10% | things growing under the pointer |
 
-- `--dur-fast`, `--dur-medium`, `--dur-slow`, and `--dur-fade` cover most motion.
-- Effect-specific durations: `--dur-pop`, `--dur-squash`, `--dur-bob`, and others.
-- `--dur-none` is used by reduced motion.
+Other easings: `--ease-slide` + `--ease-settle` (view slides), `--ease-exit` (things
+leaving speed up), `--ease-fade` (fades), `--ease-launch` (channel zoom), `--ease-press`
+(the squash going down). Durations and distances are tokens too (`--dur-*`, `--motion-*`).
+Values only JavaScript uses (count-up length, slide overshoot in px, cursor lean, sound,
+idle delay) live in `public/feel-config.js`.
 
-Distances and transforms are tokens too (`--motion-*`).
+Keyframes (`motion.css`): `nintendoPop`, `wiiSquashPress`, `shineSweep`, `fieldOpen`,
+`alertBarDown`, `alertWiggle`, `dotBounce`, `dotGlow`, `fadeIn`, `nopeShake`, `sunTurn`,
+`sunPulse`, `cloudDrift`, `moonGlow`, `fogDrift`, `snowSway`, `glowPulse`, `dripFall`,
+`satPan`, `winkClose`, `winkLine`, `snowSettle`, plus the older `iconBob`, `hintBounce`,
+`tempFreezeIn`, `tempShiver`, `tempHeatShake`, `searchPressGlow`, `dockScan*`,
+`alertBarUp`, `channelColonBlink`. **Reuse these before adding new ones.**
 
-Keyframes (`motion.css`): `nintendoPop`, `iconBob`, `hintBounce`, `tempFreezeIn`,
-`tempShiver`, `tempHeatShake`, `wiiSquashPress`, `searchPressGlow`, `dockScanDrift`,
-`dockScanStatic`, `alertBarDown`, `alertBarUp`, `channelColonBlink`. **Reuse these
-before adding new ones.**
+**Button rules.** Hover grow uses the CSS `scale` property and the press squash uses
+`transform`, so they stack. Grow and shine only happen for `(hover: hover) and
+(pointer: fine)`, so touch screens never leave a tapped button lit. Row buttons sit
+edge to edge, so their label and arrow grow instead of the face. Highlights (cyan faces,
+the brighter 5-Day column) are layers that fade with `opacity`, because a gradient
+can't fade by itself. `feel.js` adds `.is-squashing` on press and removes it when the
+animation ends, so a quick click still plays the whole squash.
 
 | Trigger | Effect |
 |---------|--------|
-| Up/Down, arrow keys, Page Up/Down, vertical swipe | View track slides one view (`--dur-slow`, soft) |
-| Hover on a middle button | Face turns cyan (`--dur-fast` background transition) |
-| Press on a frame button or chip | `wiiSquashPress`, one shot |
-| Alerts arrive | Alert bar slides down out of the header (`alertBarDown`) |
-| Status pill appears | `nintendoPop` |
-| Weather icon | `iconBob` loop (decorative) |
-| Below 32°F | `.temp--freezing`: fades white → cyan, then shivers |
-| 95°F and up | `.temp--hot`: heat shake; JS scales `--heat-amp` / `--heat-speed` up to 120°F |
-| Globe moves | Eased camera animation, rendered at half resolution while moving |
+| Point at a button | Springy grow, one sweep of light, a soft tick |
+| Press (pointer, Enter, Space) | Squash down, spring back; a pop; an 8ms buzz on phones |
+| Change view | Track slides from that side, runs 18px past, settles; title, labels, wind line come in with it; numbers count up; a two-note chime |
+| Open / close a screen | Pops in from 94%, shrinks away on Back (a 5-Day day grows out of its column and back) |
+| Open a channel from Home | The tile grows into the frame (600ms); Home zooms back into it |
+| Phone opens | A Cirrus tile pops up and grows into the frame (under 1s) |
+| Loading / error | Bouncing dots in the middle of the panel; error card pops in; a not-found town shakes the field |
+| Alerts arrive | Bar springs down, triangle wiggles once, a soft tone for warnings |
+| Weather icons | Idle: sun turns and pulses, clouds drift, rain drips, snow sways, moon glows (paused off-screen) |
+| Globe | Glides after a flick; markers fade while it moves |
+| A quiet minute | Globe turns by itself or the satellite picture pans; any input stops it |
 
 ### Reduced motion
 
-`motion.css` ends with a `prefers-reduced-motion: reduce` block:
+- `motion.css` ends with a `prefers-reduced-motion: reduce` block that cuts CSS
+  animation and transition durations, stops every loop, grow, shine, and squash, and
+  hides decorative extras (icon glows, drops, the sun's face).
+- The scripts check reduced motion themselves and swap slides, screen pops, and launch
+  zooms for 200ms fades; count-ups, globe glide, idle mode, the drawn cursor, and the
+  sun's spin are skipped. The loading dots glow in turn instead of hopping.
 
-- It cuts every animation and transition to `--dur-none`.
-- It stops the loops and the press squash.
-- The view track swaps instantly.
-- The globe jumps straight to its target.
+Any new animation **must** be added to that block or check reduced motion in script.
 
-Any new animation **must** be added to that block.
+### Sound and the cursor
+
+- `sound.js` builds every sound from Web Audio tones (no recordings); pitches, lengths,
+  and volumes are in `feel-config.js`. Nothing plays until the first click, tap, or key
+  press. Effects and music have their own remembered switches in Settings.
+- `pointer.js` draws the hand only for a fine pointer without reduced motion or high
+  contrast mode; otherwise the still CSS hand (`--cursor-point`) stays. It turns around
+  its fingertip, so the hotspot never moves.
 
 ---
 
@@ -237,7 +264,7 @@ Test every UI change at **360, 390, 768, and 1440px**.
 
 ## 11. Don'ts (design guardrails)
 
-- Don't copy Nintendo assets, logos, the Wii cursor, or the "supported by weathernews" credit. The cursor (`public/cursors/hand.svg`), icons, and credit line are original.
+- Don't copy Nintendo assets, logos, sounds, music, characters, the Wii cursor, or the "supported by weathernews" credit. The cursor (`public/cursors/hand.svg`), sounds, music, icons, and credit line are original.
 - Don't hard-code a design value outside `theme.css`; the lint will fail.
 - Don't use ternaries in the frontend scripts; this codebase prefers `if` / `else`.
 - No purple/violet gradients, decorative blobs, or emoji as UI.
@@ -252,8 +279,9 @@ Test every UI change at **360, 390, 768, and 1440px**.
 
 - [ ] New values added to `theme.css` as tokens; `node --test test/*.test.js` passes
 - [ ] Resting state static; motion only on hover/press/focus or an allowed loop
-- [ ] Animations use `transform`/`opacity`/`box-shadow` and a `--nintendo-*` easing
-- [ ] New animation added to the reduced-motion block
+- [ ] Animations use `transform`/`opacity` (or `scale`/`rotate`/`translate`) and a `--spring-*` or `--ease-*` token
+- [ ] New animation added to the reduced-motion block, or the script fades instead
+- [ ] New JS-only timings, distances, or sounds go in `feel-config.js`
 - [ ] Touch targets ≥ 44px; focus ring visible; contrast AA
 - [ ] Middle nav labels still name the neighboring view
 - [ ] Checked at 360 / 390 / 768 / 1440px
