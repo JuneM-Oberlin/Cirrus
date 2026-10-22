@@ -737,4 +737,7 @@ test("globe zoom levels blend evenly between steps and convert back", () => {
     });
     assert.equal(globe.levelForShare(0.1), 0);
     assert.equal(globe.levelForShare(40), 5);
+    // a level a hair outside the range still gives a real size
+    assert.ok(close(globe.shareFor(-0.06), 0.42));
+    assert.ok(close(globe.shareFor(5.2), 5.6));
 });

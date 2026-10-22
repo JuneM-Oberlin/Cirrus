@@ -96,6 +96,7 @@ const CirrusGlobe = (function () {
     let extraFetchTimes = [];
     let extrasPausedUntil = 0;
     let extrasTimer = null;
+    let extrasDueAt = 0;
     let markersTimer = null;
 
     function byId(id) {
@@ -119,8 +120,9 @@ const CirrusGlobe = (function () {
     // levels the size grows by the same factor for each equal step, so
     // zooming feels even all the way in.
     function shareFor(level) {
-        const lower = Math.min(Math.floor(level), MAX_LEVEL - 1);
-        const t = level - lower;
+        const safe = clampLevel(level);
+        const lower = Math.min(Math.floor(safe), MAX_LEVEL - 1);
+        const t = safe - lower;
         return ZOOM_LEVELS[lower] * Math.pow(ZOOM_LEVELS[lower + 1] / ZOOM_LEVELS[lower], t);
     }
 
@@ -160,14 +162,17 @@ const CirrusGlobe = (function () {
         return Math.max(-75, Math.min(75, lat));
     }
 
-    // Where the camera is for the current view (all in CSS pixels).
+    // Where the camera is for the current view (all in CSS pixels). Far
+    // south, the tilt is cut back so the facing point never goes past the
+    // South Pole; otherwise the camera would stop following view.lat.
     function camera(width, height, scale) {
         const radius = view.radius * scale;
-        const lat0 = Math.max(-89.9, Math.min(89.9, view.lat - view.tilt / DEG));
+        const tilt = Math.min(view.tilt, (view.lat + 89.9) * DEG);
+        const lat0 = Math.min(89.9, view.lat - tilt / DEG);
         return {
             radius,
             cx: width / 2,
-            cy: height / 2 + radius * Math.sin(view.tilt),
+            cy: height / 2 + radius * Math.sin(tilt),
             sinLat0: Math.sin(lat0 * DEG),
             cosLat0: Math.cos(lat0 * DEG),
             lon0: view.lon,
@@ -201,8 +206,11 @@ const CirrusGlobe = (function () {
             return null;
         }
         const z = Math.sqrt(1 - rho2);
+        // rounding can push this a hair past 1 right at a pole, where asin
+        // would give NaN, so it is kept inside -1..1
+        const sinLat = Math.max(-1, Math.min(1, z * cam.sinLat0 + unitY * cam.cosLat0));
         return {
-            lat: Math.asin(z * cam.sinLat0 + unitY * cam.cosLat0) / DEG,
+            lat: Math.asin(sinLat) / DEG,
             lon: wrapLon(cam.lon0 + Math.atan2(unitX, z * cam.cosLat0 - unitY * cam.sinLat0) / DEG),
         };
     }
@@ -257,6 +265,7 @@ const CirrusGlobe = (function () {
                 base = texture;
                 setStatus("");
                 render(1);
+                placeMarkers();
             })
             .catch(() => setStatus("The satellite view isn't available right now."));
     }
@@ -373,7 +382,6 @@ const CirrusGlobe = (function () {
         ctx.fill();
         ctx.globalCompositeOperation = "source-over";
 
-        placeMarkers();
         describe();
     }
 
@@ -437,14 +445,68 @@ const CirrusGlobe = (function () {
         return b.point.depth - a.point.depth;
     }
 
+    // Every city the globe knows about at this zoom.
+    function allCities() {
+        const cities = [];
+        Object.values(regions).forEach((region) => region.cities.forEach((city) => cities.push(city)));
+        extraCities().forEach((city) => cities.push(city));
+        return cities;
+    }
+
     // Weather arriving for several cities at once redraws the markers once.
+    // While a marker is being pressed or has keyboard focus, rebuilding them
+    // would swallow the click or make a screen reader read it out again, so
+    // the markers on screen are just brought up to date instead.
     function placeMarkersSoon() {
         clearTimeout(markersTimer);
         markersTimer = setTimeout(() => {
-            if (isOpen && !animation && zoomTarget === null) {
-                placeMarkers();
+            if (!isOpen || animation || zoomTarget !== null) {
+                return;
             }
+            const layer = byId("globeMarkers");
+            if (layer.querySelector(".globe-marker:active") || layer.contains(document.activeElement)) {
+                refreshMarkers();
+                return;
+            }
+            placeMarkers();
         }, 120);
+    }
+
+    // Updates the markers already on screen without replacing them.
+    function refreshMarkers() {
+        const cities = allCities();
+        byId("globeMarkers").querySelectorAll(".globe-marker").forEach((button) => {
+            const city = cities.find((item) => item.name === button.dataset.city);
+            if (city) {
+                describeMarker(button, city);
+            }
+        });
+    }
+
+    // Fills in a marker's weather icon, label, and spoken description.
+    function describeMarker(button, city) {
+        button.classList.toggle("is-pending", Boolean(city.pending));
+        let icon = button.querySelector(".globe-marker-icon");
+        if (!city.pending) {
+            if (!icon) {
+                icon = document.createElement("img");
+                icon.className = "globe-marker-icon";
+                icon.alt = "";
+                // a drag that starts on the icon turns the globe, not the picture
+                icon.draggable = false;
+                button.insertBefore(icon, button.querySelector(".globe-label"));
+            }
+            icon.src = deps.iconPath(city.conditionId, city.weatherCode);
+        }
+        button.querySelector(".globe-label").textContent = markerLabel(city);
+
+        let description = city.name;
+        if (city.pending) {
+            description += ": weather loading";
+        } else {
+            description += ": " + deps.formatTemp(city.temperature) + ", " + (city.condition || "");
+        }
+        button.setAttribute("aria-label", description + ". Open forecast");
     }
 
     function placeMarkers() {
@@ -452,9 +514,7 @@ const CirrusGlobe = (function () {
         const layer = byId("globeMarkers");
         const size = canvasSize();
         const placed = [];
-        const cities = [];
-        Object.values(regions).forEach((region) => region.cities.forEach((city) => cities.push(city)));
-        extraCities().forEach((city) => cities.push(city));
+        const cities = allCities();
 
         // the markers are rebuilt, so keyboard focus moves to the new copy
         let focusedName = null;
@@ -469,9 +529,7 @@ const CirrusGlobe = (function () {
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "globe-marker";
-                if (city.pending) {
-                    button.classList.add("is-pending");
-                }
+                button.dataset.city = city.name;
                 button.style.left = point.x + "px";
                 button.style.top = point.y + "px";
                 // near the right edge the label goes on the left of its dot
@@ -481,20 +539,10 @@ const CirrusGlobe = (function () {
 
                 const dot = document.createElement("span");
                 dot.className = "globe-dot";
-                button.appendChild(dot);
-
-                if (!city.pending) {
-                    const icon = document.createElement("img");
-                    icon.className = "globe-marker-icon";
-                    icon.src = deps.iconPath(city.conditionId, city.weatherCode);
-                    icon.alt = "";
-                    button.appendChild(icon);
-                }
-
                 const label = document.createElement("span");
                 label.className = "globe-label";
-                label.textContent = markerLabel(city);
-                button.appendChild(label);
+                button.append(dot, label);
+                describeMarker(button, city);
 
                 // Skip a label that would sit on top of one already placed.
                 // The box covers the dot plus the label on whichever side it sits.
@@ -512,14 +560,6 @@ const CirrusGlobe = (function () {
                     placed.push(box);
                 }
 
-                let description = city.name;
-                if (city.pending) {
-                    description += ": weather loading";
-                } else {
-                    description += ": " + deps.formatTemp(city.temperature) + ", " + (city.condition || "");
-                }
-                button.setAttribute("aria-label", description + ". Open forecast");
-                button.dataset.city = city.name;
                 // extra cities search by their query, so the right town answers
                 button.addEventListener("click", () => deps.onVisit(city.query || city.name));
                 layer.appendChild(button);
@@ -587,9 +627,7 @@ const CirrusGlobe = (function () {
                             }
                         }, PENDING_RETRY_MS);
                     }
-                    if (isOpen && !animation) {
-                        placeMarkers();
-                    }
+                    placeMarkersSoon();
                 })
                 .catch(() => {
                     regions[region.id] = { cities: [], fetchedAt: Date.now(), hasPending: true, loading: false };
@@ -633,8 +671,13 @@ const CirrusGlobe = (function () {
             })
             // a city that didn't load stays "loading" and is tried again later
             .catch((error) => {
+                let wait = PENDING_RETRY_MS + 100;
                 if (error && error.status === 429) {
                     extrasPausedUntil = Date.now() + MINUTE_MS;
+                    wait = MINUTE_MS + 100;
+                }
+                if (isOpen) {
+                    lookAgainIn(wait);
                 }
             })
             .finally(() => {
@@ -645,8 +688,16 @@ const CirrusGlobe = (function () {
     // Fetches weather for the extra cities on screen that need it, those
     // nearest the middle first, within the per-minute budget. If some are
     // left waiting, it looks again when the budget frees up.
+    // Plans another look; if one is already planned sooner, that one stays.
     function lookAgainIn(wait) {
+        const due = Date.now() + wait;
+        if (extrasTimer !== null && extrasDueAt <= due) {
+            return;
+        }
+        clearTimeout(extrasTimer);
+        extrasDueAt = due;
         extrasTimer = setTimeout(() => {
+            extrasTimer = null;
             if (isOpen && !animation && zoomTarget === null) {
                 loadVisibleExtras();
             }
@@ -655,6 +706,7 @@ const CirrusGlobe = (function () {
 
     function loadVisibleExtras() {
         clearTimeout(extrasTimer);
+        extrasTimer = null;
         const now = Date.now();
         if (now < extrasPausedUntil) {
             lookAgainIn(extrasPausedUntil - now);
@@ -698,6 +750,13 @@ const CirrusGlobe = (function () {
         const wasMoving = animation !== null || settleTimer !== null;
         if (animation) {
             cancelAnimationFrame(animation);
+            // a glide between levels stopped part-way: the level becomes
+            // whatever size the globe is drawn at now
+            const size = canvasSize();
+            const shorterSide = Math.min(size.width, size.height);
+            if (shorterSide > 0 && view.radius > 0) {
+                view.level = clampLevel(levelForShare(view.radius / shorterSide));
+            }
         }
         animation = null;
         zoomTarget = null;
@@ -707,6 +766,9 @@ const CirrusGlobe = (function () {
     }
 
     function settle() {
+        if (animation) {
+            cancelAnimationFrame(animation);
+        }
         animation = null;
         zoomTarget = null;
         clearTimeout(settleTimer);
@@ -717,6 +779,7 @@ const CirrusGlobe = (function () {
         }
         setMoving(false);
         render(1);
+        placeMarkers();
         loadVisibleRegions();
         loadVisibleExtras();
         scheduleDetail();
@@ -793,7 +856,10 @@ const CirrusGlobe = (function () {
         view.level = level;
         view.radius = radiusFor(level);
         view.tilt = tiltFor(level, view.radius);
-        if (!pinned) {
+        // A place more than 90 degrees of longitude away is over the pole
+        // from the middle; turning toward it would flip the globe around,
+        // so the zoom just heads for the middle instead.
+        if (!pinned || Math.abs(wrapLon(pinned.lon - view.lon)) > 90) {
             return;
         }
         // turn the globe until the place is back under the point; each
@@ -814,6 +880,10 @@ const CirrusGlobe = (function () {
     // the zoom has rested for a moment.
     function zoomToward(level, x, y) {
         const target = clampLevel(level);
+        // a sideways scroll, or scrolling past the last level, changes nothing
+        if (zoomTarget === null && target === view.level) {
+            return;
+        }
         if (zoomTarget === null) {
             stopMotion();
         }
@@ -828,12 +898,14 @@ const CirrusGlobe = (function () {
         const settings = CirrusConfig.globeZoom;
         let before = performance.now();
         const step = (now) => {
-            const elapsed = now - before;
+            // a frame's time stamp can be a little earlier than the clock
+            // reading taken when it was asked for, so never go backwards
+            const elapsed = Math.max(0, now - before);
             before = now;
             const gap = zoomTarget - view.level;
             // the share of the gap to close this frame, the same on any screen
             const follow = 1 - Math.pow(1 - settings.followPerFrame, elapsed / (1000 / 60));
-            let next = view.level + gap * follow;
+            let next = clampLevel(view.level + gap * follow);
             if (Math.abs(gap) < settings.closeEnough || deps.prefersReducedMotion()) {
                 next = zoomTarget;
             }
@@ -877,13 +949,17 @@ const CirrusGlobe = (function () {
     // After a drag the globe keeps turning at the speed you let go of it,
     // slowing a little every frame until it stops.
     function glide(velocity) {
+        // a zoom still waiting to settle must not cut the glide short
+        stopMotion();
         const settings = CirrusConfig.globeGlide;
         let speedLon = Math.max(-settings.maxDegPerMs, Math.min(settings.maxDegPerMs, velocity.lon));
         let speedLat = Math.max(-settings.maxDegPerMs, Math.min(settings.maxDegPerMs, velocity.lat));
         let before = performance.now();
         setMoving(true);
         const step = (now) => {
-            const elapsed = now - before;
+            // a frame's time stamp can be a little earlier than the clock
+            // reading taken when it was asked for, so never go backwards
+            const elapsed = Math.max(0, now - before);
             before = now;
             view.lon = wrapLon(view.lon + speedLon * elapsed);
             view.lat = clampLat(view.lat + speedLat * elapsed);
@@ -919,7 +995,7 @@ const CirrusGlobe = (function () {
     // Scroll to zoom toward the cursor. A trackpad pinch arrives as a
     // scroll with the ctrl key held, in much smaller steps.
     function onWheel(event) {
-        if (!isOnGlobe(event.target)) {
+        if (!isOpen || !isOnGlobe(event.target)) {
             return;
         }
         event.preventDefault();
@@ -1004,9 +1080,13 @@ const CirrusGlobe = (function () {
             if (pointers.size > 2) {
                 return;
             }
-            // a press on a marker stays a click unless it turns into a drag
+            // A press on a marker stays a click unless it turns into a drag.
+            // Either way the press is captured, so its release is heard even
+            // if the pointer has wandered off the globe.
             const onMarker = event.target !== canvas;
-            if (!onMarker) {
+            if (onMarker) {
+                event.target.closest(".globe-marker").setPointerCapture(event.pointerId);
+            } else {
                 canvas.setPointerCapture(event.pointerId);
             }
             // grabbing a moving globe stops it
@@ -1028,9 +1108,15 @@ const CirrusGlobe = (function () {
             if (!pointers.has(event.pointerId)) {
                 return;
             }
+            // a mouse that moves with no button held let go somewhere we missed
+            if (event.pointerType === "mouse" && event.buttons === 0) {
+                end(event);
+                return;
+            }
             pointers.set(event.pointerId, canvasPoint(event));
             if (pinch) {
-                if (pointers.size < 2) {
+                // once a finger has lifted, the pinch is over until all lift
+                if (pointers.size < 2 || pinch.ended) {
                     return;
                 }
                 const fingers = fingersApart();
@@ -1042,6 +1128,8 @@ const CirrusGlobe = (function () {
             if (!last || animation) {
                 return;
             }
+            // The globe only starts turning once the pointer has moved more
+            // than a tap's worth, so a slightly shaky tap stays a tap.
             const point = canvasPoint(event);
             if (!last.moved && Math.hypot(point.x - last.start.x, point.y - last.start.y) > settings.tapSlopPx) {
                 last.moved = true;
@@ -1050,7 +1138,7 @@ const CirrusGlobe = (function () {
                     canvas.setPointerCapture(event.pointerId);
                 }
             }
-            if (last.onMarker && !last.moved) {
+            if (!last.moved) {
                 return;
             }
             const dx = event.clientX - last.x;
@@ -1115,8 +1203,10 @@ const CirrusGlobe = (function () {
             }
             glide(velocity);
         };
-        screen.addEventListener("pointerup", end);
-        screen.addEventListener("pointercancel", end);
+        // releases are heard anywhere in the window; end() ignores pointers
+        // that never pressed on the globe
+        window.addEventListener("pointerup", end);
+        window.addEventListener("pointercancel", end);
         screen.addEventListener("wheel", onWheel, { passive: false });
     }
 
@@ -1209,6 +1299,7 @@ const CirrusGlobe = (function () {
         view.radius = radiusFor(view.level);
         view.tilt = tiltFor(view.level, view.radius);
         render(1);
+        placeMarkers();
     }
 
     function onScreenClose() {
@@ -1218,6 +1309,7 @@ const CirrusGlobe = (function () {
         window.removeEventListener("resize", onResize);
         stopMotion();
         clearTimeout(extrasTimer);
+        extrasTimer = null;
         clearTimeout(markersTimer);
         deps.onEnd();
     }
