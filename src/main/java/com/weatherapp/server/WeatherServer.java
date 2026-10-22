@@ -3,9 +3,11 @@ package com.weatherapp.server;
 import com.google.gson.Gson;
 import com.weatherapp.error.CityNotFoundException;
 import com.weatherapp.error.RateLimitExceededException;
+import com.weatherapp.model.GlobeRegion;
 import com.weatherapp.model.UvIndex;
 import com.weatherapp.model.WeatherAlert;
 import com.weatherapp.service.AlertService;
+import com.weatherapp.service.GlobeService;
 import com.weatherapp.service.NwsAlertClient;
 import com.weatherapp.service.OpenWeatherClient;
 import com.weatherapp.service.UvService;
@@ -52,6 +54,7 @@ public class WeatherServer {
         OpenWeatherClient openWeatherClient = new OpenWeatherClient();
         WeatherService service = new WeatherService(openWeatherClient);
         UvService uvService = new UvService(openWeatherClient);
+        GlobeService globeService = new GlobeService(openWeatherClient);
         AlertService alertService = new AlertService(new NwsAlertClient());
         Gson gson = new Gson();
 
@@ -92,6 +95,8 @@ public class WeatherServer {
         get("/alerts", (req, res) -> handleAlertsRoute(req, res, gson, rateLimiter, alertService));
 
         get("/uv", (req, res) -> handleUvRoute(req, res, gson, rateLimiter, uvService));
+
+        get("/globe", (req, res) -> handleGlobeRoute(req, res, gson, rateLimiter, globeService));
 
         // Videos need Range support (iOS Safari refuses to play without it),
         // which Spark's static file handler doesn't provide.
@@ -229,6 +234,35 @@ public class WeatherServer {
             System.err.println("UV route error: " + e.getMessage());
             res.status(503);
             return gson.toJson(new ErrorResponse("Could not load UV index."));
+        }
+    }
+
+    static Object handleGlobeRoute(
+            Request req,
+            Response res,
+            Gson gson,
+            RateLimiter rateLimiter,
+            GlobeService globeService) {
+
+        res.type("application/json");
+        String region = req.queryParams("region");
+        if (region == null || region.isBlank()) {
+            return badRequest(res, gson, "region parameter is required.");
+        }
+        if (!globeService.hasRegion(region)) {
+            return badRequest(res, gson, "Unknown region.");
+        }
+
+        try {
+            // Rate limiting happens per uncached city inside the service; a
+            // tripped limit marks the remaining cities pending instead of failing.
+            GlobeRegion result = globeService.getRegion(region,
+                    rateLimitCheck(rateLimiter, ClientIpResolver.resolve(req)));
+            return gson.toJson(result);
+        } catch (Exception e) {
+            System.err.println("Globe route error: " + e.getMessage());
+            res.status(503);
+            return gson.toJson(new ErrorResponse("Could not load the globe."));
         }
     }
 

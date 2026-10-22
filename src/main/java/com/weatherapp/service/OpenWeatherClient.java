@@ -60,6 +60,21 @@ public class OpenWeatherClient {
         return fetchJson(url, city, "Weather API");
     }
 
+    /** Current weather at a point; the globe uses this for its fixed city list. */
+    public String getWeatherByCoordsJSON(double lat, double lon) {
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("https")
+                .host("api.openweathermap.org")
+                .addPathSegments("data/2.5/weather")
+                .addQueryParameter("lat", String.format("%.4f", lat))
+                .addQueryParameter("lon", String.format("%.4f", lon))
+                .addQueryParameter("appid", apiKey)
+                .addQueryParameter("units", "imperial")
+                .build();
+
+        return fetchJson(url, lat + "," + lon, "Weather API");
+    }
+
     public String getForecastJSON(String city) {
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("https")
