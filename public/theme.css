@@ -242,6 +242,21 @@
   --sixhour-temp-font: clamp(20px, 3.6vh, 32px);
   --sixhour-gap: 18px;
 
+  /* ---- UV index (WHO colors) ---- */
+  --uv-low: #3ea72d;
+  --uv-moderate: #fff300;
+  --uv-high: #f18b00;
+  --uv-very-high: #e53210;
+  --uv-extreme: #b567a4;
+  --uv-value-font: clamp(110px, 22vh, 200px);
+  --uv-category-font: clamp(28px, 5vh, 48px);
+  --uv-band-height: 22px;
+  --uv-scale-width: 720px;
+  --uv-band-active-height: 34px;
+  --uv-band-border: rgba(255, 255, 255, 0.85);
+  --uv-band-font: 15px;
+  --uv-advice-font: clamp(17px, 2.6vh, 22px);
+
   /* ---- Panel status pills (loading / error) ---- */
   --status-face: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.06) 55%), rgba(6, 24, 92, 0.82);
   --status-border: rgba(255, 255, 255, 0.35);
@@ -302,6 +317,10 @@
     --panel-footer-slim: 44px;
     --fiveday-max-height: 440px;
     --sixhour-strip-font: 18px;
+    --uv-value-font: clamp(96px, 16vh, 140px);
+    --uv-category-font: 26px;
+    --uv-band-font: 11px;
+    --uv-advice-font: 16px;
     --sixhour-icon-size: clamp(60px, 10vh, 84px);
     --sixhour-time-font: 14px;
     --sixhour-temp-font: 18px;

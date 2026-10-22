@@ -263,7 +263,7 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
     };
     const forecastDays = Array.from({ length: 5 }, () => ({ day: "Tue" }));
     let failNext = false;
-    const calls = { renders: 0, alerts: 0, atmosphere: 0, channels: 0, recents: 0, locations: [] };
+    const calls = { renders: 0, alerts: 0, atmosphere: 0, channels: 0, recents: 0, locations: [], uv: [] };
     const noop = () => {};
     const context = runClassicScript("public/script.js", {
         console: quietConsole,
@@ -279,6 +279,9 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
             if (url.includes("/weather?")) {
                 return { ok: true, json: async () => weather };
             }
+            if (url.includes("/uv?")) {
+                return { ok: true, json: async () => ({ value: 4.8, category: "Moderate" }) };
+            }
             return { ok: true, json: async () => forecastDays };
         },
         Image: class {
@@ -287,7 +290,12 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
         },
         CirrusUnits: { temp: (f) => f + "°", asOf: () => "As of", cityClockTime: () => "--" },
         CirrusFrame: { init: noop, showView: noop, hasView: () => false },
-        CirrusViews: { init: noop, showEmpty: noop, render: () => { calls.renders += 1; } },
+        CirrusViews: {
+            init: noop,
+            showEmpty: noop,
+            render: () => { calls.renders += 1; },
+            renderUv: (uv) => calls.uv.push(uv),
+        },
         CirrusSearch: {
             init: noop,
             open: noop,
@@ -318,6 +326,10 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
     assert.equal(calls.channels, 2);
     assert.equal(calls.alerts, 2);
     assert.equal(calls.locations.at(-1), "New York");
+    assert.ok(urls.includes("https://cirrus-project1.duckdns.org/sixhour?city=New%20York%20%26%20Co"));
+    assert.ok(urls.includes("https://cirrus-project1.duckdns.org/uv?lat=40.7&lon=-74"));
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(calls.uv.at(-1), { value: 4.8, category: "Moderate" });
     assert.deepEqual(JSON.parse(localStorage.getItem("cirrus_city_history")).slice(0, 2), ["New York & Co", "Boston"]);
 
     for (const [status, message] of [

@@ -552,6 +552,96 @@
   font-size: var(--hero-cond-size);
 }
 
+/* ---------- UV index ---------- */
+
+.view--uv {
+  padding-bottom: var(--panel-footer-slim);
+}
+
+.uv {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  height: 100%;
+  text-align: center;
+}
+
+.uv-label {
+  font-size: var(--hero-cond-size);
+  font-weight: var(--fw-bold);
+}
+
+.uv-reading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-6);
+}
+
+.uv-value {
+  color: var(--temp-high);
+  font-size: var(--uv-value-font);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-tight);
+  text-shadow: var(--temp-high-shadow);
+}
+
+.uv-category {
+  font-size: var(--uv-category-font);
+  font-weight: var(--fw-heavy);
+}
+
+.uv-scale {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-1);
+  width: min(100%, var(--uv-scale-width));
+  list-style: none;
+}
+
+.uv-band {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  font-size: var(--uv-band-font);
+  font-weight: var(--fw-bold);
+}
+
+.uv-band-bar {
+  height: var(--uv-band-height);
+  align-self: stretch;
+  margin-top: calc(var(--uv-band-active-height) - var(--uv-band-height));
+  border: var(--rule) solid var(--uv-band-border);
+  border-radius: var(--radius-sm);
+}
+
+.uv-band.is-current .uv-band-bar {
+  height: var(--uv-band-active-height);
+  margin-top: 0;
+  box-shadow: 0 0 0 var(--rule) var(--panel-text);
+}
+
+.uv-band.is-current .uv-band-name {
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+}
+
+.uv-band[data-band="Low"] .uv-band-bar { background: var(--uv-low); }
+.uv-band[data-band="Moderate"] .uv-band-bar { background: var(--uv-moderate); }
+.uv-band[data-band="High"] .uv-band-bar { background: var(--uv-high); }
+.uv-band[data-band="Very High"] .uv-band-bar { background: var(--uv-very-high); }
+.uv-band[data-band="Extreme"] .uv-band-bar { background: var(--uv-extreme); }
+
+.uv-advice {
+  max-width: 36ch;
+  color: var(--panel-text-soft);
+  font-size: var(--uv-advice-font);
+  line-height: var(--lh-body);
+}
+
 /* ---------- Empty state ---------- */
 
 /* Until a city loads, every view shows its empty message instead. */

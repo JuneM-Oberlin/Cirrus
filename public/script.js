@@ -75,6 +75,7 @@ const clientCache = {
     weather: new Map(),
     forecast: new Map(),
     sixHour: new Map(),
+    uv: new Map(),
 };
 
 const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -199,6 +200,29 @@ function fetchSixHourData(city) {
         console.log("6-hour forecast unavailable:", err);
         return null;
     });
+}
+
+// UV comes from OpenWeather's deprecated UV service, so a failure only
+// means "UV data unavailable" (null), never a broken page.
+async function fetchUvData(lat, lon) {
+    const key = lat.toFixed(2) + "," + lon.toFixed(2);
+    const cached = getCachedEntry(clientCache.uv, key);
+    if (cached) {
+        return cached;
+    }
+    try {
+        // fallow-ignore-next-line security-sink -- fixed /uv path with numeric, percent-encoded coordinates.
+        const response = await fetch(`${BACKEND_URL}/uv?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
+        if (!response.ok) {
+            return null;
+        }
+        const data = await response.json();
+        setCachedEntry(clientCache.uv, key, data);
+        return data;
+    } catch (err) {
+        console.log("UV unavailable:", err);
+        return null;
+    }
 }
 
 /* ---------- Loading + error status ---------- */
@@ -336,6 +360,7 @@ const appState = {
     weather: null,
     forecast: [],
     sixHour: null,
+    uv: undefined,
     loadedAt: 0,
 };
 
@@ -344,6 +369,7 @@ function applyCity(city, weather, forecast, sixHour, { visit = false } = {}) {
     appState.weather = weather;
     appState.forecast = forecast;
     appState.sixHour = sixHour;
+    appState.uv = undefined;
     appState.loadedAt = Date.now();
 
     document.body.classList.toggle("theme-day", !weather.weatherCode.endsWith("n"));
@@ -358,6 +384,14 @@ function applyCity(city, weather, forecast, sixHour, { visit = false } = {}) {
     if (Array.isArray(forecast) && forecast.length >= 5) {
         CirrusDesktopChannels.render(weather, forecast);
     }
+
+    // UV needs the city's coordinates, so it arrives just after the rest.
+    fetchUvData(weather.lat, weather.lon).then((uv) => {
+        if (appState.weather === weather) {
+            appState.uv = uv;
+            CirrusViews.renderUv(uv);
+        }
+    });
 }
 
 async function loadCity(city, options = {}) {

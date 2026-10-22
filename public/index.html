@@ -204,6 +204,27 @@
       <div class="panel-viewport" id="panelViewport">
         <div class="panel-track" id="panelTrack">
 
+          <section class="view view--uv" data-view="uv" id="viewUv" aria-label="UV index">
+            <div class="view-empty">
+              <p class="view-empty-text">Choose a city to see today's UV index.</p>
+            </div>
+            <div class="view-body uv">
+              <p class="uv-label">Today's peak UV</p>
+              <div class="uv-reading">
+                <span class="uv-value" id="uvValue">--</span>
+                <span class="uv-category" id="uvCategory">Loading</span>
+              </div>
+              <ol class="uv-scale" id="uvScale" aria-hidden="true">
+                <li class="uv-band" data-band="Low"><span class="uv-band-bar"></span><span class="uv-band-name">Low</span></li>
+                <li class="uv-band" data-band="Moderate"><span class="uv-band-bar"></span><span class="uv-band-name">Moderate</span></li>
+                <li class="uv-band" data-band="High"><span class="uv-band-bar"></span><span class="uv-band-name">High</span></li>
+                <li class="uv-band" data-band="Very High"><span class="uv-band-bar"></span><span class="uv-band-name">Very High</span></li>
+                <li class="uv-band" data-band="Extreme"><span class="uv-band-bar"></span><span class="uv-band-name">Extreme</span></li>
+              </ol>
+              <p class="uv-advice" id="uvAdvice"></p>
+            </div>
+          </section>
+
           <section class="view view--current" data-view="current" id="viewCurrent" aria-label="Current conditions">
             <div class="view-empty">
               <p class="view-empty-text">Choose a city to tune in.</p>

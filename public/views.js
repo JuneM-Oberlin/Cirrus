@@ -212,6 +212,46 @@ const CirrusViews = (function () {
 
     const BLOCK_HOURS = 6;
 
+    // Short WHO sun-safety guidance for each UV band.
+    const UV_ADVICE = {
+        "Low": "Little protection needed. Sunglasses help on bright days.",
+        "Moderate": "Seek shade around midday and wear sunscreen and a hat.",
+        "High": "Limit sun from 10 a.m. to 4 p.m. Use SPF 30+, a hat, and sunglasses.",
+        "Very High": "Avoid the midday sun. Shade, SPF 30+, a hat, and sunglasses are a must.",
+        "Extreme": "Stay out of the midday sun. Unprotected skin can burn in minutes.",
+    };
+
+    // uv: undefined while loading, null when unavailable, else { value, category }.
+    function renderUv(uv) {
+        const value = byId("uvValue");
+        const category = byId("uvCategory");
+        const advice = byId("uvAdvice");
+        let current = "";
+
+        if (uv === undefined) {
+            value.textContent = "--";
+            category.textContent = "Loading";
+            advice.textContent = "";
+            value.removeAttribute("aria-label");
+        } else if (uv === null) {
+            value.textContent = "--";
+            category.textContent = "UV data unavailable";
+            advice.textContent = "The UV service didn't answer. Try again later.";
+            value.removeAttribute("aria-label");
+        } else {
+            const rounded = Math.round(uv.value);
+            current = uv.category;
+            value.textContent = String(rounded);
+            value.setAttribute("aria-label", "UV index " + rounded);
+            category.textContent = uv.category;
+            advice.textContent = UV_ADVICE[uv.category] || "";
+        }
+
+        document.querySelectorAll("#uvScale .uv-band").forEach((band) => {
+            band.classList.toggle("is-current", band.dataset.band === current);
+        });
+    }
+
     // Tomorrow's four six-hour tiles, titled with tomorrow's weekday.
     function renderSixHour(sixHour, loadedAt) {
         const list = byId("sixhourList");
@@ -277,12 +317,14 @@ const CirrusViews = (function () {
         forecastDays = data.forecast;
         renderFiveDay(data.forecast);
         renderSixHour(data.sixHour, data.loadedAt);
+        renderUv(data.uv);
         frame.setAsOf(units.asOf(data.loadedAt, data.weather.timezoneOffset));
     }
 
     return {
         init,
         render,
+        renderUv,
         showEmpty,
         openDay,
         iconPath,
