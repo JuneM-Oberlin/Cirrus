@@ -97,6 +97,15 @@
   100% { opacity: 1; transform: none; }
 }
 
+/* the warning triangle gives one little wiggle as the bar lands */
+@keyframes alertWiggle {
+  0%, 100% { transform: none; }
+  20% { transform: rotate(calc(-1 * var(--motion-wiggle))); }
+  45% { transform: rotate(var(--motion-wiggle)); }
+  65% { transform: rotate(calc(-0.5 * var(--motion-wiggle))); }
+  82% { transform: rotate(calc(0.25 * var(--motion-wiggle))); }
+}
+
 @keyframes alertBarUp {
   0% { opacity: 0; transform: translateY(100%); }
   100% { opacity: 1; transform: none; }
@@ -293,9 +302,13 @@
   animation: nintendoPop var(--dur-spring-pop) var(--spring-pop) both;
 }
 
-/* the alert bar slides down out of the header when alerts arrive */
+/* the alert bar springs down out of the header when alerts arrive */
 .alert-bar {
-  animation: alertBarDown var(--dur-medium) var(--nintendo-soft) both;
+  animation: alertBarDown var(--dur-spring-pop) var(--spring-pop) both;
+}
+
+.alert-bar .alert-icon {
+  animation: alertWiggle var(--dur-wiggle) ease-in-out var(--dur-medium) both;
 }
 
 /* ---------- Desktop Home menu ---------- */
@@ -404,6 +417,7 @@
 
   .hero-icon,
   .alert-bar,
+  .alert-bar .alert-icon,
   .temp--freezing,
   .temp--hot,
   .is-squashing,

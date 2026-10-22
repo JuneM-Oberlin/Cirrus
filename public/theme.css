@@ -559,6 +559,8 @@
   --shine-travel: 330%;
   --dur-shine: 700ms;
   --motion-shiver: 1.2px;
+  --motion-wiggle: 14deg;
+  --dur-wiggle: 700ms;
   --heat-amp-default: 0.5px;
   --press-glow:
     inset 0 2px 5px rgba(20, 50, 110, 0.22),
