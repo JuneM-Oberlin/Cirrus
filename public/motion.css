@@ -1,14 +1,11 @@
 /* MOTION — keyframes, interactive motion, and the reduced-motion overrides.
    Every duration and distance comes from theme.css. */
 
+/* a single move from small to full size; the spring curve adds the bounce */
 @keyframes nintendoPop {
   0% {
     opacity: 0;
     transform: var(--motion-pop-from);
-  }
-  55% {
-    opacity: 1;
-    transform: var(--motion-pop-over);
   }
   100% {
     opacity: 1;
@@ -137,7 +134,7 @@
 }
 
 .panel-status:not(.hidden) {
-  animation: nintendoPop var(--dur-medium) var(--nintendo-spring) both;
+  animation: nintendoPop var(--dur-spring-pop) var(--spring-pop) both;
 }
 
 /* the alert bar slides down out of the header when alerts arrive */
@@ -166,7 +163,7 @@
 
   /* tiles pop in one after another; the empty ones follow after a beat */
   .channel-grid--enter .channel-tile {
-    animation: nintendoPop var(--dur-pop) var(--nintendo-spring) backwards;
+    animation: nintendoPop var(--dur-spring-pop) var(--spring-pop) backwards;
   }
 
   .channel-grid--enter .channel-tile:nth-child(1) { animation-delay: calc(1 * var(--stagger-step)); }
@@ -183,7 +180,7 @@
   .channel-grid--enter .channel-tile:nth-child(12) { animation-delay: calc(var(--stagger-gap) + 11 * var(--stagger-step)); }
 
   .channel-tile--live {
-    transition: transform var(--dur-medium) var(--nintendo-spring), box-shadow var(--dur-medium) var(--nintendo-soft);
+    transition: transform var(--dur-spring-hover) var(--spring-hover), box-shadow var(--dur-medium) var(--nintendo-soft);
   }
 
   .channel-tile--live:hover {
@@ -209,7 +206,7 @@
   .channel-search button,
   .channel-tray-button {
     transition:
-      transform var(--dur-medium) var(--nintendo-spring),
+      transform var(--dur-spring-hover) var(--spring-hover),
       box-shadow var(--dur-medium) var(--nintendo-soft),
       border-color var(--dur-fast) var(--nintendo-soft);
   }
