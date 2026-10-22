@@ -63,6 +63,14 @@ const CirrusConfig = Object.freeze({
         frameFromScale: 0.92,
     },
 
+    // Attract mode after a minute without input: the globe turns this fast
+    // (drawn at a gentle frame rate), or the satellite picture pans (CSS).
+    idle: {
+        afterMs: 60000,
+        globeDegPerSecond: 5,
+        globeFps: 30,
+    },
+
     // A tiny buzz on press, on phones that support vibration.
     haptics: {
         pressMs: 8,

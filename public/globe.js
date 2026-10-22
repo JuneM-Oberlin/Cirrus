@@ -463,8 +463,15 @@ const CirrusGlobe = (function () {
         return 1 - Math.pow(-2 * t + 2, 2) / 2;
     }
 
+    // Markers only know where cities are when the globe stands still, so
+    // they fade out while it moves and come back when it settles.
+    function setMoving(moving) {
+        byId("screenGlobe").classList.toggle("is-moving", moving);
+    }
+
     function settle() {
         animation = null;
+        setMoving(false);
         render(1);
         loadVisibleRegions();
         scheduleDetail();
@@ -489,6 +496,7 @@ const CirrusGlobe = (function () {
             settle();
             return;
         }
+        setMoving(true);
         const start = { lat: view.lat, lon: view.lon, radius: view.radius, tilt: view.tilt };
         const dLon = wrapLon(target.lon - start.lon);
         const duration = deps.frame.cssDuration("--dur-slow") * 1.4;
@@ -547,6 +555,7 @@ const CirrusGlobe = (function () {
         let speedLon = Math.max(-settings.maxDegPerMs, Math.min(settings.maxDegPerMs, velocity.lon));
         let speedLat = Math.max(-settings.maxDegPerMs, Math.min(settings.maxDegPerMs, velocity.lat));
         let before = performance.now();
+        setMoving(true);
         const step = (now) => {
             const elapsed = now - before;
             before = now;
@@ -596,6 +605,7 @@ const CirrusGlobe = (function () {
             view.lon = wrapLon(view.lon + dLon);
             view.lat = clampLat(view.lat + dLat);
             velocity = { lon: dLon / elapsed, lat: dLat / elapsed };
+            setMoving(true);
             render(0.5);
         });
         const end = () => {
@@ -636,6 +646,38 @@ const CirrusGlobe = (function () {
             return;
         }
         event.preventDefault();
+    }
+
+    /* ---------- Idle: the globe turns by itself ---------- */
+
+    // Attract mode turns the globe slowly east until any input stops it.
+    // It draws at a gentle frame rate to spare the battery.
+    function startDrift() {
+        if (!isOpen || animation) {
+            return;
+        }
+        const settings = CirrusConfig.idle;
+        let before = performance.now();
+        let drawnAt = 0;
+        setMoving(true);
+        const step = (now) => {
+            view.lon = wrapLon(view.lon + settings.globeDegPerSecond * (now - before) / 1000);
+            before = now;
+            if (now - drawnAt >= 1000 / settings.globeFps) {
+                drawnAt = now;
+                render(0.5);
+            }
+            animation = requestAnimationFrame(step);
+        };
+        animation = requestAnimationFrame(step);
+    }
+
+    function stopDrift() {
+        if (!animation) {
+            return;
+        }
+        cancelAnimationFrame(animation);
+        settle();
     }
 
     /* ---------- Open / close ---------- */
@@ -713,6 +755,8 @@ const CirrusGlobe = (function () {
         open,
         closeForVisit,
         isOpen: () => isOpen,
+        startDrift,
+        stopDrift,
         project,
         nearestRegion,
     };

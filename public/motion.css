@@ -455,6 +455,26 @@ img[data-motion="snow"] {
   animation-delay: calc(var(--dur-flake) / -2);
 }
 
+/* ---------- Idle attract: the satellite picture drifts and pans ---------- */
+
+@keyframes satPan {
+  0%, 100% { transform: none; }
+  50% { transform: scale(var(--attract-zoom)) translate(var(--attract-pan-x), var(--attract-pan-y)); }
+}
+
+.frame-panel.is-attract .panel-sat {
+  animation: satPan var(--dur-attract-pan) ease-in-out infinite;
+}
+
+/* markers fade while the globe moves and come back when it settles */
+.globe-markers {
+  transition: opacity var(--dur-fast) var(--ease-fade);
+}
+
+.screen--globe.is-moving .globe-markers {
+  opacity: 0;
+}
+
 /* views out of sight rest */
 .view[aria-hidden="true"] img[data-motion],
 .view[aria-hidden="true"] .wx-icon::before,
@@ -626,6 +646,7 @@ img[data-motion="snow"] {
   }
 
   img[data-motion],
+  .frame-panel.is-attract .panel-sat,
   .alert-bar,
   .alert-bar .alert-icon,
   .temp--freezing,

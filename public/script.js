@@ -603,6 +603,14 @@ CirrusGlobe.init({
 CirrusFrame.setHandlers({
     onEndVisit: () => openGlobe({ keepCamera: true }),
 });
+CirrusIdle.init({
+    globe: CirrusGlobe,
+    // the weather views are showing, with no screen or Home over them
+    canPanWeather: () => {
+        const onHome = isDesktop() && document.body.classList.contains("is-home");
+        return Boolean(appState.weather) && !onHome && CirrusFrame.screenName() === null;
+    },
+});
 
 // New units re-render everything already on screen.
 CirrusUnits.onChange(() => {
