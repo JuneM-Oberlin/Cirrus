@@ -143,12 +143,10 @@ test("frame shows Home only on desktop and renders the wind readout", () => {
 
     desktop.frame.setReadout("current", {
         main: "WSW 3 mph",
-        stats: [{ text: "Humidity 36%" }, { text: "Clouds 93%", extra: true }],
+        stats: [{ text: "Humidity 36%" }, { text: "Clouds 93%" }],
     });
-    const sub = desktop.document.getElementById("panelWindSub");
+    // the footer carries only the wind line; readings live in the view's bubbles
     assert.equal(desktop.document.getElementById("panelWindMain").textContent, "WSW 3 mph");
-    assert.equal(sub.children.length, 2);
-    assert.equal(sub.children[1].classList.contains("panel-stat--extra"), true);
     assert.equal(desktop.document.getElementById("panelWind").classList.contains("hidden"), false);
 
     desktop.frame.setAsOf("As of 6:46 p.m., 10/21");
@@ -400,6 +398,15 @@ test("views fill Current, Today, and Tomorrow and hand readouts to the frame", (
     assert.equal(readouts.tomorrow.stats[0].text, "Chance of rain 15%");
     assert.equal(readouts.tomorrow.stats[1].text, "Precipitation 0.01 in");
     assert.equal(asOf, "As of 7:30 p.m., 10/21");
+
+    // readings become bubbles inside the views, label first for screen readers
+    const bubbles = document.getElementById("currentReadings").children;
+    assert.equal(bubbles.length, 7, "all seven readings show, on phones too");
+    const [icon, label, value] = bubbles[1].children;
+    assert.equal(icon.getAttribute("class"), "reading-icon");
+    assert.equal(label.textContent, "Humidity");
+    assert.equal(value.textContent, "36%");
+    assert.equal(document.getElementById("tomorrowReadings").children[0].children[2].textContent, "15%");
 
     views.showEmpty();
     assert.equal(document.getElementById("framePanel").classList.contains("has-data"), false);

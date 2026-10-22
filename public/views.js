@@ -19,6 +19,20 @@ const CirrusViews = (function () {
         Sat: "Saturday",
     };
 
+    // Little line drawings for the reading bubbles (24 x 24, drawn with strokes).
+    const READING_ICONS = {
+        feels: ["M10 13.5V5a2 2 0 0 1 4 0v8.5a4 4 0 1 1-4 0Z", "M12 9v7"],
+        humidity: ["M12 3.5C9 8 6.5 11 6.5 14.5a5.5 5.5 0 0 0 11 0C17.5 11 15 8 12 3.5Z"],
+        clouds: ["M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.1 11.2 3.5 3.5 0 0 0 7 18Z"],
+        visibility: ["M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z", "M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"],
+        pressure: ["M4.5 16a7.5 7.5 0 1 1 15 0", "M12 16l3.5-4.5", "M3 19.5h18"],
+        sunrise: ["M5 17a7 7 0 0 1 14 0", "M2 20h20", "M12 3v6", "M9.5 5.5 12 3l2.5 2.5"],
+        sunset: ["M5 17a7 7 0 0 1 14 0", "M2 20h20", "M12 3v6", "M9.5 6.5 12 9l2.5-2.5"],
+        rain: ["M3 12a9 9 0 0 1 18 0Z", "M12 12v6.5a2 2 0 0 1-4 0"],
+        precip: ["M8 4.5c-1.6 2.4-3 4-3 5.8a3 3 0 0 0 6 0c0-1.8-1.4-3.4-3-5.8Z", "M16 10.5c-1.6 2.4-3 4-3 5.8a3 3 0 0 0 6 0c0-1.8-1.4-3.4-3-5.8Z"],
+    };
+    const SVG_NS = "http://www.w3.org/2000/svg";
+
     let frame = null;
     let units = null;
     let forecastDays = [];
@@ -75,6 +89,44 @@ const CirrusViews = (function () {
         }
     }
 
+    // One reading: what it is, its value, and the two read together.
+    function reading(icon, label, value) {
+        return { icon, label, value, text: label + " " + value };
+    }
+
+    function readingIcon(name) {
+        const svg = document.createElementNS(SVG_NS, "svg");
+        svg.setAttribute("class", "reading-icon");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("focusable", "false");
+        (READING_ICONS[name] || []).forEach((d) => {
+            const path = document.createElementNS(SVG_NS, "path");
+            path.setAttribute("d", d);
+            svg.appendChild(path);
+        });
+        return svg;
+    }
+
+    // The rounded bubbles under the condition. The label comes first in the
+    // page so screen readers say "Humidity 36%"; CSS puts the value on top.
+    function renderReadings(listId, readings) {
+        const list = byId(listId);
+        list.replaceChildren();
+        readings.forEach((item) => {
+            const bubble = document.createElement("li");
+            bubble.className = "reading";
+            const label = document.createElement("span");
+            label.className = "reading-label";
+            label.textContent = item.label;
+            const value = document.createElement("span");
+            value.className = "reading-value";
+            value.textContent = item.value;
+            bubble.append(readingIcon(item.icon), label, value);
+            list.appendChild(bubble);
+        });
+    }
+
     function showEmpty() {
         byId("framePanel").classList.remove("has-data");
         ["current", "today", "tomorrow"].forEach((id) => frame.setReadout(id, null));
@@ -91,17 +143,19 @@ const CirrusViews = (function () {
         byId("currentCond").textContent = condition;
         setIcon(byId("currentIcon"), weather.conditionId, weather.weatherCode, condition);
 
+        const stats = [
+            reading("feels", "Feels like", units.temp(weather.feelsLike)),
+            reading("humidity", "Humidity", weather.humidity + "%"),
+            reading("clouds", "Clouds", weather.cloudCover + "%"),
+            reading("visibility", "Visibility", units.distance(weather.visibility / 1609.34)),
+            reading("pressure", "Pressure", units.pressure(weather.pressure)),
+            reading("sunrise", "Sunrise", units.cityClockTime(weather.sunrise, weather.timezoneOffset)),
+            reading("sunset", "Sunset", units.cityClockTime(weather.sunset, weather.timezoneOffset)),
+        ];
+        renderReadings("currentReadings", stats);
         frame.setReadout("current", {
             main: degreesToCompass(weather.windDeg) + " " + units.wind(weather.windSpeed),
-            stats: [
-                { text: "Feels like " + units.temp(weather.feelsLike) },
-                { text: "Humidity " + weather.humidity + "%" },
-                { text: "Clouds " + weather.cloudCover + "%", extra: true },
-                { text: "Visibility " + units.distance(weather.visibility / 1609.34), extra: true },
-                { text: "Pressure " + units.pressure(weather.pressure), extra: true },
-                { text: "Sunrise " + units.cityClockTime(weather.sunrise, weather.timezoneOffset) },
-                { text: "Sunset " + units.cityClockTime(weather.sunset, weather.timezoneOffset) },
-            ],
+            stats,
         });
     }
 
@@ -128,8 +182,8 @@ const CirrusViews = (function () {
         return {
             main: "Wind " + units.wind(day.windSpeed || 0),
             stats: [
-                { text: "Chance of rain " + rainChance + "%" },
-                { text: "Precipitation " + units.precip(precipInches) },
+                reading("rain", "Chance of rain", rainChance + "%"),
+                reading("precip", "Precipitation", units.precip(precipInches)),
             ],
         };
     }
@@ -155,7 +209,9 @@ const CirrusViews = (function () {
             return;
         }
         fillDay(prefix, day);
-        frame.setReadout(viewId, dayReadout(day));
+        const readout = dayReadout(day);
+        renderReadings(prefix + "Readings", readout.stats);
+        frame.setReadout(viewId, readout);
     }
 
     // Opens one forecast day full-panel, titled with its weekday name.
@@ -165,9 +221,11 @@ const CirrusViews = (function () {
             return;
         }
         fillDay("day", day);
+        const readout = dayReadout(day);
+        renderReadings("dayReadings", readout.stats);
         frame.openScreen("day", {
             title: fullWeekday(day.day),
-            readout: dayReadout(day),
+            readout,
         });
     }
 

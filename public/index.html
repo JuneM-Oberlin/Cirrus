@@ -6,9 +6,9 @@
   <title>Cirrus</title>
   <meta name="description" content="A console-inspired weather channel: current conditions, today, tomorrow, and a 5-day forecast for any city.">
   <link rel="icon" href="icons/clear-day.png">
-  <link rel="stylesheet" href="theme.css?v=20261022ab">
+  <link rel="stylesheet" href="theme.css?v=20261022c1">
   <link rel="stylesheet" href="base.css?v=20261022a">
-  <link rel="stylesheet" href="frame.css?v=20261022ab">
+  <link rel="stylesheet" href="frame.css?v=20261022c1">
   <link rel="stylesheet" href="channels.css?v=20261022a">
   <link rel="stylesheet" href="alerts.css?v=20261022a">
   <link rel="stylesheet" href="globe.css?v=20261022a">
@@ -257,6 +257,7 @@
               </div>
               <p class="hero-cond" id="currentCond">--</p>
               <img class="hero-icon" id="currentIcon" src="icons/default.png" alt="">
+              <ul class="readings" id="currentReadings" aria-label="More readings"></ul>
             </div>
           </section>
 
@@ -271,6 +272,7 @@
               </div>
               <p class="hero-cond" id="todayCond">--</p>
               <img class="hero-icon" id="todayIcon" src="icons/default.png" alt="">
+              <ul class="readings" id="todayReadings" aria-label="More readings"></ul>
             </div>
           </section>
 
@@ -285,6 +287,7 @@
               </div>
               <p class="hero-cond" id="tomorrowCond">--</p>
               <img class="hero-icon" id="tomorrowIcon" src="icons/default.png" alt="">
+              <ul class="readings" id="tomorrowReadings" aria-label="More readings"></ul>
             </div>
           </section>
 
@@ -357,6 +360,7 @@
           </div>
           <p class="hero-cond" id="dayCond">--</p>
           <img class="hero-icon" id="dayIcon" src="icons/default.png" alt="">
+          <ul class="readings" id="dayReadings" aria-label="More readings"></ul>
         </div>
       </section>
 
@@ -375,7 +379,6 @@
         <div class="panel-readout">
           <div class="panel-wind hidden" id="panelWind">
             <span class="panel-wind-main" id="panelWindMain"></span>
-            <span class="panel-wind-sub" id="panelWindSub"></span>
           </div>
           <p class="panel-asof hidden" id="panelAsOf"></p>
         </div>
@@ -413,8 +416,8 @@
   <script src="atmo-lightning.js?v=20260626c"></script>
   <script src="alerts.js?v=20261022a"></script>
   <script src="atmosphere.js?v=20260706"></script>
-  <script src="frame.js?v=20261022a"></script>
-  <script src="views.js?v=20261022a"></script>
+  <script src="frame.js?v=20261022c1"></script>
+  <script src="views.js?v=20261022c1"></script>
   <script src="search.js?v=20261022ab"></script>
   <script src="settings.js?v=20261022a"></script>
   <script src="globe.js?v=20261022a"></script>

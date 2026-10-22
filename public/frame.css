@@ -393,8 +393,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   grid-template-areas:
-    "temps icon"
-    "cond  icon";
+    "temps    icon"
+    "cond     icon"
+    "readings readings";
   align-content: center;
   align-items: center;
   column-gap: var(--space-6);
@@ -457,6 +458,72 @@
   height: var(--hero-icon-size);
   object-fit: contain;
   filter: var(--hero-icon-shadow);
+}
+
+/* Reading bubbles: icon, value on top, what it is underneath */
+.readings {
+  grid-area: readings;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--reading-gap);
+  margin-top: var(--reading-top);
+  list-style: none;
+}
+
+.reading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "icon value"
+    "icon label";
+  align-items: center;
+  column-gap: var(--space-2);
+  min-width: var(--reading-min-width);
+  padding: var(--reading-pad-y) var(--reading-pad-x);
+  background: var(--reading-face);
+  border: var(--hairline) solid var(--reading-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--reading-shadow);
+}
+
+.reading-icon {
+  grid-area: icon;
+  width: var(--reading-icon-size);
+  height: var(--reading-icon-size);
+  fill: none;
+  stroke: var(--reading-icon);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: var(--reading-icon-stroke);
+  filter: var(--reading-icon-shadow);
+}
+
+.reading-value {
+  grid-area: value;
+  font-size: var(--reading-value-font);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-tight);
+  white-space: nowrap;
+}
+
+.reading-label {
+  grid-area: label;
+  color: var(--panel-text-soft);
+  font-size: var(--reading-label-font);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+  white-space: nowrap;
+}
+
+/* mid-size screens split Current's seven bubbles four and three */
+@media (min-width: 768px) and (max-width: 1279px) {
+  #currentReadings {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    justify-content: center;
+  }
 }
 
 /* ---------- 5-Day forecast: five equal columns ---------- */
@@ -786,29 +853,12 @@
   line-height: var(--lh-tight);
 }
 
-.panel-wind-sub {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  column-gap: var(--space-4);
-  max-width: 100%;
-  color: var(--panel-text-soft);
-  font-size: var(--wind-sub-font);
-  font-weight: var(--fw-bold);
-  line-height: var(--lh-snug);
-}
-
 .panel-asof {
   padding: var(--space-1) var(--space-6);
   background: var(--asof-strip);
   font-size: var(--asof-font);
   font-weight: var(--fw-bold);
   text-align: right;
-  white-space: nowrap;
-}
-
-/* each stat stays on one line; the row wraps between stats */
-.panel-stat {
   white-space: nowrap;
 }
 
@@ -1102,8 +1152,21 @@ body.is-home .frame {
     padding: var(--space-1) var(--space-4);
   }
 
-  .panel-stat--extra {
-    display: none;
+  /* bubbles pair up in two columns on phones */
+  .readings {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reading {
+    min-width: 0;
+  }
+
+  /* an odd bubble out sits centred under the pairs */
+  .reading:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc(50% - var(--reading-gap) / 2);
   }
 
   /* four tiles become a 2 x 2 grid on phones */

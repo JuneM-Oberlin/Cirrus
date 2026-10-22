@@ -155,25 +155,15 @@ const CirrusFrame = (function () {
         setSlot(byId("globeButton"), globeLabel);
     }
 
+    // The footer shows only the wind line; the other readings sit in
+    // bubbles inside each view.
     function applyReadout(readout) {
         const wind = byId("panelWind");
-        const main = byId("panelWindMain");
-        const sub = byId("panelWindSub");
         if (!readout) {
             wind.classList.add("hidden");
             return;
         }
-        main.textContent = readout.main;
-        sub.replaceChildren();
-        (readout.stats || []).forEach((stat) => {
-            const span = document.createElement("span");
-            span.className = "panel-stat";
-            if (stat.extra) {
-                span.classList.add("panel-stat--extra");
-            }
-            span.textContent = stat.text;
-            sub.appendChild(span);
-        });
+        byId("panelWindMain").textContent = readout.main;
         wind.classList.remove("hidden");
     }
 
