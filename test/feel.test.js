@@ -66,3 +66,38 @@ test("disabled buttons and reduced motion skip the squash", () => {
     calm.document.dispatch("pointerdown", { target: button });
     assert.equal(button.classList.contains("is-squashing"), false);
 });
+
+test("buttons tick on hover, pop on press, and buzz under a finger", () => {
+    const document = documentStub();
+    const context = runClassicScript("public/feel.js", {
+        document,
+        window: { matchMedia: () => ({ matches: false }) },
+    });
+    const played = [];
+    const buzzes = [];
+    lexical(context, "CirrusFeel").init({
+        sound: { play: (name) => played.push(name), hover: () => played.push("tick") },
+        vibrate: (ms) => buzzes.push(ms),
+        hapticMs: 8,
+    });
+    const button = pressable(document, ["frame-btn"]);
+    const label = element(document, "label");
+    label.closest = button.closest;
+
+    // moving across the button and its label ticks once
+    document.dispatch("pointerover", { target: button, pointerType: "mouse" });
+    document.dispatch("pointerover", { target: label, pointerType: "mouse" });
+    assert.deepEqual(played, ["tick"]);
+
+    document.dispatch("pointerdown", { target: button, pointerType: "touch" });
+    assert.deepEqual(played, ["tick", "pop"]);
+    assert.deepEqual(buzzes, [8], "a finger press buzzes");
+    document.dispatch("pointerdown", { target: button, pointerType: "mouse" });
+    assert.deepEqual(buzzes, [8], "a mouse press doesn't");
+
+    // Back leaves its sound to the frame (a lower blip, not a pop)
+    const back = pressable(document);
+    back.dataset.sound = "back";
+    document.dispatch("pointerdown", { target: back, pointerType: "mouse" });
+    assert.deepEqual(played, ["tick", "pop", "pop"]);
+});

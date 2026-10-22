@@ -525,10 +525,19 @@ function openChannel(target) {
 
 /* ---------- Start up ---------- */
 
-CirrusFeel.init();
+CirrusSound.init();
+CirrusFeel.init({ sound: CirrusSound, hapticMs: CirrusConfig.haptics.pressMs });
 CirrusFrame.init({
     onHome: openHome,
     onEnter: (element) => CirrusCountUp.playIn(element),
+    onSound: (name) => {
+        if (name === "chime") {
+            // the chime lands with the view, just after the press pop
+            CirrusSound.play("chime", { delayMs: CirrusConfig.sound.chimeDelayMs });
+        } else {
+            CirrusSound.play(name);
+        }
+    },
     prefersReducedMotion,
 });
 CirrusViews.init({ frame: CirrusFrame, units: CirrusUnits });
@@ -566,8 +575,9 @@ CirrusAlerts.init({
         closeHome();
         CirrusAlerts.open();
     },
+    onWarning: () => CirrusSound.play("alert"),
 });
-CirrusSettings.init({ frame: CirrusFrame, units: CirrusUnits });
+CirrusSettings.init({ frame: CirrusFrame, units: CirrusUnits, sound: CirrusSound });
 CirrusGlobe.init({
     frame: CirrusFrame,
     fetchRegion: fetchGlobeRegion,

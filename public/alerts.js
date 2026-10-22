@@ -25,12 +25,15 @@ const CirrusAlerts = (function () {
         onAlertsChanged: () => {},
         allowAutoPop: () => true,
         onBadgeOpen: () => {},
+        // a warning arrived (once per search): the app plays a soft tone
+        onWarning: () => {},
     };
 
     const session = {
         generation: 0,
         alerts: [],
         autoPopDismissed: false,
+        warned: false,
     };
 
     function byId(id) {
@@ -142,6 +145,7 @@ const CirrusAlerts = (function () {
     function resetForSearch() {
         session.generation += 1;
         session.autoPopDismissed = false;
+        session.warned = false;
         session.alerts = [];
         deps.hide("alertFetchMsg");
         if (isScreenOpen()) {
@@ -159,6 +163,11 @@ const CirrusAlerts = (function () {
         } else {
             session.alerts = snapshot.alerts;
             deps.hide("alertFetchMsg");
+        }
+        const hasWarning = session.alerts.some((alert) => normalizeAlertTier(alert.tier) === "warning");
+        if (hasWarning && !session.warned) {
+            session.warned = true;
+            deps.onWarning();
         }
         renderBar();
         updateBadge();

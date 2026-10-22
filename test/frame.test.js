@@ -311,6 +311,8 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
         CirrusUnits: { temp: (f) => f + "°", asOf: () => "As of", cityClockTime: () => "--", onChange: noop },
         CirrusSettings: { init: noop },
         CirrusFeel: { init: noop },
+        CirrusSound: { init: noop, play: noop },
+        CirrusConfig,
         CirrusFrame: { init: noop, showView: noop, hasView: () => false, setVisiting: noop, setHandlers: noop, currentViewId: () => "current" },
         CirrusCountUp: { playIn: noop },
         CirrusGlobe: { init: noop },

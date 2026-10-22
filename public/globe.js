@@ -701,7 +701,7 @@ const CirrusGlobe = (function () {
         byId("globeRotateLeft").addEventListener("click", () => rotate(-ROTATE_STEP));
         byId("globeRotateRight").addEventListener("click", () => rotate(ROTATE_STEP));
         byId("globeRestore").addEventListener("click", restore);
-        byId("globeEnd").addEventListener("click", () => deps.frame.closeScreen());
+        byId("globeEnd").addEventListener("click", () => deps.frame.back());
         wireDrag();
         deps.frame.setHandlers({ onGlobe: () => deps.onOpen() });
     }

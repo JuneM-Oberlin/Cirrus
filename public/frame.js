@@ -29,6 +29,8 @@ const CirrusFrame = (function () {
         onViewChange: () => {},
         // called with the view or screen element that just opened
         onEnter: () => {},
+        // plays a named sound: "chime" when something opens, "back" for Back
+        onSound: () => {},
         prefersReducedMotion: () => false,
     };
 
@@ -368,6 +370,7 @@ const CirrusFrame = (function () {
             }
             animateChrome(direction);
             deps.onEnter(currentViewElement());
+            deps.onSound("chime");
         }
         deps.onViewChange(id);
     }
@@ -523,6 +526,7 @@ const CirrusFrame = (function () {
             if (element) {
                 deps.onEnter(element);
             }
+            deps.onSound("chime");
         }
     }
 
@@ -568,6 +572,7 @@ const CirrusFrame = (function () {
 
     function back() {
         if (state.screen) {
+            deps.onSound("back");
             if (state.screen.onBack && state.screen.onBack()) {
                 return;
             }
@@ -575,10 +580,12 @@ const CirrusFrame = (function () {
             return;
         }
         if (state.visiting && deps.onEndVisit) {
+            deps.onSound("back");
             deps.onEndVisit();
             return;
         }
         if (isDesktop() && deps.onHome) {
+            deps.onSound("back");
             deps.onHome();
         }
     }

@@ -342,8 +342,25 @@
               </div>
             </div>
           </section>
+          <section class="settings-card" aria-labelledby="settingsSoundTitle">
+            <h3 class="settings-card-title" id="settingsSoundTitle">Sound</h3>
+            <div class="settings-group">
+              <h4 class="settings-label" id="settingsEffectsLabel">Sound effects</h4>
+              <div class="settings-choices" role="radiogroup" aria-labelledby="settingsEffectsLabel">
+                <button type="button" class="chip-btn settings-choice" role="radio" data-setting="effects" data-value="on">On</button>
+                <button type="button" class="chip-btn settings-choice" role="radio" data-setting="effects" data-value="off">Off</button>
+              </div>
+            </div>
+            <div class="settings-group">
+              <h4 class="settings-label" id="settingsMusicLabel">Music</h4>
+              <div class="settings-choices" role="radiogroup" aria-labelledby="settingsMusicLabel">
+                <button type="button" class="chip-btn settings-choice" role="radio" data-setting="music" data-value="on">On</button>
+                <button type="button" class="chip-btn settings-choice" role="radio" data-setting="music" data-value="off">Off</button>
+              </div>
+            </div>
+          </section>
         </div>
-        <p class="screen-note">Cirrus remembers these choices on this device.</p>
+        <p class="screen-note">Cirrus remembers these choices on this device. Sounds start after your first tap or click.</p>
       </section>
 
       <section class="screen hidden" id="screenAlert" aria-label="Weather alerts">
@@ -396,7 +413,7 @@
     </section>
 
     <nav class="frame-row frame-row--bottom" aria-label="Frame controls, bottom">
-      <button type="button" class="frame-btn" id="backButton">
+      <button type="button" class="frame-btn" id="backButton" data-sound="back">
         <span class="frame-btn-label"></span>
       </button>
       <button type="button" class="frame-btn frame-btn--nav" id="navDown">
@@ -407,7 +424,7 @@
         <span class="frame-btn-label"></span>
       </button>
       <!-- globe mode -->
-      <button type="button" class="frame-btn globe-only" id="globeEnd">End</button>
+      <button type="button" class="frame-btn globe-only" id="globeEnd" data-sound="back">End</button>
       <div class="frame-btn-pair globe-only">
         <button type="button" class="frame-btn" id="globeRotateLeft" aria-label="Spin west">
           <svg class="frame-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 15A8 8 0 0 0 5.5 9.5"></path><path d="M4 4.5V10H9.5"></path></svg>
@@ -420,21 +437,22 @@
     </nav>
   </div>
 
-  <script src="feel-config.js?v=20261022h2"></script>
+  <script src="feel-config.js?v=20261022i1"></script>
   <script src="iconMap.js?v=20260701"></script>
   <script src="units.js?v=20261022a"></script>
   <script src="atmo-rain-video.js?v=20260706e"></script>
   <script src="atmo-lightning.js?v=20260626c"></script>
-  <script src="alerts.js?v=20261022a"></script>
+  <script src="alerts.js?v=20261022i1"></script>
   <script src="atmosphere.js?v=20260706"></script>
-  <script src="feel.js?v=20261022g1"></script>
-  <script src="frame.js?v=20261022h1"></script>
+  <script src="sound.js?v=20261022i1"></script>
+  <script src="feel.js?v=20261022i1"></script>
+  <script src="frame.js?v=20261022i1"></script>
   <script src="views.js?v=20261022h1"></script>
   <script src="search.js?v=20261022h1"></script>
-  <script src="settings.js?v=20261022a"></script>
-  <script src="globe.js?v=20261022h1"></script>
+  <script src="settings.js?v=20261022i1"></script>
+  <script src="globe.js?v=20261022i1"></script>
   <script src="channels.js?v=20261022a"></script>
   <script src="countup.js?v=20261022h1"></script>
-  <script src="script.js?v=20261022h1"></script>
+  <script src="script.js?v=20261022i1"></script>
 </body>
 </html>

@@ -1,17 +1,26 @@
-/* Settings screen: temperature (°F / °C) and wind (mph / km/h) choices.
-   Each pair is a radio group; choices save immediately and every view
-   re-renders in the new units. */
+/* Settings screen: units (°F / °C, mph / km/h) and sound (effects and
+   music on or off). Each pair is a radio group; choices save immediately.
+   New units re-render every view; the sound switches go to sound.js. */
 
 const CirrusSettings = (function () {
-    let deps = { frame: null, units: null };
+    let deps = { frame: null, units: null, sound: null };
 
     function choices() {
         return [...document.querySelectorAll(".settings-choice")];
     }
 
+    // Which module keeps a setting: the sound engine for effects and music,
+    // the units for everything else.
+    function storeFor(setting) {
+        if (deps.sound && setting in deps.sound.getSettings()) {
+            return deps.sound;
+        }
+        return deps.units;
+    }
+
     function render() {
-        const settings = deps.units.getSettings();
         choices().forEach((button) => {
+            const settings = storeFor(button.dataset.setting).getSettings();
             const selected = settings[button.dataset.setting] === button.dataset.value;
             button.classList.toggle("is-selected", selected);
             button.setAttribute("aria-checked", String(selected));
@@ -27,7 +36,7 @@ const CirrusSettings = (function () {
     function choose(button) {
         const change = {};
         change[button.dataset.setting] = button.dataset.value;
-        deps.units.update(change);
+        storeFor(button.dataset.setting).update(change);
         render();
     }
 
