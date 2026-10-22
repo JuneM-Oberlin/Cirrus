@@ -124,6 +124,15 @@
   /* ---- Pointer: Cirrus's own hand cursor (fingertip hotspot), with
          a PNG and the system pointer as fallbacks ---- */
   --cursor-point: url("cursors/hand.svg") 10 2, url("cursors/hand.png") 10 2, pointer;
+  /* the drawn hand (pointer.js): the same picture, a little bigger */
+  --soft-cursor-size: 40px;
+  --soft-cursor-hot-x: 12.5px;
+  --soft-cursor-hot-y: 2.5px;
+  --soft-cursor-shadow: drop-shadow(0 3px 3px rgba(0, 10, 40, 0.35));
+  --soft-cursor-poke: 0 2px;
+  --soft-cursor-poke-scale: 0.9;
+  --ripple-size: 72px;
+  --ripple-face: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(140, 220, 255, 0.45) 45%, rgba(140, 220, 255, 0) 70%);
 
   /* ---- Focus ---- */
   --focus-width: 3px;
@@ -577,6 +586,7 @@
   --z-screen: 4;
   --z-status: 5;
   --z-frame: 10;
+  --z-cursor: 1000;
 }
 
 /* Phones: same frame, shorter rows and smaller type. */

@@ -37,6 +37,23 @@ const CirrusConfig = Object.freeze({
         maxDegPerMs: 0.5,
     },
 
+    // The drawn hand: how far it leans while moving and how it hops.
+    pointer: {
+        leanPerSpeed: 10,
+        maxLeanDeg: 12,
+        leanFollow: 0.25,
+        leanSettle: 0.82,
+        bounceScale: 1.22,
+        bounceMs: 380,
+        // the ripple under a finger on touch screens
+        ripple: {
+            fromScale: 0.2,
+            startOpacity: 0.6,
+            durationMs: 480,
+            fadeMs: 220,
+        },
+    },
+
     // A tiny buzz on press, on phones that support vibration.
     haptics: {
         pressMs: 8,

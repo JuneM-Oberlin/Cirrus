@@ -526,6 +526,7 @@ function openChannel(target) {
 /* ---------- Start up ---------- */
 
 CirrusSound.init();
+CirrusPointer.init();
 CirrusFeel.init({ sound: CirrusSound, hapticMs: CirrusConfig.haptics.pressMs });
 CirrusFrame.init({
     onHome: openHome,

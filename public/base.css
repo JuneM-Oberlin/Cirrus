@@ -78,6 +78,64 @@ button:disabled {
   cursor: default;
 }
 
+/* When pointer.js draws the hand, the system cursor hides, except in text
+   fields, which keep the normal text cursor. */
+html.has-soft-cursor,
+html.has-soft-cursor * {
+  cursor: none !important;
+}
+
+html.has-soft-cursor input,
+html.has-soft-cursor textarea {
+  cursor: text !important;
+}
+
+.soft-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-cursor);
+  width: var(--soft-cursor-size);
+  height: var(--soft-cursor-size);
+  margin: calc(-1 * var(--soft-cursor-hot-y)) 0 0 calc(-1 * var(--soft-cursor-hot-x));
+  transform-origin: var(--soft-cursor-hot-x) var(--soft-cursor-hot-y);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.soft-cursor.is-hidden {
+  opacity: 0;
+}
+
+.soft-cursor-hand {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: var(--soft-cursor-hot-x) var(--soft-cursor-hot-y);
+  filter: var(--soft-cursor-shadow);
+  transition: translate var(--dur-fast) var(--ease-fade), scale var(--dur-fast) var(--ease-fade);
+}
+
+/* pressing pokes the finger down a little */
+.soft-cursor.is-pressing .soft-cursor-hand {
+  translate: var(--soft-cursor-poke);
+  scale: var(--soft-cursor-poke-scale);
+}
+
+/* a soft ring where a finger taps */
+.tap-ripple {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-cursor);
+  width: var(--ripple-size);
+  height: var(--ripple-size);
+  margin: calc(var(--ripple-size) / -2) 0 0 calc(var(--ripple-size) / -2);
+  background: var(--ripple-face);
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+}
+
 :focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
