@@ -594,6 +594,7 @@ CirrusSettings.init({ frame: CirrusFrame, units: CirrusUnits, sound: CirrusSound
 CirrusGlobe.init({
     frame: CirrusFrame,
     fetchRegion: fetchGlobeRegion,
+    fetchCity: fetchWeatherData,
     onOpen: () => openGlobe(),
     onVisit: visitCity,
     onEnd: endGlobe,

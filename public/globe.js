@@ -1,6 +1,7 @@
 /* Globe: a satellite globe drawn on a <canvas> from one NASA GIBS
    Blue Marble image, with live weather markers for a fixed list of major
-   cities. No library — just the orthographic projection:
+   cities, and more cities (globe-cities.js) as you zoom in. No library —
+   just the orthographic projection:
 
    Forward (lat/lon -> screen), with the globe facing point (lat0, lon0):
      cos c = sin(lat0) sin(lat) + cos(lat0) cos(lat) cos(lon - lon0)   (> 0 means visible)
@@ -42,6 +43,16 @@ const CirrusGlobe = (function () {
     const HORIZON_SHARE = 0.36;
     const MAX_REGIONS_PER_LOOK = 2;
     const PENDING_RETRY_MS = 20000;
+    // Extra cities appear as you zoom in: tier 2 from level 2.5, tier 3 from
+    // level 3.5. Each one's weather is its own /weather call, so at most
+    // EXTRAS_PER_MINUTE load each minute, leaving room under the server's
+    // rate limit (30 a minute) for your own searches; if the server says
+    // "too many" anyway, they wait a whole minute. Loaded weather is
+    // refreshed after ten minutes, like the server's cache.
+    const TIER_LEVELS = { 2: 2.5, 3: 3.5 };
+    const EXTRAS_PER_MINUTE = 12;
+    const EXTRA_REFRESH_MS = 10 * 60 * 1000;
+    const MINUTE_MS = 60 * 1000;
     const BASE_SIZE = { width: 2048, height: 1024 };
     // Sharper pictures of the area in view as you zoom in: a regional one
     // from level 2, and a close one (a third of the size, three times as
@@ -55,6 +66,7 @@ const CirrusGlobe = (function () {
     let deps = {
         frame: null,
         fetchRegion: async () => null,
+        fetchCity: async () => null,
         onVisit: () => {},
         onEnd: () => {},
         formatTemp: (f) => Math.round(f) + "°",
@@ -78,6 +90,13 @@ const CirrusGlobe = (function () {
     let drawFrame = null;
     let isOpen = false;
     const regions = {};
+    // weather for the extra cities, by search query
+    const extras = {};
+    // when each recent extra city fetch started, for the per-minute budget
+    let extraFetchTimes = [];
+    let extrasPausedUntil = 0;
+    let extrasTimer = null;
+    let markersTimer = null;
 
     function byId(id) {
         return document.getElementById(id);
@@ -382,21 +401,70 @@ const CirrusGlobe = (function () {
         return city.name + " " + deps.formatTemp(city.temperature);
     }
 
-    function placeMarkers() {
-        const layer = byId("globeMarkers");
+    // The extra cities that belong at this zoom, with their weather once
+    // it has loaded (until then they show as loading).
+    function extraCities() {
+        return CirrusGlobeCities
+            .filter((entry) => view.level >= TIER_LEVELS[entry.tier])
+            .map((entry) => {
+                if (extras[entry.query]) {
+                    return extras[entry.query];
+                }
+                return Object.assign({ pending: true }, entry);
+            });
+    }
+
+    // The cities that land inside the canvas on the near side of the
+    // globe, each with the point where it lands.
+    function citiesOnScreen(cities) {
         const size = canvasSize();
         const cam = camera(size.width, size.height, 1);
-        const placed = [];
-        const cities = [];
-        Object.values(regions).forEach((region) => region.cities.forEach((city) => cities.push(city)));
-
-        layer.replaceChildren();
-        cities
+        return cities
             .map((city) => ({ city, point: project(city.lat, city.lon, cam) }))
             .filter((item) => item.point.visible
                 && item.point.x > 0 && item.point.x < size.width
-                && item.point.y > 0 && item.point.y < size.height)
-            .sort((a, b) => b.point.depth - a.point.depth)
+                && item.point.y > 0 && item.point.y < size.height);
+    }
+
+    // Major cities get first pick of space for their labels, then tier 2,
+    // then tier 3; within a tier, the ones facing you most go first.
+    function byImportance(a, b) {
+        const tierA = a.city.tier || 1;
+        const tierB = b.city.tier || 1;
+        if (tierA !== tierB) {
+            return tierA - tierB;
+        }
+        return b.point.depth - a.point.depth;
+    }
+
+    // Weather arriving for several cities at once redraws the markers once.
+    function placeMarkersSoon() {
+        clearTimeout(markersTimer);
+        markersTimer = setTimeout(() => {
+            if (isOpen && !animation && zoomTarget === null) {
+                placeMarkers();
+            }
+        }, 120);
+    }
+
+    function placeMarkers() {
+        clearTimeout(markersTimer);
+        const layer = byId("globeMarkers");
+        const size = canvasSize();
+        const placed = [];
+        const cities = [];
+        Object.values(regions).forEach((region) => region.cities.forEach((city) => cities.push(city)));
+        extraCities().forEach((city) => cities.push(city));
+
+        // the markers are rebuilt, so keyboard focus moves to the new copy
+        let focusedName = null;
+        if (layer.contains(document.activeElement)) {
+            focusedName = document.activeElement.dataset.city;
+        }
+
+        layer.replaceChildren();
+        citiesOnScreen(cities)
+            .sort(byImportance)
             .forEach(({ city, point }) => {
                 const button = document.createElement("button");
                 button.type = "button";
@@ -451,8 +519,13 @@ const CirrusGlobe = (function () {
                     description += ": " + deps.formatTemp(city.temperature) + ", " + (city.condition || "");
                 }
                 button.setAttribute("aria-label", description + ". Open forecast");
-                button.addEventListener("click", () => deps.onVisit(city.name));
+                button.dataset.city = city.name;
+                // extra cities search by their query, so the right town answers
+                button.addEventListener("click", () => deps.onVisit(city.query || city.name));
                 layer.appendChild(button);
+                if (city.name === focusedName) {
+                    button.focus();
+                }
             });
     }
 
@@ -526,6 +599,84 @@ const CirrusGlobe = (function () {
         });
     }
 
+    /* ---------- Extra cities, a few at a time ---------- */
+
+    function needsWeather(city, now) {
+        const known = extras[city.query];
+        if (!known) {
+            return true;
+        }
+        if (known.loading) {
+            return false;
+        }
+        if (known.pending) {
+            return now - known.triedAt > PENDING_RETRY_MS;
+        }
+        return now - known.fetchedAt > EXTRA_REFRESH_MS;
+    }
+
+    function fetchExtra(city, now) {
+        extraFetchTimes.push(now);
+        const known = Object.assign(extras[city.query] || {}, city, { loading: true, triedAt: now });
+        extras[city.query] = known;
+        deps.fetchCity(city.query)
+            .then((weather) => {
+                Object.assign(known, {
+                    pending: false,
+                    temperature: weather.temperature,
+                    conditionId: weather.conditionId,
+                    weatherCode: weather.weatherCode,
+                    condition: weather.condition,
+                    fetchedAt: Date.now(),
+                });
+                placeMarkersSoon();
+            })
+            // a city that didn't load stays "loading" and is tried again later
+            .catch((error) => {
+                if (error && error.status === 429) {
+                    extrasPausedUntil = Date.now() + MINUTE_MS;
+                }
+            })
+            .finally(() => {
+                known.loading = false;
+            });
+    }
+
+    // Fetches weather for the extra cities on screen that need it, those
+    // nearest the middle first, within the per-minute budget. If some are
+    // left waiting, it looks again when the budget frees up.
+    function lookAgainIn(wait) {
+        extrasTimer = setTimeout(() => {
+            if (isOpen && !animation && zoomTarget === null) {
+                loadVisibleExtras();
+            }
+        }, wait);
+    }
+
+    function loadVisibleExtras() {
+        clearTimeout(extrasTimer);
+        const now = Date.now();
+        if (now < extrasPausedUntil) {
+            lookAgainIn(extrasPausedUntil - now);
+            return;
+        }
+        extraFetchTimes = extraFetchTimes.filter((at) => now - at < MINUTE_MS);
+        const size = canvasSize();
+        const waiting = citiesOnScreen(extraCities())
+            .filter((item) => needsWeather(item.city, now))
+            .map((item) => ({
+                city: item.city,
+                distance: Math.hypot(item.point.x - size.width / 2, item.point.y - size.height / 2),
+            }))
+            .sort((a, b) => a.distance - b.distance);
+        const room = EXTRAS_PER_MINUTE - extraFetchTimes.length;
+        waiting.slice(0, Math.max(0, room)).forEach((item) => fetchExtra(item.city, now));
+        if (waiting.length > room) {
+            // the oldest fetch leaves the one-minute window first
+            lookAgainIn(MINUTE_MS - (now - extraFetchTimes[0]) + 100);
+        }
+    }
+
     /* ---------- Moving the camera ---------- */
 
     function easeInOut(t) {
@@ -567,6 +718,7 @@ const CirrusGlobe = (function () {
         setMoving(false);
         render(1);
         loadVisibleRegions();
+        loadVisibleExtras();
         scheduleDetail();
     }
 
@@ -1065,6 +1217,8 @@ const CirrusGlobe = (function () {
         document.removeEventListener("keydown", onKeydown);
         window.removeEventListener("resize", onResize);
         stopMotion();
+        clearTimeout(extrasTimer);
+        clearTimeout(markersTimer);
         deps.onEnd();
     }
 
