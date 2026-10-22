@@ -263,6 +263,7 @@ function clearStatus() {
 
 function startColdStartLoading(initialMessage) {
     stopColdStartLoading();
+    document.body.classList.add("is-loading");
     CirrusDesktopChannels.setSearching(true);
     setLoadingText(initialMessage);
     show("loading");
@@ -291,6 +292,7 @@ function stopColdStartLoading() {
         clearInterval(timerId);
     });
     coldStartTimers = [];
+    document.body.classList.remove("is-loading");
     CirrusDesktopChannels.setSearching(false);
 }
 

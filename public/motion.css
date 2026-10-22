@@ -1,82 +1,70 @@
-/* MOTION — keyframes, interactive motion, and the reduced-motion overrides */
+/* MOTION — keyframes, interactive motion, and the reduced-motion overrides.
+   Every duration and distance comes from theme.css. */
 
 @keyframes nintendoPop {
   0% {
     opacity: 0;
-    transform: scale(0.82) translateY(10px);
+    transform: var(--motion-pop-from);
   }
   55% {
     opacity: 1;
-    transform: scale(1.06) translateY(-3px);
+    transform: var(--motion-pop-over);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: none;
   }
-}
-
-@keyframes nintendoBounce {
-  0%, 100% { transform: translateY(0) scale(1); }
-  35% { transform: translateY(-6px) scale(1.04); }
-  65% { transform: translateY(2px) scale(0.98); }
 }
 
 @keyframes iconBob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  0%, 100% { transform: none; }
+  50% { transform: var(--motion-bob); }
 }
 
 @keyframes hintBounce {
-  0%, 100% { transform: translateY(0); opacity: 0.75; }
-  50% { transform: translateY(-4px); opacity: 1; }
+  0%, 100% { transform: none; opacity: 0.75; }
+  50% { transform: var(--motion-hint); opacity: 1; }
 }
 
+/* below freezing the white temperature chills to the low-temp cyan */
 @keyframes tempFreezeIn {
-  from { color: #f0c000; }
-  to { color: #00e5ff; }
+  from { color: var(--temp-current); }
+  to { color: var(--temp-low); }
 }
 
 @keyframes tempShiver {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  20% { transform: translate(-1.2px, 0.6px) rotate(-0.35deg); }
-  40% { transform: translate(1.1px, -0.5px) rotate(0.3deg); }
-  60% { transform: translate(-0.9px, -0.6px) rotate(-0.25deg); }
-  80% { transform: translate(1.2px, 0.5px) rotate(0.35deg); }
+  0%, 100% { transform: none; }
+  20% { transform: translate(calc(-1 * var(--motion-shiver)), calc(0.5 * var(--motion-shiver))) rotate(-0.35deg); }
+  40% { transform: translate(var(--motion-shiver), calc(-0.4 * var(--motion-shiver))) rotate(0.3deg); }
+  60% { transform: translate(calc(-0.75 * var(--motion-shiver)), calc(-0.5 * var(--motion-shiver))) rotate(-0.25deg); }
+  80% { transform: translate(var(--motion-shiver), calc(0.4 * var(--motion-shiver))) rotate(0.35deg); }
 }
 
 @keyframes tempHeatShake {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  15% { transform: translate(calc(var(--heat-amp, 0.5px) * -0.8), calc(var(--heat-amp, 0.5px) * 0.5)) rotate(-0.5deg); }
-  30% { transform: translate(var(--heat-amp, 0.5px), calc(var(--heat-amp, 0.5px) * -0.7)) rotate(0.6deg); }
-  45% { transform: translate(calc(var(--heat-amp, 0.5px) * -1), calc(var(--heat-amp, 0.5px) * -0.4)) rotate(-0.4deg); }
-  60% { transform: translate(calc(var(--heat-amp, 0.5px) * 0.9), calc(var(--heat-amp, 0.5px) * 0.6)) rotate(0.5deg); }
-  80% { transform: translate(calc(var(--heat-amp, 0.5px) * -0.6), calc(var(--heat-amp, 0.5px) * 0.3)) rotate(-0.3deg); }
+  0%, 100% { transform: none; }
+  15% { transform: translate(calc(var(--heat-amp, var(--heat-amp-default)) * -0.8), calc(var(--heat-amp, var(--heat-amp-default)) * 0.5)) rotate(-0.5deg); }
+  30% { transform: translate(var(--heat-amp, var(--heat-amp-default)), calc(var(--heat-amp, var(--heat-amp-default)) * -0.7)) rotate(0.6deg); }
+  45% { transform: translate(calc(var(--heat-amp, var(--heat-amp-default)) * -1), calc(var(--heat-amp, var(--heat-amp-default)) * -0.4)) rotate(-0.4deg); }
+  60% { transform: translate(calc(var(--heat-amp, var(--heat-amp-default)) * 0.9), calc(var(--heat-amp, var(--heat-amp-default)) * 0.6)) rotate(0.5deg); }
+  80% { transform: translate(calc(var(--heat-amp, var(--heat-amp-default)) * -0.6), calc(var(--heat-amp, var(--heat-amp-default)) * 0.3)) rotate(-0.3deg); }
 }
 
 @keyframes wiiSquashPress {
-  0%   { transform: translateY(0) scale(1, 1); }
-  35%  { transform: translateY(3px) scale(1.06, 0.90); }
-  70%  { transform: translateY(-1px) scale(0.97, 1.04); }
-  100% { transform: translateY(0) scale(1, 1); }
+  0% { transform: none; }
+  35% { transform: var(--motion-squash-down); }
+  70% { transform: var(--motion-squash-up); }
+  100% { transform: none; }
 }
 
+/* the search button glows while pressed, then settles into the searching halo */
 @keyframes searchPressGlow {
-  0%, 28% {
-    box-shadow:
-      inset 0 2px 5px rgba(20, 50, 110, 0.22),
-      0 0 0 1.5px rgba(52, 190, 237, 0.70),
-      0 1px 4px rgba(0, 0, 0, 0.30),
-      0 0 8px 2px rgba(52, 190, 237, 0.75),
-      0 0 22px 6px rgba(52, 190, 237, 0.55);
-  }
-  100% {
-    box-shadow: var(--wii-searching-shadow);
-  }
+  0%, 28% { box-shadow: var(--press-glow); }
+  100% { box-shadow: var(--wii-searching-shadow); }
 }
 
 @keyframes dockScanDrift {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(3px); }
+  0% { transform: none; }
+  100% { transform: var(--motion-scan-drift); }
 }
 
 @keyframes dockScanStatic {
@@ -86,12 +74,12 @@
 
 @keyframes alertBarDown {
   0% { opacity: 0; transform: translateY(-100%); }
-  100% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 1; transform: none; }
 }
 
 @keyframes alertBarUp {
   0% { opacity: 0; transform: translateY(100%); }
-  100% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 1; transform: none; }
 }
 
 @keyframes channelColonBlink {
@@ -102,7 +90,8 @@
 /* ---------- Frame ---------- */
 
 .frame-btn,
-.chip-btn {
+.chip-btn,
+.fiveday-col {
   transition:
     background var(--dur-fast) var(--nintendo-soft),
     color var(--dur-fast) var(--nintendo-soft);
@@ -110,32 +99,28 @@
 
 .frame-btn:not(:disabled):active,
 .chip-btn:active {
-  animation: wiiSquashPress var(--dur-medium) var(--nintendo-spring);
+  animation: wiiSquashPress var(--dur-squash) var(--nintendo-spring);
 }
 
 /* floating weather icon on the big-number views */
 .hero-icon {
-  animation: iconBob 3.2s var(--nintendo-soft) infinite;
+  animation: iconBob var(--dur-bob) var(--nintendo-soft) infinite;
 }
 
 /* temperature moods on the current temperature (classes set from views.js) */
 .temp--freezing {
   color: var(--temp-low);
   animation:
-    tempFreezeIn 1.6s ease-in-out both,
-    tempShiver 0.3s linear infinite 1.6s;
+    tempFreezeIn var(--dur-freeze) ease-in-out both,
+    tempShiver var(--dur-shiver) linear infinite var(--dur-freeze);
 }
 
 .temp--hot {
-  animation: tempHeatShake var(--heat-speed, 0.4s) linear infinite;
+  animation: tempHeatShake var(--heat-speed, var(--dur-heat)) linear infinite;
 }
 
 .panel-status:not(.hidden) {
   animation: nintendoPop var(--dur-medium) var(--nintendo-spring) both;
-}
-
-.anim-pop {
-  animation: nintendoPop 0.55s var(--nintendo-spring) both;
 }
 
 /* the alert bar slides down out of the header when alerts arrive */
@@ -147,78 +132,82 @@
 
 @media (min-width: 768px) {
   .channel-letterbox {
-    animation: alertBarDown 0.7s var(--nintendo-spring) both;
+    animation: alertBarDown var(--dur-entrance) var(--nintendo-spring) both;
   }
 
   .channel-letterbox::before {
-    animation: dockScanDrift 10s linear infinite;
+    animation: dockScanDrift var(--dur-scan-drift) linear infinite;
   }
 
   .channel-tray {
-    animation: alertBarUp 0.7s var(--nintendo-spring) both;
+    animation: alertBarUp var(--dur-entrance) var(--nintendo-spring) both;
   }
 
   .channel-tray-crt {
-    animation: dockScanStatic 8s steps(8) infinite;
+    animation: dockScanStatic var(--dur-scan-static) steps(8) infinite;
   }
 
+  /* tiles pop in one after another; the empty ones follow after a beat */
   .channel-grid--enter .channel-tile {
-    animation: nintendoPop 0.5s var(--nintendo-spring) backwards;
+    animation: nintendoPop var(--dur-pop) var(--nintendo-spring) backwards;
   }
 
-  .channel-grid--enter .channel-tile:nth-child(1) { animation-delay: 0.06s; }
-  .channel-grid--enter .channel-tile:nth-child(2) { animation-delay: 0.12s; }
-  .channel-grid--enter .channel-tile:nth-child(3) { animation-delay: 0.18s; }
-  .channel-grid--enter .channel-tile:nth-child(4) { animation-delay: 0.24s; }
-  .channel-grid--enter .channel-tile:nth-child(5) { animation-delay: 0.30s; }
-  .channel-grid--enter .channel-tile:nth-child(6) { animation-delay: 0.36s; }
-  .channel-grid--enter .channel-tile:nth-child(7) { animation-delay: 0.47s; }
-  .channel-grid--enter .channel-tile:nth-child(8) { animation-delay: 0.52s; }
-  .channel-grid--enter .channel-tile:nth-child(9) { animation-delay: 0.57s; }
-  .channel-grid--enter .channel-tile:nth-child(10) { animation-delay: 0.62s; }
-  .channel-grid--enter .channel-tile:nth-child(11) { animation-delay: 0.67s; }
-  .channel-grid--enter .channel-tile:nth-child(12) { animation-delay: 0.72s; }
+  .channel-grid--enter .channel-tile:nth-child(1) { animation-delay: calc(1 * var(--stagger-step)); }
+  .channel-grid--enter .channel-tile:nth-child(2) { animation-delay: calc(2 * var(--stagger-step)); }
+  .channel-grid--enter .channel-tile:nth-child(3) { animation-delay: calc(3 * var(--stagger-step)); }
+  .channel-grid--enter .channel-tile:nth-child(4) { animation-delay: calc(4 * var(--stagger-step)); }
+  .channel-grid--enter .channel-tile:nth-child(5) { animation-delay: calc(5 * var(--stagger-step)); }
+  .channel-grid--enter .channel-tile:nth-child(6) { animation-delay: calc(6 * var(--stagger-step)); }
+  .channel-grid--enter .channel-tile:nth-child(7) { animation-delay: calc(var(--stagger-gap) + 6 * var(--stagger-step)); }
+  .channel-grid--enter .channel-tile:nth-child(8) { animation-delay: calc(var(--stagger-gap) + 7 * var(--stagger-step)); }
+  .channel-grid--enter .channel-tile:nth-child(9) { animation-delay: calc(var(--stagger-gap) + 8 * var(--stagger-step)); }
+  .channel-grid--enter .channel-tile:nth-child(10) { animation-delay: calc(var(--stagger-gap) + 9 * var(--stagger-step)); }
+  .channel-grid--enter .channel-tile:nth-child(11) { animation-delay: calc(var(--stagger-gap) + 10 * var(--stagger-step)); }
+  .channel-grid--enter .channel-tile:nth-child(12) { animation-delay: calc(var(--stagger-gap) + 11 * var(--stagger-step)); }
 
   .channel-tile--live {
-    transition: transform 0.35s var(--nintendo-spring), box-shadow 0.3s var(--nintendo-soft);
+    transition: transform var(--dur-medium) var(--nintendo-spring), box-shadow var(--dur-medium) var(--nintendo-soft);
   }
 
   .channel-tile--live:hover {
     z-index: 2;
-    transform: scale(1.06);
-    box-shadow: 0 0 0 3px #34beed, 0 0 18px 4px rgba(52, 190, 237, 0.5);
+    transform: var(--motion-tile-hover);
+    box-shadow: var(--cyan-glow);
   }
 
   .channel-tile--live:active,
   .channel-search button:active,
   .channel-tray-button:active {
-    animation: wiiSquashPress 0.4s var(--nintendo-spring);
+    animation: wiiSquashPress var(--dur-squash) var(--nintendo-spring);
   }
 
   .channel-today-icon {
-    animation: iconBob 3.2s var(--nintendo-soft) infinite;
+    animation: iconBob var(--dur-bob) var(--nintendo-soft) infinite;
   }
 
   .channel-grid-hint {
-    animation: hintBounce 2s var(--nintendo-soft) infinite;
+    animation: hintBounce var(--dur-hint) var(--nintendo-soft) infinite;
   }
 
   .channel-search button,
   .channel-tray-button {
-    transition: transform 0.35s var(--nintendo-spring), box-shadow 0.3s var(--nintendo-soft), border-color 0.2s var(--nintendo-soft);
+    transition:
+      transform var(--dur-medium) var(--nintendo-spring),
+      box-shadow var(--dur-medium) var(--nintendo-soft),
+      border-color var(--dur-fast) var(--nintendo-soft);
   }
 
   .channel-search button:hover {
-    border-color: #4fd0fb;
-    transform: translateY(-2px) scale(1.03);
+    border-color: var(--cyan-rim-hover);
+    transform: var(--motion-lift);
   }
 
   .channel-tray-button:not(:disabled):hover {
-    transform: translateY(-3px) scale(1.05);
+    transform: var(--motion-lift-tray);
   }
 
   .channel-search button.search-press-feedback {
-    animation: searchPressGlow 0.62s var(--nintendo-spring) both;
+    animation: searchPressGlow var(--dur-press-glow) var(--nintendo-spring) both;
   }
 
   .channel-search button.is-searching {
@@ -226,17 +215,19 @@
   }
 
   .channel-clock-colon {
-    animation: channelColonBlink 2s steps(1) infinite;
+    animation: channelColonBlink var(--dur-blink) steps(1) infinite;
   }
 }
+
+/* ---------- Reduced motion: everything rests ---------- */
 
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: var(--dur-none) !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: var(--dur-none) !important;
   }
 
   .panel-track {
@@ -248,11 +239,7 @@
   .temp--freezing,
   .temp--hot,
   .frame-btn:active,
-  .chip-btn:active {
-    animation: none !important;
-  }
-
-  /* Variant C: keep every desktop state visible and static. */
+  .chip-btn:active,
   .channel-letterbox,
   .channel-letterbox::before,
   .channel-tray,
@@ -260,6 +247,7 @@
   .channel-grid--enter .channel-tile,
   .channel-today-icon,
   .channel-grid-hint,
+  .channel-tile--live:active,
   .channel-search button:active,
   .channel-tray-button:active,
   .channel-search button.search-press-feedback,

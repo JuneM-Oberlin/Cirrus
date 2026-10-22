@@ -10,10 +10,7 @@
   --font-ui: 'M PLUS Rounded 1c', Helvetica, Arial, sans-serif;
   --font-digital: "DSEG7 Classic", 'M PLUS Rounded 1c', sans-serif;
 
-  /* ---- Layout ---- */
-  --header-height: 52px;
-
-  /* ---- Sky + panel tints (day / night) ---- */
+  /* ---- Sky behind the desktop Home menu (day / night) ---- */
   --focus-ring-night: rgba(140, 200, 255, 0.9);
   --focus-ring-day: rgba(255, 255, 255, 0.95);
   --sky-night: linear-gradient(to bottom,
@@ -31,20 +28,8 @@
   --sky-day-opacity: 0.92;
   --sky-base-night: #010820;
   --sky-base-day: #3a92e4;
-  --panel-tint-night: rgba(10, 20, 80, 0.43);
-  --panel-tint-day: rgba(20, 50, 120, 0.28);
   --focus-ring: var(--focus-ring-night);
   --sky-base: var(--sky-base-night);
-  --panel-tint: var(--panel-tint-night);
-
-  /* ---- Maroon accent ---- */
-  --footer-accent-start: #8a1a3a;
-  --footer-accent-end: #5a0a22;
-  --footer-accent-background:
-    linear-gradient(180deg,
-      rgba(255, 255, 255, 0.16) 0%,
-      rgba(255, 255, 255, 0) 50%),
-    linear-gradient(to right, var(--footer-accent-start), var(--footer-accent-end));
 
   /* ---- Cyan pill controls ---- */
   --wii-pill-rest-shadow:
@@ -65,7 +50,7 @@
   --alert-warning-face: linear-gradient(180deg, #ec5045 0%, #bb1a10 42%, #8e0e07 100%);
   --alert-warning-strip: linear-gradient(180deg, #a5150c 0%, #6c0a05 100%);
   --alert-warning-edge: #4f0703;
-  --alert-watch-face: linear-gradient(180deg, #f6a43a 0%, #c46100 42%, #9c4a00 100%);
+  --alert-watch-face: linear-gradient(180deg, #f6a43a 0%, #b35600 42%, #8f4400 100%);
   --alert-watch-strip: linear-gradient(180deg, #a35000 0%, #6d3500 100%);
   --alert-watch-edge: #4e2600;
   --alert-bar-font: 17px;
@@ -94,8 +79,7 @@
   /* ---- Motion ---- */
   --nintendo-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --nintendo-soft: cubic-bezier(0.32, 0.72, 0, 1);
-  --nintendo-press: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --dur-instant: 120ms;
+  --dur-none: 0.01ms;
   --dur-fast: 200ms;
   --dur-medium: 350ms;
   --dur-slow: 600ms;
@@ -157,7 +141,7 @@
   --frame-btn-face-hover: linear-gradient(180deg, #ffffff 0%, #f7f9fa 46%, #e9edf0 100%);
   --frame-btn-face-active: linear-gradient(180deg, #6fd6fb 0%, #2aaee9 34%, #0d76bd 52%, #0a64aa 100%);
   --frame-btn-text: #2f3337;
-  --frame-btn-text-muted: #6b747c;
+  --frame-btn-text-muted: #5b646c;
   --frame-btn-text-active: #ffffff;
   --frame-btn-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
@@ -300,7 +284,6 @@
   --globe-dot-glow: 0 0 6px 3px rgba(255, 225, 74, 0.75);
   --globe-dot-pending: rgba(255, 255, 255, 0.65);
   --globe-marker-icon: 34px;
-  --globe-temp: var(--temp-high);
   --globe-status-bottom: 56px;
 
   /* ---- Panel status pills (loading / error) ---- */
@@ -318,6 +301,156 @@
   --chip-min-width: 220px;
   --settings-width: 640px;
 
+  /* ---- Desktop Home (channel menu) ---- */
+  --home-globe-opacity: 0.17;
+  --home-gutter: 32px;
+  --home-grid-width: 900px;
+  --home-grid-margin: 85px;
+  --home-letterbox-height: 84px;
+  --home-letterbox-face: rgba(0, 0, 0, 0.52);
+  --home-letterbox-edge: rgba(255, 255, 255, 0.1);
+  --home-letterbox-shine: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --home-scan-dark: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.38) 0 1px, transparent 1px 3px);
+  --home-scan-light: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 3px);
+  --home-title-text: #eef4f9;
+  --home-title-font: 20px;
+  --home-title-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  --home-sub-text: #9ddcff;
+  --home-sub-font: 12px;
+  --home-input-width: 260px;
+  --home-input-face: linear-gradient(to bottom, #e9eef2 0%, #ffffff 40%);
+  --home-input-text: #1c3a66;
+  --home-input-placeholder: #5d7086;
+  --home-input-shadow: inset 0 2px 4px rgba(20, 50, 110, 0.18), 0 0 0 1px rgba(54, 195, 242, 0.35);
+  --home-input-font: 16px;
+  --cyan-rim: #36c3f2;
+  --cyan-rim-hover: #4fd0fb;
+  --cyan-rim-width: 1.5px;
+  --cyan-glow: 0 0 0 3px #34beed, 0 0 18px 4px rgba(52, 190, 237, 0.5);
+  --pill-silver-face: linear-gradient(180deg, #fdffff 0%, #eef4f7 50%, #d6e2e9 100%);
+  --pill-silver-text: #3a3a3a;
+  --pill-silver-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+  --pill-gloss-cap: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.15));
+  --pill-gloss-cap-radius: 999px 999px 60% 60% / 999px 999px 22px 22px;
+  --home-status-font: 15px;
+  --home-prompt-text: rgba(255, 255, 255, 0.9);
+  --home-prompt-font: clamp(17px, 2vw, 22px);
+  --home-prompt-shadow: 0 1px 5px rgba(0, 8, 42, 0.8);
+  --home-prompt-width: 560px;
+  --home-hint-text: rgba(255, 255, 255, 0.9);
+  --home-hint-font: 13px;
+  --tile-gap: 13px;
+  --tile-radius: 10px;
+  --tile-frame: rgb(203, 203, 203);
+  --tile-ring: 0 0 0 3px rgb(180, 180, 180);
+  --tile-scan: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 3px);
+  --tile-today-face: linear-gradient(to bottom, #2b63d4 0%, #1c45a8 55%, #0b2266 100%);
+  --tile-today-title-font: 14px;
+  --tile-today-temp-font: 30px;
+  --tile-day-face: linear-gradient(180deg, #3a78dd 0%, #2a62c8 55%, #1f4fae 100%);
+  --tile-day-head: linear-gradient(180deg, #16357f 0%, #0a1d55 100%);
+  --tile-day-label-font: 15px;
+  --tile-day-high-font: 20px;
+  --tile-day-low-font: 15px;
+  --tile-day-low-text: #eaf7ff;
+  --tile-icon-size: 36px;
+  --tile-text-shadow: 0 1px 3px rgba(0, 10, 40, 0.6);
+  --tile-empty-face: radial-gradient(30% 65% at 50% 50%, rgba(255, 255, 255, 0.3), transparent);
+  --tile-empty-scan: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.07) 0 1px, rgba(255, 255, 255, 0.1) 2px 3px);
+  --tile-empty-title: #b3b3b3;
+  --tile-empty-sub: #a9a9a9;
+  --tile-empty-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  --tray-height: 150px;
+  --tray-fill: rgb(225, 226, 230);
+  --tray-shade: rgba(0, 0, 0, 0.05);
+  --tray-rim: rgb(54, 191, 237);
+  --tray-crt-dark: rgba(0, 0, 0, 0.16);
+  --tray-crt-light: rgba(255, 255, 255, 0.35);
+  --tray-groove: rgb(217, 217, 217);
+  --tray-groove-ring: rgb(179, 181, 187);
+  --tray-groove-shine: rgba(255, 255, 255, 0.7);
+  --tray-button-size: 88px;
+  --tray-button-face: rgb(217, 217, 217);
+  --tray-button-text: #5f5e63;
+  --tray-button-shadow:
+    0 0 0 4px rgb(52, 190, 237),
+    inset -4px -4px 10px rgba(0, 0, 0, 0.26),
+    10px 12px 2px -2px rgb(188, 189, 195);
+  --tray-button-shadow-active:
+    0 0 0 4px rgb(52, 190, 237),
+    inset -4px -4px 10px rgba(0, 0, 0, 0.26),
+    10px 12px 2px -2px rgb(188, 189, 195),
+    0 0 16px 4px rgba(52, 190, 237, 0.55);
+  --tray-crescent: rgb(228, 228, 228);
+  --tray-clock-text: #626263;
+  --tray-clock-shadow: 0 1px 0 #ffffff;
+  --tray-clock-font: 40px;
+  --tray-date-font: 22px;
+
+  /* ---- Weather effects inside the panel ---- */
+  --atmo-fade: 600ms;
+  --atmo-rain-fade: 500ms;
+  --atmo-rain-filter: contrast(1.15) brightness(1.05);
+  --atmo-strike-height: 58vh;
+  --atmo-strike-glow: drop-shadow(0 0 24px rgba(170, 215, 255, 0.65));
+  --atmo-flash: rgba(195, 220, 255, 0.14);
+  --atmo-snow:
+    radial-gradient(circle, rgba(255, 255, 255, 0.85) 0 1.2px, transparent 1.3px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.65) 0 0.9px, transparent 1px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.75) 0 1px, transparent 1.1px);
+  --atmo-snow-size: 52px 52px, 38px 38px, 64px 64px;
+  --atmo-snow-offset: 0 0, 16px 24px, 8px 40px;
+  --atmo-snow-drift: 12px;
+  --atmo-snow-speed: 6s;
+  --atmo-sleet-speed: 4s;
+  --atmo-fog: linear-gradient(180deg, rgba(200, 210, 230, 0.18) 0%, rgba(180, 195, 220, 0.28) 45%, rgba(160, 175, 200, 0.22) 100%);
+  --atmo-fog-speed: 12s;
+  --atmo-clouds:
+    radial-gradient(ellipse 42% 18% at 20% 28%, rgba(255, 255, 255, 0.14) 0%, transparent 70%),
+    radial-gradient(ellipse 36% 14% at 72% 22%, rgba(255, 255, 255, 0.1) 0%, transparent 68%),
+    radial-gradient(ellipse 50% 20% at 48% 38%, rgba(220, 230, 245, 0.12) 0%, transparent 72%);
+  --atmo-clouds-heavy:
+    radial-gradient(ellipse 55% 22% at 15% 25%, rgba(210, 220, 240, 0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 48% 18% at 65% 20%, rgba(200, 215, 235, 0.18) 0%, transparent 68%),
+    radial-gradient(ellipse 60% 24% at 42% 42%, rgba(190, 205, 225, 0.2) 0%, transparent 72%),
+    linear-gradient(180deg, rgba(120, 140, 170, 0.08) 0%, transparent 60%);
+  --atmo-clouds-speed: 22s;
+  --atmo-clouds-heavy-speed: 18s;
+
+  /* ---- Motion distances and timings ---- */
+  --dur-pop: 550ms;
+  --dur-entrance: 700ms;
+  --dur-squash: 400ms;
+  --dur-press-glow: 620ms;
+  --dur-bob: 3.2s;
+  --dur-hint: 2s;
+  --dur-blink: 2s;
+  --dur-scan-drift: 10s;
+  --dur-scan-static: 8s;
+  --dur-freeze: 1.6s;
+  --dur-shiver: 0.3s;
+  --dur-heat: 0.4s;
+  --stagger-step: 60ms;
+  --stagger-gap: 110ms;
+  --motion-pop-from: translateY(10px) scale(0.82);
+  --motion-pop-over: translateY(-3px) scale(1.06);
+  --motion-bob: translateY(-8px);
+  --motion-hint: translateY(-4px);
+  --motion-squash-down: translateY(3px) scale(1.06, 0.9);
+  --motion-squash-up: translateY(-1px) scale(0.97, 1.04);
+  --motion-scan-drift: translateY(3px);
+  --motion-lift: translateY(-2px) scale(1.03);
+  --motion-lift-tray: translateY(-3px) scale(1.05);
+  --motion-tile-hover: scale(1.06);
+  --motion-shiver: 1.2px;
+  --heat-amp-default: 0.5px;
+  --press-glow:
+    inset 0 2px 5px rgba(20, 50, 110, 0.22),
+    0 0 0 1.5px rgba(52, 190, 237, 0.7),
+    0 1px 4px rgba(0, 0, 0, 0.3),
+    0 0 8px 2px rgba(52, 190, 237, 0.75),
+    0 0 22px 6px rgba(52, 190, 237, 0.55);
+
   /* ---- Layering ---- */
   --z-sat: 0;
   --z-atmosphere: 1;
@@ -326,7 +459,6 @@
   --z-screen: 4;
   --z-status: 5;
   --z-frame: 10;
-  --z-overlay: 1000;
 }
 
 /* Phones: same frame, shorter rows and smaller type. */
@@ -337,7 +469,7 @@
     --frame-tri-size: 12px;
     --frame-clock-font: 20px;
     --frame-clock-meridiem-font: 11px;
-    --frame-header-height: 52px;
+    --frame-header-height: 58px;
     --title-block-width: 38%;
     --title-font: 19px;
     --title-font-long: 15px;
@@ -385,5 +517,4 @@
 body.theme-day {
   --focus-ring: var(--focus-ring-day);
   --sky-base: var(--sky-base-day);
-  --panel-tint: var(--panel-tint-day);
 }
