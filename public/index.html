@@ -6,9 +6,9 @@
   <title>Cirrus</title>
   <meta name="description" content="A console-inspired weather channel: current conditions, today, tomorrow, and a 5-day forecast for any city.">
   <link rel="icon" href="icons/clear-day.png">
-  <link rel="stylesheet" href="theme.css?v=20261022d1">
+  <link rel="stylesheet" href="theme.css?v=20261022e1">
   <link rel="stylesheet" href="base.css?v=20261022a">
-  <link rel="stylesheet" href="frame.css?v=20261022d1">
+  <link rel="stylesheet" href="frame.css?v=20261022e1">
   <link rel="stylesheet" href="channels.css?v=20261022a">
   <link rel="stylesheet" href="alerts.css?v=20261022a">
   <link rel="stylesheet" href="globe.css?v=20261022a">
@@ -322,19 +322,24 @@
       </section>
 
       <section class="screen hidden" id="screenSettings" aria-label="Settings">
-        <div class="settings-group">
-          <h3 class="screen-heading" id="settingsTempLabel">Temperature</h3>
-          <div class="settings-choices" role="radiogroup" aria-labelledby="settingsTempLabel">
-            <button type="button" class="chip-btn settings-choice" role="radio" data-setting="temp" data-value="F">Fahrenheit (°F)</button>
-            <button type="button" class="chip-btn settings-choice" role="radio" data-setting="temp" data-value="C">Celsius (°C)</button>
-          </div>
-        </div>
-        <div class="settings-group">
-          <h3 class="screen-heading" id="settingsWindLabel">Wind and distance</h3>
-          <div class="settings-choices" role="radiogroup" aria-labelledby="settingsWindLabel">
-            <button type="button" class="chip-btn settings-choice" role="radio" data-setting="wind" data-value="mph">mph and miles</button>
-            <button type="button" class="chip-btn settings-choice" role="radio" data-setting="wind" data-value="kmh">km/h and kilometers</button>
-          </div>
+        <div class="settings-cards">
+          <section class="settings-card" aria-labelledby="settingsUnitsTitle">
+            <h3 class="settings-card-title" id="settingsUnitsTitle">Units</h3>
+            <div class="settings-group">
+              <h4 class="settings-label" id="settingsTempLabel">Temperature</h4>
+              <div class="settings-choices" role="radiogroup" aria-labelledby="settingsTempLabel">
+                <button type="button" class="chip-btn settings-choice" role="radio" data-setting="temp" data-value="F">Fahrenheit (°F)</button>
+                <button type="button" class="chip-btn settings-choice" role="radio" data-setting="temp" data-value="C">Celsius (°C)</button>
+              </div>
+            </div>
+            <div class="settings-group">
+              <h4 class="settings-label" id="settingsWindLabel">Wind and distance</h4>
+              <div class="settings-choices" role="radiogroup" aria-labelledby="settingsWindLabel">
+                <button type="button" class="chip-btn settings-choice" role="radio" data-setting="wind" data-value="mph">mph and miles</button>
+                <button type="button" class="chip-btn settings-choice" role="radio" data-setting="wind" data-value="kmh">km/h and kilometers</button>
+              </div>
+            </div>
+          </section>
         </div>
         <p class="screen-note">Cirrus remembers these choices on this device.</p>
       </section>

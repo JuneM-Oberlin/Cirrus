@@ -372,7 +372,14 @@
   --chip-height: 52px;
   --chip-font: 18px;
   --chip-min-width: 220px;
-  --settings-width: 640px;
+  --settings-cards-width: 1080px;
+  --settings-card-face:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.05) 30%, rgba(255, 255, 255, 0) 31%),
+    rgba(6, 24, 92, 0.5);
+  --settings-card-border: rgba(255, 255, 255, 0.35);
+  --settings-card-shadow: 0 8px 20px rgba(0, 10, 50, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  --settings-card-title-font: 24px;
+  --settings-label-font: 17px;
 
   /* ---- Desktop Home (channel menu) ---- */
   --home-globe-opacity: 0.17;
@@ -577,6 +584,8 @@
     --reading-label-font: 12px;
     --chip-height: 48px;
     --chip-font: 16px;
+    --settings-card-title-font: 20px;
+    --settings-label-font: 15px;
     --loader-dot-size: 14px;
     --loader-dot-gap: 11px;
     --fiveday-gap: 5px;

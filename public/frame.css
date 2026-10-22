@@ -1089,16 +1089,54 @@
   line-height: var(--lh-body);
 }
 
-/* Settings: each group is a row of two big silver choices */
+/* Settings: glossy cards side by side, each holding rows of two choices */
+.settings-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-6);
+  max-width: var(--settings-cards-width);
+}
+
+.settings-card {
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  background: var(--settings-card-face);
+  border: var(--hairline) solid var(--settings-card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--settings-card-shadow);
+}
+
+.settings-card-title {
+  margin-bottom: var(--space-4);
+  font-size: var(--settings-card-title-font);
+  font-weight: var(--fw-heavy);
+  letter-spacing: var(--tracking-caps);
+  line-height: var(--lh-tight);
+}
+
+.settings-label {
+  margin-bottom: var(--space-3);
+  color: var(--panel-text-soft);
+  font-size: var(--settings-label-font);
+  font-weight: var(--fw-bold);
+}
+
 .settings-group + .settings-group {
-  margin-top: var(--space-7);
+  margin-top: var(--space-5);
 }
 
 .settings-choices {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
-  max-width: var(--settings-width);
+}
+
+/* long choices wrap onto two centred lines instead of being cut off */
+.chip-btn.settings-choice {
+  padding: var(--space-1) var(--space-3);
+  line-height: var(--lh-snug);
+  text-align: center;
+  white-space: normal;
 }
 
 /* Silver buttons used inside the panel (recent cities, choices) */
@@ -1223,6 +1261,15 @@ body.is-home .frame {
 
   .panel-asof {
     padding: var(--space-1) var(--space-4);
+  }
+
+  .settings-cards {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .settings-card {
+    padding: var(--space-4);
   }
 
   /* phones navigate by swipe, so the dots only show where you are */
