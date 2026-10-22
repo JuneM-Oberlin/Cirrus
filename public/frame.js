@@ -37,9 +37,10 @@ const CirrusFrame = (function () {
     // the slide animation of the view track, while it is running
     let slide = null;
 
-    // the scroll wheel: how far it has turned, and whether it is waiting
-    // for a flick to finish before it can move again
-    const wheel = { total: 0, lastAt: 0, lastSize: 0, movedAt: 0, waiting: false };
+    // the scroll wheel: how far it has turned, whether it is waiting for a
+    // flick to finish before it can move again, and how strong the fading
+    // scroll is (so a new flick can be told apart from it)
+    const wheel = { total: 0, lastAt: 0, movedAt: 0, waiting: false, fadeSize: 0, strongInARow: 0 };
 
     const state = {
         views: [],
@@ -718,30 +719,47 @@ const CirrusFrame = (function () {
     // the next view (Current, Today, Tomorrow...), up goes back. A trackpad
     // keeps sending smaller and smaller scrolls after a flick, so after each
     // move the wheel waits until the scrolling goes quiet, or until a
-    // clearly bigger push shows that a new flick has started.
+    // clearly stronger push shows that a new flick has started.
     function onWheel(event) {
-        // pinch zoom and sideways scrolls keep their usual meaning, and open
-        // screens (settings, the globe) handle their own scrolling
-        if (event.ctrlKey || state.screen || !frameIsActive()) {
-            return;
-        }
-        if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+        // pinch zoom keeps its usual meaning
+        if (event.ctrlKey) {
             return;
         }
         const settings = CirrusConfig.viewWheel;
         const pixels = wheelPixels(event);
         const size = Math.abs(pixels);
         const now = event.timeStamp;
+        // Open screens (settings, the globe) handle their own scrolling. Their
+        // scrolls still count as recent, so a trackpad's leftover glide after
+        // closing one has to go quiet before it can move a view.
+        if (state.screen || !frameIsActive()) {
+            wheel.lastAt = now;
+            wheel.waiting = true;
+            return;
+        }
+        // sideways scrolls are left alone
+        if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+            return;
+        }
         const quiet = now - wheel.lastAt > settings.quietMs;
-        const newPush = now - wheel.movedAt > settings.cooldownMs
+        // A new flick must be clearly stronger than the fading scroll for two
+        // scrolls in a row. A single bump (two scrolls merged into one while
+        // the page was busy) doesn't count.
+        const strong = now - wheel.movedAt > settings.cooldownMs
             && size >= settings.newPushMinPx
-            && size > wheel.lastSize * settings.newPushRatio;
-        if (quiet || (wheel.waiting && newPush)) {
+            && size > wheel.fadeSize * settings.newPushRatio;
+        if (strong) {
+            wheel.strongInARow += 1;
+        } else {
+            wheel.strongInARow = 0;
+            wheel.fadeSize = size;
+        }
+        if (quiet || (wheel.waiting && wheel.strongInARow >= 2)) {
             wheel.waiting = false;
             wheel.total = 0;
+            wheel.strongInARow = 0;
         }
         wheel.lastAt = now;
-        wheel.lastSize = size;
         if (wheel.waiting) {
             event.preventDefault();
             return;
@@ -758,17 +776,26 @@ const CirrusFrame = (function () {
             return;
         }
         event.preventDefault();
+        // A mouse wheel notch that starts a scroll counts as a whole step,
+        // even when the browser reports only a few pixels for it (a slow
+        // notch on a Mac). wheelDeltaY says 120 for every notch.
+        let amount = pixels;
+        if (quiet && Math.abs(event.wheelDeltaY || 0) >= settings.notchDelta) {
+            amount = direction * settings.stepPx;
+        }
         // turning the wheel the other way starts counting again
-        if (wheel.total * pixels < 0) {
+        if (wheel.total * amount < 0) {
             wheel.total = 0;
         }
-        wheel.total += pixels;
+        wheel.total += amount;
         if (Math.abs(wheel.total) < settings.stepPx) {
             return;
         }
         wheel.total = 0;
         wheel.waiting = true;
         wheel.movedAt = now;
+        wheel.fadeSize = size;
+        wheel.strongInARow = 0;
         step(direction, { feedback: true });
     }
 

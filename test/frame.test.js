@@ -171,6 +171,46 @@ test("scrolling over the frame moves one view per flick", () => {
     frame.openScreen("settings", { title: "Settings" });
     scroll(100, 5000);
     assert.equal(frame.screenName(), "settings");
+
+    // a trackpad still gliding when the screen closes doesn't move a view
+    scroll(30, 5016);
+    frame.closeScreen();
+    scroll(28, 5032);
+    scroll(25, 5048);
+    assert.equal(frame.currentViewId(), "current");
+
+    // a slow mouse notch on a Mac is only 4px, but it is still one notch
+    scroll(4, 6000, { wheelDeltaY: -120 });
+    assert.equal(frame.currentViewId(), "today");
+    scroll(4, 6300, { wheelDeltaY: -120 });
+    assert.equal(frame.currentViewId(), "tomorrow");
+    scroll(-4, 6600, { wheelDeltaY: 120 });
+    assert.equal(frame.currentViewId(), "today");
+});
+
+test("a single bump in a trackpad's fading scroll doesn't skip a view", () => {
+    const { document, frame } = loadFrame(["uv", "current", "today", "tomorrow"]);
+    frame.init({});
+    document.getElementById("alertOverlay").classList.add("hidden");
+    const frameElement = document.getElementById("frame");
+    function scroll(deltaY, timeStamp) {
+        frameElement.dispatch("wheel", { deltaX: 0, deltaY, deltaMode: 0, timeStamp, preventDefault() {} });
+    }
+
+    scroll(60, 10000);
+    assert.equal(frame.currentViewId(), "today");
+    // the flick fades out...
+    [[50, 10016], [40, 10032], [30, 10048], [20, 10064], [14, 10100], [14, 10150],
+        [13, 10200], [13, 10250], [12, 10300], [12, 10350], [12, 10400]].forEach(([size, at]) => scroll(size, at));
+    // ...and two scrolls merged into one while the page was busy
+    scroll(27, 10420);
+    scroll(13, 10440);
+    assert.equal(frame.currentViewId(), "today");
+
+    // a real second flick grows over several scrolls and does move
+    scroll(25, 10460);
+    scroll(40, 10476);
+    assert.equal(frame.currentViewId(), "tomorrow");
 });
 
 test("page dots show where you are and jump straight to a view", () => {

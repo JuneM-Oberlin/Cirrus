@@ -17,7 +17,9 @@ const CirrusConfig = Object.freeze({
 
     // Scrolling over the frame moves one view per flick. stepPx is how far
     // to scroll before moving; after a move the wheel waits for quietMs of
-    // stillness, or a push newPushRatio times bigger than the last scroll.
+    // stillness, or two scrolls in a row newPushRatio times stronger than
+    // the fading one. A mouse notch (wheelDeltaY of notchDelta) that starts
+    // a scroll always counts as a whole step.
     viewWheel: {
         stepPx: 40,
         lineHeightPx: 16,
@@ -25,6 +27,7 @@ const CirrusConfig = Object.freeze({
         cooldownMs: 350,
         newPushRatio: 1.5,
         newPushMinPx: 20,
+        notchDelta: 120,
     },
 
     // The title, button labels, and wind line come in with the view.
