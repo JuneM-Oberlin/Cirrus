@@ -812,7 +812,86 @@
   white-space: nowrap;
 }
 
-/* ---------- Loading / error pills ---------- */
+/* ---------- Loading and errors: in the middle of the panel ---------- */
+
+/* the panel dims while a city loads, with bouncing dots in the middle */
+.panel-loading {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-status);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  background: var(--loading-scrim);
+  text-align: center;
+}
+
+.loader-dots {
+  display: flex;
+  gap: var(--loader-dot-gap);
+}
+
+.loader-dot {
+  width: var(--loader-dot-size);
+  height: var(--loader-dot-size);
+  background: var(--loader-dot-1);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--loader-dot-shadow);
+}
+
+.loader-dot:nth-child(2) {
+  background: var(--loader-dot-2);
+}
+
+.loader-dot:nth-child(3) {
+  background: var(--loader-dot-3);
+}
+
+.panel-loading-text {
+  max-width: 30ch;
+  font-size: var(--loading-font);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+}
+
+/* a friendly white card with one way forward */
+.panel-error {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-status);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  width: min(calc(100% - 2 * var(--space-6)), var(--error-card-width));
+  height: fit-content;
+  margin: auto;
+  padding: var(--space-6) var(--space-6) var(--space-5);
+  background: var(--error-card-face);
+  border: var(--rule) solid var(--error-card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--error-card-shadow);
+  color: var(--error-card-text);
+  text-align: center;
+  text-shadow: none;
+}
+
+.panel-error-text {
+  font-size: var(--error-font);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+}
+
+.panel-error-btn {
+  width: auto;
+  min-width: var(--error-btn-width);
+  border-color: var(--cyan-rim);
+}
+
+/* ---------- Small note pill (alerts couldn't load) ---------- */
 
 .panel-status {
   position: absolute;

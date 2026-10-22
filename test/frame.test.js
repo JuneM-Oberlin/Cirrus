@@ -349,6 +349,12 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
     assert.equal(document.getElementById("errorMsg").textContent, "City not found — check the spelling and try again.");
     assert.equal(document.getElementById("errorMsg").classList.contains("hidden"), false);
     assert.equal(document.getElementById("loading").classList.contains("hidden"), true);
+    assert.equal(document.getElementById("errorCard").classList.contains("hidden"), false, "the error card shows");
+    assert.equal(lexical(context, "lastFailure.status"), 404, "Try again knows it was a misspelling");
+
+    // typing a new spelling clears the card
+    document.getElementById("cityInput").dispatch("input");
+    assert.equal(document.getElementById("errorCard").classList.contains("hidden"), true);
 });
 
 test("views fill Current, Today, and Tomorrow and hand readouts to the frame", () => {

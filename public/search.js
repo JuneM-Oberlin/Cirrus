@@ -55,6 +55,20 @@ const CirrusSearch = (function () {
         input.focus();
     }
 
+    // After a failed search: back in the field with the old text selected,
+    // so typing replaces it.
+    function retype() {
+        if (!isOpen()) {
+            open();
+            return;
+        }
+        const input = byId("cityInput");
+        input.focus();
+        if (input.select) {
+            input.select();
+        }
+    }
+
     function close() {
         if (isOpen()) {
             deps.frame.closeScreen();
@@ -85,6 +99,7 @@ const CirrusSearch = (function () {
     return {
         init,
         open,
+        retype,
         close,
         isOpen,
         setLocation,

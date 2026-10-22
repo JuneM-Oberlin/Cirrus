@@ -178,7 +178,9 @@ async function fetchCached(path, city, cache, normalize = (d) => d) {
     }
 
     if (!response.ok) {
-        throw new Error(await readBackendError(response));
+        const error = new Error(await readBackendError(response));
+        error.status = response.status;
+        throw error;
     }
 
     const data = normalize(await response.json());
@@ -239,23 +241,41 @@ async function fetchGlobeRegion(regionId) {
 
 let coldStartTimers = [];
 
+// What the last failed load was, so "Try again" knows what to do.
+let lastFailure = null;
+
 function setLoadingText(message) {
-    set("loading", message);
+    set("loadingText", message);
     set("homeStatus", message);
 }
 
 function showError(message) {
     set("errorMsg", message);
-    show("errorMsg");
+    show("errorCard");
     const homeStatus = document.getElementById("homeStatus");
     homeStatus.textContent = message;
     homeStatus.classList.add("home-status--error");
     homeStatus.classList.remove("hidden");
 }
 
+function hideError() {
+    hide("errorCard");
+}
+
+// A misspelled town goes back to the search field; anything else retries.
+function retryAfterError() {
+    const failure = lastFailure;
+    clearStatus();
+    if (!failure || failure.status === 404 || !failure.retry) {
+        CirrusSearch.retype();
+        return;
+    }
+    failure.retry();
+}
+
 function clearStatus() {
     hide("loading");
-    hide("errorMsg");
+    hideError();
     const homeStatus = document.getElementById("homeStatus");
     homeStatus.classList.add("hidden");
     homeStatus.classList.remove("home-status--error");
@@ -296,20 +316,24 @@ function stopColdStartLoading() {
     CirrusDesktopChannels.setSearching(false);
 }
 
-// Runs a fetch task with the loading pill showing. Resolves true on success.
-async function withLoading(task, { loadingMessage = "Fetching weather" } = {}) {
+// Runs a fetch task with the panel loader showing. Resolves true on success.
+// retry is what "Try again" runs if this load fails for a reason other than
+// a city that doesn't exist.
+async function withLoading(task, { loadingMessage = "Fetching weather", retry = null } = {}) {
     clearStatus();
     startColdStartLoading(loadingMessage);
     let ok = false;
     try {
         await task();
         ok = true;
+        lastFailure = null;
     } catch (err) {
         console.log("Search error:", err);
         let message = err.message;
         if (!message) {
             message = "Could not load weather data.";
         }
+        lastFailure = { status: err.status, retry };
         showError(message);
     } finally {
         stopColdStartLoading();
@@ -409,10 +433,15 @@ function applyCity(city, weather, forecast, sixHour, { visit = false } = {}) {
     });
 }
 
+// options: { visit, retry } — retry replaces the default "load it again".
 async function loadCity(city, options = {}) {
     const trimmed = city.trim();
     if (!trimmed) {
         return false;
+    }
+    let retry = options.retry;
+    if (!retry) {
+        retry = () => loadCity(trimmed, options);
     }
     CirrusAlerts.resetForSearch();
     return withLoading(async () => {
@@ -422,12 +451,12 @@ async function loadCity(city, options = {}) {
             fetchSixHourData(trimmed),
         ]);
         applyCity(trimmed, weather, forecast, sixHour, options);
-    });
+    }, { retry });
 }
 
 // Search from the location pill or a recent-city button.
 async function searchCity(city) {
-    const ok = await loadCity(city);
+    const ok = await loadCity(city, { retry: () => searchCity(city) });
     if (ok && CirrusSearch.isOpen()) {
         CirrusSearch.close();
         CirrusFrame.showView("current");
@@ -448,7 +477,7 @@ function openGlobe(options = {}) {
 
 // Choosing a city on the globe shows its views; Back returns to the globe.
 async function visitCity(name) {
-    const ok = await loadCity(name, { visit: true });
+    const ok = await loadCity(name, { visit: true, retry: () => visitCity(name) });
     if (ok) {
         CirrusGlobe.closeForVisit();
         CirrusFrame.setVisiting(true);
@@ -567,6 +596,10 @@ CirrusDesktopChannels.init({
     onSearch: (city) => loadCity(city),
     onOpenChannel: openChannel,
 });
+
+document.getElementById("errorRetry").addEventListener("click", retryAfterError);
+// typing a new spelling clears the old error
+document.getElementById("cityInput").addEventListener("input", hideError);
 
 CirrusViews.showEmpty();
 CirrusSearch.renderRecents();

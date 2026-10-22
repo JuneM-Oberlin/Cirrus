@@ -315,6 +315,23 @@
   --status-error-face: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.04) 55%), rgba(150, 16, 40, 0.9);
   --status-shadow: 0 6px 18px rgba(0, 10, 50, 0.4);
 
+  /* ---- Loading dots and the error card ---- */
+  --loading-scrim: rgba(6, 22, 86, 0.55);
+  --loading-font: clamp(18px, 2.8vh, 24px);
+  --loader-dot-size: 18px;
+  --loader-dot-gap: 14px;
+  --loader-dot-1: var(--temp-high);
+  --loader-dot-2: #ffffff;
+  --loader-dot-3: var(--temp-low);
+  --loader-dot-shadow: 0 4px 8px rgba(0, 10, 50, 0.45), inset 0 -3px 3px rgba(0, 30, 80, 0.2);
+  --error-card-width: 520px;
+  --error-card-face: linear-gradient(180deg, #ffffff 0%, #f1f5f8 60%, #e1e8ee 100%);
+  --error-card-border: rgba(255, 255, 255, 0.9);
+  --error-card-shadow: 0 10px 28px rgba(0, 10, 50, 0.5), inset 0 -3px 4px rgba(110, 125, 140, 0.25);
+  --error-card-text: #2f3337;
+  --error-font: clamp(17px, 2.4vh, 21px);
+  --error-btn-width: 180px;
+
   /* ---- Silver buttons inside the panel (recent cities, choices) ---- */
   --chip-face: var(--frame-btn-face);
   --chip-border: rgba(255, 255, 255, 0.85);
@@ -516,6 +533,8 @@
     --credit-font: 11px;
     --chip-height: 48px;
     --chip-font: 16px;
+    --loader-dot-size: 14px;
+    --loader-dot-gap: 11px;
     --fiveday-gap: 5px;
     --fiveday-head-font: 15px;
     --fiveday-icon-size: clamp(48px, 8vh, 64px);

@@ -6,9 +6,9 @@
   <title>Cirrus</title>
   <meta name="description" content="A console-inspired weather channel: current conditions, today, tomorrow, and a 5-day forecast for any city.">
   <link rel="icon" href="icons/clear-day.png">
-  <link rel="stylesheet" href="theme.css?v=20261022c">
+  <link rel="stylesheet" href="theme.css?v=20261022ab">
   <link rel="stylesheet" href="base.css?v=20261022a">
-  <link rel="stylesheet" href="frame.css?v=20261022c">
+  <link rel="stylesheet" href="frame.css?v=20261022ab">
   <link rel="stylesheet" href="channels.css?v=20261022a">
   <link rel="stylesheet" href="alerts.css?v=20261022a">
   <link rel="stylesheet" href="globe.css?v=20261022a">
@@ -360,8 +360,14 @@
         </div>
       </section>
 
-      <p id="loading" class="panel-status hidden" role="status" aria-live="polite">Fetching weather</p>
-      <p id="errorMsg" class="panel-status panel-status--error hidden" role="alert"></p>
+      <div class="panel-loading hidden" id="loading" role="status" aria-live="polite">
+        <span class="loader-dots" aria-hidden="true"><span class="loader-dot"></span><span class="loader-dot"></span><span class="loader-dot"></span></span>
+        <p class="panel-loading-text" id="loadingText">Fetching weather</p>
+      </div>
+      <div class="panel-error hidden" id="errorCard" role="alert">
+        <p class="panel-error-text" id="errorMsg"></p>
+        <button type="button" class="chip-btn panel-error-btn" id="errorRetry">Try again</button>
+      </div>
       <p id="alertFetchMsg" class="panel-status panel-status--note hidden" role="status" aria-live="polite"></p>
 
       <footer class="panel-footer">
@@ -409,10 +415,10 @@
   <script src="atmosphere.js?v=20260706"></script>
   <script src="frame.js?v=20261022a"></script>
   <script src="views.js?v=20261022a"></script>
-  <script src="search.js?v=20261022a"></script>
+  <script src="search.js?v=20261022ab"></script>
   <script src="settings.js?v=20261022a"></script>
   <script src="globe.js?v=20261022a"></script>
   <script src="channels.js?v=20261022a"></script>
-  <script src="script.js?v=20261022a"></script>
+  <script src="script.js?v=20261022ab"></script>
 </body>
 </html>
