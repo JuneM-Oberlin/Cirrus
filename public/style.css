@@ -3,7 +3,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'M PLUS Rounded 1c', Helvetica, Arial, sans-serif;
+  font-family: var(--font-ui);
 }
 
 @font-face {
@@ -19,56 +19,8 @@ html, body {
   height: 100%;
 }
 
-:root {
-  --header-height: 52px;
-  --focus-ring-night: rgba(140, 200, 255, 0.9);
-  --focus-ring-day: rgba(255, 255, 255, 0.95);
-  --sky-night: linear-gradient(to bottom,
-      #2258cc 0%,
-      #1640a8 20%,
-      #0e2578 45%,
-      #050f48 75%,
-      #010820 100%);
-  --sky-day: linear-gradient(to bottom,
-      rgba(31, 111, 208, 0.88) 0%,
-      rgba(58, 146, 228, 0.82) 30%,
-      rgba(90, 177, 240, 0.76) 62%,
-      rgba(156, 212, 250, 0.68) 85%,
-      rgba(191, 230, 255, 0.62) 100%);
-  --sky-day-opacity: 0.92;
-  --sky-base-night: #010820;
-  --sky-base-day: #3a92e4;
-  --panel-tint-night: rgba(10, 20, 80, 0.43);
-  --panel-tint-day: rgba(20, 50, 120, 0.28);
-  --focus-ring: var(--focus-ring-night);
-  --sky-base: var(--sky-base-night);
-  --panel-tint: var(--panel-tint-night);
-  --footer-accent-start: #8a1a3a;
-  --footer-accent-end: #5a0a22;
-  --footer-accent-background:
-    linear-gradient(180deg,
-      rgba(255, 255, 255, 0.16) 0%,
-      rgba(255, 255, 255, 0) 50%),
-    linear-gradient(to right, var(--footer-accent-start), var(--footer-accent-end));
-  --wii-pill-rest-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -2px 3px rgba(54, 195, 242, 0.25),
-    0 0 0 1px rgba(54, 195, 242, 0.35),
-    0 3px 9px rgba(0, 0, 0, 0.32);
-  --alert-tri: #ff6b60;
-  --alert-sub: #ffb3ad;
-  --alert-seg-accent: #9ddcff;
-  --alert-chrome: rgba(0, 0, 0, 0.52);
-}
-
-body.theme-day {
-  --focus-ring: var(--focus-ring-day);
-  --sky-base: var(--sky-base-day);
-  --panel-tint: var(--panel-tint-day);
-}
-
 body {
-  font-family:'M PLUS Rounded 1c', Helvetica, Arial, sans-serif;
+  font-family: var(--font-ui);
   min-height: 100dvh;
   background-color: var(--sky-base);
   transition: background-color 1.2s ease;

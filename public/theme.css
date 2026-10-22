@@ -1,0 +1,79 @@
+/* CIRRUS THEME
+   Every design value lives here as a CSS custom property: colors,
+   gradients, shadows, radii, spacing, type, and durations.
+   Component stylesheets only reference these tokens. */
+
+:root {
+  /* ---- Type ---- */
+  /* M PLUS Rounded 1c: free rounded gothic, the closest free match to the
+     rounded console system face the references use. */
+  --font-ui: 'M PLUS Rounded 1c', Helvetica, Arial, sans-serif;
+  --font-digital: "DSEG7 Classic", 'M PLUS Rounded 1c', sans-serif;
+
+  /* ---- Layout ---- */
+  --header-height: 52px;
+
+  /* ---- Sky + panel tints (day / night) ---- */
+  --focus-ring-night: rgba(140, 200, 255, 0.9);
+  --focus-ring-day: rgba(255, 255, 255, 0.95);
+  --sky-night: linear-gradient(to bottom,
+      #2258cc 0%,
+      #1640a8 20%,
+      #0e2578 45%,
+      #050f48 75%,
+      #010820 100%);
+  --sky-day: linear-gradient(to bottom,
+      rgba(31, 111, 208, 0.88) 0%,
+      rgba(58, 146, 228, 0.82) 30%,
+      rgba(90, 177, 240, 0.76) 62%,
+      rgba(156, 212, 250, 0.68) 85%,
+      rgba(191, 230, 255, 0.62) 100%);
+  --sky-day-opacity: 0.92;
+  --sky-base-night: #010820;
+  --sky-base-day: #3a92e4;
+  --panel-tint-night: rgba(10, 20, 80, 0.43);
+  --panel-tint-day: rgba(20, 50, 120, 0.28);
+  --focus-ring: var(--focus-ring-night);
+  --sky-base: var(--sky-base-night);
+  --panel-tint: var(--panel-tint-night);
+
+  /* ---- Maroon accent ---- */
+  --footer-accent-start: #8a1a3a;
+  --footer-accent-end: #5a0a22;
+  --footer-accent-background:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0) 50%),
+    linear-gradient(to right, var(--footer-accent-start), var(--footer-accent-end));
+
+  /* ---- Cyan pill controls ---- */
+  --wii-pill-rest-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+    0 0 0 1px rgba(54, 195, 242, 0.35),
+    0 3px 9px rgba(0, 0, 0, 0.32);
+  --wii-searching-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2px 3px rgba(54, 195, 242, 0.25),
+    0 0 0 1.5px rgba(52, 190, 237, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.28),
+    0 0 10px 2px rgba(52, 190, 237, 0.42),
+    0 0 18px 4px rgba(52, 190, 237, 0.26);
+
+  /* ---- Alerts ---- */
+  --alert-tri: #ff6b60;
+  --alert-sub: #ffb3ad;
+  --alert-seg-accent: #9ddcff;
+  --alert-chrome: rgba(0, 0, 0, 0.52);
+
+  /* ---- Motion ---- */
+  --nintendo-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --nintendo-soft: cubic-bezier(0.32, 0.72, 0, 1);
+  --nintendo-press: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+body.theme-day {
+  --focus-ring: var(--focus-ring-day);
+  --sky-base: var(--sky-base-day);
+  --panel-tint: var(--panel-tint-day);
+}
