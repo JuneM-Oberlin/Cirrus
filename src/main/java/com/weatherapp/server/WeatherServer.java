@@ -3,10 +3,12 @@ package com.weatherapp.server;
 import com.google.gson.Gson;
 import com.weatherapp.error.CityNotFoundException;
 import com.weatherapp.error.RateLimitExceededException;
+import com.weatherapp.model.UvIndex;
 import com.weatherapp.model.WeatherAlert;
 import com.weatherapp.service.AlertService;
 import com.weatherapp.service.NwsAlertClient;
 import com.weatherapp.service.OpenWeatherClient;
+import com.weatherapp.service.UvService;
 import com.weatherapp.service.WeatherService;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -47,7 +49,9 @@ public class WeatherServer {
         enableCors(CorsConfig.fromEnvironment());
 
         RateLimiter rateLimiter = new RateLimiter(Clock.systemUTC());
-        WeatherService service = new WeatherService(new OpenWeatherClient());
+        OpenWeatherClient openWeatherClient = new OpenWeatherClient();
+        WeatherService service = new WeatherService(openWeatherClient);
+        UvService uvService = new UvService(openWeatherClient);
         AlertService alertService = new AlertService(new NwsAlertClient());
         Gson gson = new Gson();
 
@@ -86,6 +90,8 @@ public class WeatherServer {
         });
 
         get("/alerts", (req, res) -> handleAlertsRoute(req, res, gson, rateLimiter, alertService));
+
+        get("/uv", (req, res) -> handleUvRoute(req, res, gson, rateLimiter, uvService));
 
         // Videos need Range support (iOS Safari refuses to play without it),
         // which Spark's static file handler doesn't provide.
@@ -185,6 +191,45 @@ public class WeatherServer {
             payload.put("alerts", List.of());
         }
         return gson.toJson(payload);
+    }
+
+    static Object handleUvRoute(
+            Request req,
+            Response res,
+            Gson gson,
+            RateLimiter rateLimiter,
+            UvService uvService) {
+
+        res.type("application/json");
+        String latStr = req.queryParams("lat");
+        String lonStr = req.queryParams("lon");
+        if (latStr == null || latStr.isBlank() || lonStr == null || lonStr.isBlank()) {
+            return badRequest(res, gson, "lat and lon parameters are required.");
+        }
+        double lat;
+        double lon;
+        try {
+            lat = Double.parseDouble(latStr);
+            lon = Double.parseDouble(lonStr);
+        } catch (NumberFormatException e) {
+            return badRequest(res, gson, "lat and lon must be numbers.");
+        }
+        if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+            return badRequest(res, gson, "lat and lon must be valid coordinates.");
+        }
+
+        try {
+            UvIndex uv = uvService.getUv(lat, lon,
+                    rateLimitCheck(rateLimiter, ClientIpResolver.resolve(req)));
+            return gson.toJson(uv);
+        } catch (RateLimitExceededException e) {
+            res.status(429);
+            return gson.toJson(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("UV route error: " + e.getMessage());
+            res.status(503);
+            return gson.toJson(new ErrorResponse("Could not load UV index."));
+        }
     }
 
     static void enableCors(CorsConfig corsConfig) {

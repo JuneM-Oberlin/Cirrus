@@ -74,6 +74,35 @@ public class OpenWeatherClient {
         return fetchJson(url, city, "Forecast API");
     }
 
+    /**
+     * Today's UV index for a point. This is OpenWeather's older UV endpoint:
+     * it still answers on the free plan but is deprecated, so callers must
+     * treat a failure as "UV unavailable" rather than an error page.
+     */
+    public String getUvJSON(double lat, double lon) {
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("https")
+                .host("api.openweathermap.org")
+                .addPathSegments("data/2.5/uvi")
+                .addQueryParameter("lat", String.format("%.4f", lat))
+                .addQueryParameter("lon", String.format("%.4f", lon))
+                .addQueryParameter("appid", apiKey)
+                .build();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        try (Response response = HTTP_CLIENT.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new RuntimeException("UV API error: " + response.code());
+            }
+            return readResponseBody(response, "UV API");
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to fetch UV data.", e);
+        }
+    }
+
     private String fetchJson(HttpUrl url, String city, String context) {
         Request request = new Request.Builder()
                 .url(url)
