@@ -60,11 +60,36 @@
     0 0 10px 2px rgba(52, 190, 237, 0.42),
     0 0 18px 4px rgba(52, 190, 237, 0.26);
 
-  /* ---- Alerts ---- */
-  --alert-tri: #ff6b60;
-  --alert-sub: #ffb3ad;
-  --alert-seg-accent: #9ddcff;
-  --alert-chrome: rgba(0, 0, 0, 0.52);
+  /* ---- Alerts: red for warnings, orange for watches and advisories ---- */
+  --alert-text: #ffffff;
+  --alert-warning-face: linear-gradient(180deg, #ec5045 0%, #bb1a10 42%, #8e0e07 100%);
+  --alert-warning-strip: linear-gradient(180deg, #a5150c 0%, #6c0a05 100%);
+  --alert-warning-edge: #4f0703;
+  --alert-watch-face: linear-gradient(180deg, #f6a43a 0%, #c46100 42%, #9c4a00 100%);
+  --alert-watch-strip: linear-gradient(180deg, #a35000 0%, #6d3500 100%);
+  --alert-watch-edge: #4e2600;
+  --alert-bar-font: 17px;
+  --alert-icon-size: 22px;
+  --alert-more-border: rgba(255, 255, 255, 0.85);
+  --alert-list-width: 720px;
+  --alert-detail-width: 820px;
+  --alert-tile-height: 72px;
+  --alert-meta-text: #ffe0dc;
+  --alert-instruction-bg: rgba(6, 18, 70, 0.6);
+  --alert-instruction-border: rgba(255, 170, 160, 0.55);
+  --alert-instruction-accent: #e0584f;
+  --alert-instruction-accent-width: 5px;
+  --sev-warning-bg: #e0584f;
+  --sev-warning-text: #3a0c0a;
+  --sev-watch-bg: #ef9f27;
+  --sev-watch-text: #4a2a02;
+  --sev-advisory-bg: #e0b000;
+  --sev-advisory-text: #463600;
+  --sev-statement-bg: #36c3f2;
+  --sev-statement-text: #0c3247;
+  --sev-unknown-bg: #c8d2dc;
+  --sev-unknown-text: #2a3844;
+  --badge-shadow: 0 3px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 
   /* ---- Motion ---- */
   --nintendo-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -322,6 +347,9 @@
     --uv-category-font: 26px;
     --uv-band-font: 11px;
     --uv-advice-font: 16px;
+    --alert-bar-font: 14px;
+    --alert-icon-size: 18px;
+    --alert-tile-height: 64px;
     --sixhour-icon-size: clamp(60px, 10vh, 84px);
     --sixhour-time-font: 14px;
     --sixhour-temp-font: 18px;

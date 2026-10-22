@@ -56,15 +56,12 @@ test("atmosphere preserves every weather-code boundary and controls effect lifec
     assert.equal(layer.classList.contains("is-hidden"), true);
 });
 
-test("alerts encode request coordinates, render trusted icons, trap focus, and close", async () => {
+test("alerts encode coordinates, show the colored bar, open the alert screen, and step back", async () => {
     const document = documentStub();
-    const overlay = document.getElementById("alertOverlay");
-    overlay.classList.add("hidden");
-    overlay.hidden = true;
-    const detail = document.getElementById("alertDetail");
-    detail.classList.add("hidden");
-    detail.hidden = true;
-    document.getElementById("alertBadge").classList.add("hidden");
+    document.getElementById("alertDetail").classList.add("hidden");
+    document.getElementById("alertBadge").hidden = true;
+    const firstTile = { focused: 0 };
+    document.getElementById("alertList").querySelector = () => ({ focus() { firstTile.focused += 1; } });
 
     const urls = [];
     const alert = {
@@ -79,54 +76,78 @@ test("alerts encode request coordinates, render trusted icons, trap focus, and c
         instruction: "Move to an interior room.",
         autoPop: true,
     };
+    let screen = null;
+    const frame = {
+        screenName: () => (screen ? screen.name : null),
+        openScreen: (name, options) => { screen = { name, ...options }; },
+        closeScreen: () => {
+            const closing = screen;
+            screen = null;
+            if (closing && closing.onClose) {
+                closing.onClose();
+            }
+        },
+    };
     const context = runClassicScript("public/alerts.js", {
         document,
         fetch: async (url) => {
             urls.push(url);
-            return { ok: true, json: async () => ({ alerts: [alert] }) };
+            return { ok: true, json: async () => ({ alerts: [alert, { ...alert, id: "a2", event: "Flood Watch", tier: "watch", autoPop: false }] }) };
         },
     });
     const alerts = lexical(context, "CirrusAlerts");
     alerts.init({
         backendUrl: "https://cirrus-project1.duckdns.org",
+        frame,
         show: (id) => document.getElementById(id).classList.remove("hidden"),
         hide: (id) => document.getElementById(id).classList.add("hidden"),
         set: (id, value) => { document.getElementById(id).textContent = value; },
         getTimezoneOffset: () => 0,
-        formatCityTime: () => "10:00 PM",
-        prefersReducedMotion: () => true,
-        onAlertsChanged: () => {},
+        formatCityTime: () => "10:00 p.m.",
         allowAutoPop: () => true,
     });
 
     await alerts.checkAlerts({ lat: "1&admin=true", lon: "2 3" });
-    assert.equal(
-        urls[0],
-        "https://cirrus-project1.duckdns.org/alerts?lat=1%26admin%3Dtrue&lon=2%203"
-    );
-    assert.equal(overlay.classList.contains("hidden"), false);
+    assert.equal(urls[0], "https://cirrus-project1.duckdns.org/alerts?lat=1%26admin%3Dtrue&lon=2%203");
     assert.equal(alerts.getStormLightningRank(), "severe");
 
-    const strip = document.getElementById("alertStrip");
-    assert.equal(strip.children.length, 4);
-    strip.children.forEach((segment) => {
-        assert.match(segment.children[0].innerHTML, /^<svg class="alert-seg-ic"/);
-    });
+    // a severe alert opened the screen by itself, with a red header
+    assert.equal(screen.name, "alert");
+    assert.equal(screen.title, "Weather Alert");
+    assert.equal(document.getElementById("frameHeader").classList.contains("frame-header--warning"), true);
+    assert.equal(document.getElementById("alertListHeading").textContent, "2 active alerts");
+    assert.equal(document.getElementById("alertBadge").hidden, false);
+    assert.equal(document.getElementById("alertBadge").className, "home-badge home-badge--warning");
 
-    const channels = document.getElementById("alertChannels");
-    channels.children[0].dispatch("click");
-    assert.equal(detail.hidden, false);
-    assert.equal(document.getElementById("alertDetailBody").children[0].textContent, "Tornado Warning");
+    const tiles = document.getElementById("alertList").children.map((item) => item.children[0]);
+    assert.equal(tiles.length, 2);
+    tiles[0].dispatch("click");
+    assert.equal(document.getElementById("alertDetail").classList.contains("hidden"), false);
+    assert.equal(document.getElementById("alertDetail").children[0].textContent, "Tornado Warning");
+    assert.equal(document.getElementById("alertListWrap").classList.contains("hidden"), true);
 
-    const close = document.getElementById("alertClose");
-    const back = document.getElementById("alertBack");
-    overlay.querySelectorAll = () => [close, back];
-    back.focus();
-    document.dispatch("keydown", { key: "Tab", shiftKey: false, preventDefault() {} });
-    assert.equal(document.activeElement, close);
+    // Back from the detail returns to the list instead of closing
+    assert.equal(screen.onBack(), true);
+    assert.equal(document.getElementById("alertDetail").classList.contains("hidden"), true);
+    assert.equal(screen.onBack(), false);
 
-    close.dispatch("click");
-    assert.equal(overlay.hidden, true);
+    // closing dismisses auto-open for this search and brings back the bar
+    frame.closeScreen();
+    assert.equal(document.getElementById("frameHeader").classList.contains("frame-header--warning"), false);
+    const bar = document.getElementById("frameAlertSlot").children[0];
+    assert.equal(bar.className, "alert-bar alert-bar--warning");
+    assert.equal(bar.children[1].textContent, "Tornado Warning · until 10:00 p.m.");
+    assert.equal(bar.children[2].textContent, "+1 more");
+    alerts.sync();
+    assert.equal(screen, null, "a dismissed alert does not reopen by itself");
+
+    bar.dispatch("click");
+    assert.equal(screen.name, "alert");
+
+    alerts.resetForSearch();
+    assert.equal(screen, null);
+    assert.equal(document.getElementById("frameAlertSlot").children.length, 0);
+    assert.equal(document.getElementById("alertBadge").hidden, true);
 });
 
 test("lightning and rain controllers honor active, stopped, and reduced-motion states", async () => {

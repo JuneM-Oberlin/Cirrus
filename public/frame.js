@@ -254,7 +254,8 @@ const CirrusFrame = (function () {
         return byId("screen" + name.charAt(0).toUpperCase() + name.slice(1));
     }
 
-    // options: { title, readout, onClose }
+    // options: { title, readout, onClose, onBack }
+    // onBack may return true to handle Back itself (e.g. detail -> list).
     function openScreen(name, options = {}) {
         if (state.screen && state.screen.name !== name) {
             closeScreen();
@@ -270,6 +271,7 @@ const CirrusFrame = (function () {
             title: options.title || "",
             readout: options.readout || null,
             onClose: options.onClose || null,
+            onBack: options.onBack || null,
         };
         byId("frame").dataset.screen = name;
         if (element && element.classList.contains("screen--clear")) {
@@ -322,6 +324,9 @@ const CirrusFrame = (function () {
 
     function back() {
         if (state.screen) {
+            if (state.screen.onBack && state.screen.onBack()) {
+                return;
+            }
             closeScreen();
             return;
         }

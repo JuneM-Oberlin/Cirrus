@@ -138,6 +138,11 @@
   animation: nintendoPop 0.55s var(--nintendo-spring) both;
 }
 
+/* the alert bar slides down out of the header when alerts arrive */
+.alert-bar {
+  animation: alertBarDown var(--dur-medium) var(--nintendo-soft) both;
+}
+
 /* ---------- Desktop Home menu ---------- */
 
 @media (min-width: 768px) {
@@ -239,6 +244,7 @@
   }
 
   .hero-icon,
+  .alert-bar,
   .temp--freezing,
   .temp--hot,
   .frame-btn:active,

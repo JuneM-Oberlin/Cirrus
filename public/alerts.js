@@ -1,5 +1,9 @@
+/* NWS severe weather alerts, shown the frame's way: a red (warning) or
+   orange (watch / advisory) bar under the header, and an Alert screen
+   whose header takes the same color. Severe alerts open the screen
+   automatically once per search. */
+
 const CirrusAlerts = (function () {
-    const CLOSE_FALLBACK_MS = 600;
     const ALERT_KNOWN_TIERS = new Set(["warning", "watch", "advisory", "statement"]);
     const ALERT_TIER_LABELS = {
         warning: "Warning",
@@ -8,48 +12,37 @@ const CirrusAlerts = (function () {
         statement: "Statement",
         unknown: "Alert",
     };
+    const SVG_NS = "http://www.w3.org/2000/svg";
 
-    const ALERT_SEG_ICONS = {
-        pin: '<svg class="alert-seg-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>',
-        alert: '<svg class="alert-seg-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3 22 20 2 20Z"/><rect x="11" y="9" width="2" height="6" rx="1" fill="#0c3247"/><rect x="11" y="16" width="2" height="2" rx="1" fill="#0c3247"/></svg>',
-        clock: '<svg class="alert-seg-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-        source: '<svg class="alert-seg-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M7.5 7.5a6.5 6.5 0 0 0 0 9M16.5 7.5a6.5 6.5 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+    let deps = {
+        backendUrl: "",
+        frame: null,
+        show: () => {},
+        hide: () => {},
+        set: () => {},
+        getTimezoneOffset: () => 0,
+        formatCityTime: () => "--",
+        onAlertsChanged: () => {},
+        allowAutoPop: () => true,
+        onBadgeOpen: () => {},
     };
-
-    let backendUrl = "";
-    let showEl = () => {};
-    let hideEl = () => {};
-    let setEl = () => {};
-    let getTimezoneOffset = () => 0;
-    let formatCityTime = () => "--";
-    let prefersReducedMotion = () => false;
-    let onAlertsChanged = () => {};
-    let allowAutoPop = () => true;
-
-    let closeFallbackTimer = null;
-    let closeAnimationListener = null;
-    let closeAnimationOverlay = null;
 
     const session = {
         generation: 0,
         alerts: [],
         autoPopDismissed: false,
-        detailId: null,
-        closing: false,
-        lastFocused: null,
     };
 
-    function init(deps) {
-        backendUrl = deps.backendUrl;
-        showEl = deps.show;
-        hideEl = deps.hide;
-        setEl = deps.set;
-        getTimezoneOffset = deps.getTimezoneOffset;
-        formatCityTime = deps.formatCityTime;
-        prefersReducedMotion = deps.prefersReducedMotion;
-        onAlertsChanged = deps.onAlertsChanged;
-        allowAutoPop = deps.allowAutoPop ?? (() => true);
-        wireControls();
+    function byId(id) {
+        return document.getElementById(id);
+    }
+
+    function init(dependencies) {
+        deps = Object.assign(deps, dependencies);
+        const badge = byId("alertBadge");
+        if (badge) {
+            badge.addEventListener("click", () => deps.onBadgeOpen());
+        }
     }
 
     function isStormThreatAlert(alert) {
@@ -70,9 +63,10 @@ const CirrusAlerts = (function () {
                 return;
             }
             const event = alert.event.toLowerCase();
-            const intensity = event.includes("tornado") || alert.tier === "warning"
-                ? "severe"
-                : "heavy";
+            let intensity = "heavy";
+            if (event.includes("tornado") || alert.tier === "warning") {
+                intensity = "severe";
+            }
             if (rank[intensity] > best) {
                 best = rank[intensity];
             }
@@ -86,28 +80,58 @@ const CirrusAlerts = (function () {
         return "none";
     }
 
-    function resetForSearch() {
-        session.generation += 1;
-        hideAlertFetchError();
-        session.autoPopDismissed = false;
-        session.alerts = [];
-        updateAlertBadge();
-        closeAlertOverlaySilently();
+    function normalizeAlertTier(tier) {
+        if (ALERT_KNOWN_TIERS.has(tier)) {
+            return tier;
+        }
+        return "unknown";
     }
+
+    function alertTierLabel(tier) {
+        return ALERT_TIER_LABELS[tier] || "Alert";
+    }
+
+    // Warnings paint the chrome red; everything else paints it orange.
+    function colorFor(alerts) {
+        if (alerts.some((alert) => alert.tier === "warning")) {
+            return "warning";
+        }
+        return "watch";
+    }
+
+    function alertUntilText(alert) {
+        let epoch = alert.expires;
+        if (alert.ends > 0) {
+            epoch = alert.ends;
+        }
+        if (!epoch) {
+            return "";
+        }
+        return "Until " + deps.formatCityTime(epoch, deps.getTimezoneOffset());
+    }
+
+    function isScreenOpen() {
+        return deps.frame && deps.frame.screenName() === "alert";
+    }
+
+    /* ---------- Fetching ---------- */
 
     async function fetchAlertSnapshot(lat, lon) {
         if (lat == null || lon == null) {
             return { alerts: [], error: false };
         }
         try {
-            const url = `${backendUrl}/alerts?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+            const url = `${deps.backendUrl}/alerts?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
             // fallow-ignore-next-line security-sink -- backendUrl is same-origin or pinned HTTPS, and both coordinates are percent-encoded.
             const response = await fetch(url);
             const data = await response.json();
             if (!response.ok || data.error) {
                 return { alerts: [], error: true };
             }
-            const alerts = Array.isArray(data.alerts) ? data.alerts : [];
+            let alerts = [];
+            if (Array.isArray(data.alerts)) {
+                alerts = data.alerts;
+            }
             return { alerts, error: false };
         } catch (e) {
             console.log("Alerts fetch failed:", e);
@@ -115,37 +139,48 @@ const CirrusAlerts = (function () {
         }
     }
 
-    function applyAlertSnapshot(snapshot) {
-        session.alerts = snapshot.error ? [] : snapshot.alerts;
-        updateAlertBadge();
-        onAlertsChanged();
-
-        if (snapshot.error) {
-            showAlertFetchError("Could not load weather alerts. Badge counts may be unavailable.");
-            closeAlertOverlaySilently();
-            return;
+    function resetForSearch() {
+        session.generation += 1;
+        session.autoPopDismissed = false;
+        session.alerts = [];
+        deps.hide("alertFetchMsg");
+        if (isScreenOpen()) {
+            deps.frame.closeScreen();
         }
+        renderBar();
+        updateBadge();
+    }
 
-        hideAlertFetchError();
-
-        if (!snapshot.alerts.length) {
-            closeAlertOverlaySilently();
+    function applyAlertSnapshot(snapshot) {
+        if (snapshot.error) {
+            session.alerts = [];
+            deps.set("alertFetchMsg", "Could not load weather alerts right now.");
+            deps.show("alertFetchMsg");
+        } else {
+            session.alerts = snapshot.alerts;
+            deps.hide("alertFetchMsg");
+        }
+        renderBar();
+        updateBadge();
+        deps.onAlertsChanged();
+        if (isScreenOpen()) {
+            if (session.alerts.length) {
+                renderList();
+            } else {
+                deps.frame.closeScreen();
+            }
         }
     }
 
-    function syncAlertOverlay() {
-        if (!session.alerts.length) {
-            return;
-        }
-        if (isAlertOverlayOpen()) {
-            refreshAlertOverlayContent();
+    function sync() {
+        if (!session.alerts.length || isScreenOpen()) {
             return;
         }
         const shouldAutoPop = session.alerts.some((alert) => alert.autoPop)
             && !session.autoPopDismissed
-            && allowAutoPop();
+            && deps.allowAutoPop();
         if (shouldAutoPop) {
-            openAlertOverlay();
+            open();
         }
     }
 
@@ -156,487 +191,229 @@ const CirrusAlerts = (function () {
             return;
         }
         applyAlertSnapshot(snapshot);
-        syncAlertOverlay();
+        sync();
     }
 
-    function showAlertFetchError(message) {
-        setEl("alertFetchMsg", message);
-        showEl("alertFetchMsg");
+    /* ---------- Bar under the header + Home badge ---------- */
+
+    function triangleIcon() {
+        const svg = document.createElementNS(SVG_NS, "svg");
+        svg.setAttribute("class", "alert-icon");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("aria-hidden", "true");
+        const path = document.createElementNS(SVG_NS, "path");
+        path.setAttribute("d", "M12 3 22 20H2Z");
+        svg.appendChild(path);
+        return svg;
     }
 
-    function hideAlertFetchError() {
-        hideEl("alertFetchMsg");
-    }
-
-    function isAlertOverlayOpen() {
-        const overlay = document.getElementById("alertOverlay");
-        return overlay && !overlay.classList.contains("hidden") && !overlay.hidden;
-    }
-
-    function refreshAlertOverlayContent() {
-        if (!isAlertOverlayOpen() || !session.alerts.length) {
+    function renderBar() {
+        const slot = byId("frameAlertSlot");
+        if (!slot) {
             return;
         }
-        const preservedId = session.detailId;
-        renderAlertChannels();
-        renderAlertStrip();
-        updateAlertMenuHeader();
-        if (preservedId) {
-            const still = session.alerts.find((alert) => alert.id === preservedId);
-            if (still) {
-                showAlertDetail(still, { focus: false });
-                return;
-            }
-        }
-        hideAlertDetail();
-    }
-
-    function normalizeAlertTier(tier) {
-        return ALERT_KNOWN_TIERS.has(tier) ? tier : "unknown";
-    }
-
-    function alertTierLabel(tier) {
-        return ALERT_TIER_LABELS[tier] || "Alert";
-    }
-
-    function alertShortEvent(event) {
-        if (typeof event !== "string") {
-            return "Alert";
-        }
-        return event.replace(/\s+(Warning|Watch|Advisory|Statement)$/i, "").trim() || event;
-    }
-
-    function alertUntilText(alert) {
-        const epoch = alert.ends > 0 ? alert.ends : alert.expires;
-        if (!epoch) {
-            return "";
-        }
-        return "Until " + formatCityTime(epoch, getTimezoneOffset());
-    }
-
-    function renderAlertChannels() {
-        const wrap = document.getElementById("alertChannels");
-        if (!wrap) {
+        slot.replaceChildren();
+        if (!session.alerts.length || isScreenOpen()) {
             return;
         }
-        wrap.replaceChildren();
+        const first = session.alerts[0];
+        const bar = document.createElement("button");
+        bar.type = "button";
+        bar.className = "alert-bar alert-bar--" + colorFor(session.alerts);
+
+        const text = document.createElement("span");
+        text.className = "alert-bar-text";
+        let summary = first.event || "Weather alert";
+        const until = alertUntilText(first);
+        if (until) {
+            summary += " · " + until.charAt(0).toLowerCase() + until.slice(1);
+        }
+        text.textContent = summary;
+
+        const more = document.createElement("span");
+        more.className = "alert-bar-more";
+        if (session.alerts.length > 1) {
+            more.textContent = "+" + (session.alerts.length - 1) + " more";
+        } else {
+            more.textContent = "Details";
+        }
+
+        bar.append(triangleIcon(), text, more);
+        let countText = session.alerts.length + " active weather alert";
+        if (session.alerts.length !== 1) {
+            countText += "s";
+        }
+        bar.setAttribute("aria-label", countText + ": " + summary + ". Open alerts");
+        bar.addEventListener("click", open);
+        slot.appendChild(bar);
+    }
+
+    function updateBadge() {
+        const badge = byId("alertBadge");
+        if (!badge) {
+            return;
+        }
+        if (session.alerts.length > 0) {
+            byId("alertBadgeCount").textContent = String(session.alerts.length);
+            badge.className = "home-badge home-badge--" + colorFor(session.alerts);
+            badge.hidden = false;
+        } else {
+            badge.className = "home-badge hidden";
+            badge.hidden = true;
+        }
+    }
+
+    /* ---------- Alert screen ---------- */
+
+    function sevBadge(tier) {
+        const sev = document.createElement("span");
+        sev.className = "alert-sev alert-sev--" + tier;
+        sev.textContent = alertTierLabel(tier);
+        return sev;
+    }
+
+    function renderList() {
+        const list = byId("alertList");
+        list.replaceChildren();
+        const count = session.alerts.length;
+        let heading = count + " active alert";
+        if (count !== 1) {
+            heading += "s";
+        }
+        byId("alertListHeading").textContent = heading;
 
         session.alerts.forEach((alert) => {
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "pill alert-channel";
-
             const tier = normalizeAlertTier(alert.tier);
-            const sev = document.createElement("span");
-            sev.className = `alert-sev alert-sev--${tier}`;
-            sev.textContent = alertTierLabel(tier);
+            const item = document.createElement("li");
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "chip-btn alert-tile";
 
             const event = document.createElement("span");
-            event.className = "alert-ch-event";
-            event.textContent = alertShortEvent(alert.event);
-
-            btn.appendChild(sev);
-            btn.appendChild(event);
+            event.className = "alert-tile-event";
+            event.textContent = alert.event || "Weather alert";
+            button.append(sevBadge(tier), event);
 
             const until = alertUntilText(alert);
             if (until) {
                 const untilEl = document.createElement("span");
-                untilEl.className = "alert-ch-until";
+                untilEl.className = "alert-tile-until";
                 untilEl.textContent = until;
-                btn.appendChild(untilEl);
+                button.appendChild(untilEl);
             }
-
-            btn.setAttribute("aria-label", `${alertTierLabel(tier)}: ${alert.event}`);
-            btn.addEventListener("click", () => showAlertDetail(alert));
-            wrap.appendChild(btn);
+            button.setAttribute("aria-label", alertTierLabel(tier) + ": " + (alert.event || "Weather alert") + ". " + until);
+            button.addEventListener("click", () => showDetail(alert));
+            item.appendChild(button);
+            list.appendChild(item);
         });
     }
 
-    function setAlertCenterDetailMode(active) {
-        const center = document.getElementById("alertCenter");
-        center?.classList.toggle("alert-center--detail", active);
-    }
-
-    function showAlertDetail(alert, { focus = true } = {}) {
-        const body = document.getElementById("alertDetailBody");
-        const channels = document.getElementById("alertChannels");
-        const detail = document.getElementById("alertDetail");
-        const back = document.getElementById("alertBack");
-        if (!body || !channels || !detail) {
-            return;
-        }
-
-        session.detailId = alert.id;
-        body.replaceChildren();
-
-        const title = document.createElement("div");
-        title.className = "alert-detail-event";
-        title.textContent = alert.event;
-        body.appendChild(title);
-
-        const meta = document.createElement("div");
-        meta.className = "alert-detail-meta";
+    function showDetail(alert) {
+        const detail = byId("alertDetail");
+        detail.replaceChildren();
         const tier = normalizeAlertTier(alert.tier);
-        const sev = document.createElement("span");
-        sev.className = `alert-sev alert-sev--${tier}`;
-        sev.textContent = alertTierLabel(tier);
-        meta.appendChild(sev);
+
+        const title = document.createElement("h3");
+        title.className = "alert-detail-event";
+        title.textContent = alert.event || "Weather alert";
+
+        const meta = document.createElement("p");
+        meta.className = "alert-detail-meta";
+        meta.appendChild(sevBadge(tier));
         const until = alertUntilText(alert);
         if (until) {
             const u = document.createElement("span");
             u.textContent = until;
             meta.appendChild(u);
         }
-        body.appendChild(meta);
+        detail.append(title, meta);
 
         if (alert.senderName) {
-            const office = document.createElement("div");
+            const office = document.createElement("p");
             office.className = "alert-detail-office";
             office.textContent = alert.senderName;
-            body.appendChild(office);
+            detail.appendChild(office);
         }
-
         if (alert.description) {
-            const desc = document.createElement("div");
+            const desc = document.createElement("p");
             desc.className = "alert-detail-desc";
             desc.textContent = alert.description;
-            body.appendChild(desc);
+            detail.appendChild(desc);
         }
-
         if (alert.instruction) {
-            const instr = document.createElement("div");
+            const instr = document.createElement("p");
             instr.className = "alert-detail-instruction";
             instr.textContent = alert.instruction;
-            body.appendChild(instr);
+            detail.appendChild(instr);
         }
 
-        channels.classList.add("hidden");
+        byId("alertListWrap").classList.add("hidden");
         detail.classList.remove("hidden");
-        detail.hidden = false;
-        setAlertCenterDetailMode(true);
-        if (focus && back) {
-            back.focus();
+        byId("screenAlert").scrollTop = 0;
+        title.tabIndex = -1;
+        title.focus();
+    }
+
+    function hideDetail() {
+        byId("alertDetail").classList.add("hidden");
+        byId("alertListWrap").classList.remove("hidden");
+    }
+
+    function setHeaderColor(color) {
+        const header = byId("frameHeader");
+        header.classList.remove("frame-header--warning", "frame-header--watch");
+        if (color) {
+            header.classList.add("frame-header--" + color);
         }
     }
 
-    function hideAlertDetail() {
-        session.detailId = null;
-        const detail = document.getElementById("alertDetail");
-        const channels = document.getElementById("alertChannels");
-        if (!detail || !channels) {
-            return;
-        }
-        detail.classList.add("hidden");
-        detail.hidden = true;
-        setAlertCenterDetailMode(false);
-        channels.classList.remove("hidden");
-    }
-
-    function makeAlertSeg(iconName) {
-        const seg = document.createElement("div");
-        seg.className = "alert-seg";
-        const svg = ALERT_SEG_ICONS[iconName];
-        if (svg) {
-            const ic = document.createElement("span");
-            ic.style.display = "inline-flex";
-            // fallow-ignore-next-line security-sink -- svg is selected only from the static ALERT_SEG_ICONS table above.
-            ic.innerHTML = svg;
-            seg.appendChild(ic);
-        }
-        return seg;
-    }
-
-    function appendAlertSegText(seg, text, bold) {
-        if (bold) {
-            const b = document.createElement("b");
-            b.textContent = text;
-            seg.appendChild(b);
-        } else {
-            const s = document.createElement("span");
-            s.className = "alert-seg-txt";
-            s.textContent = text;
-            seg.appendChild(s);
-        }
-    }
-
-    function setAlertStripExpanded(expanded) {
-        const wrap = document.getElementById("alertStripWrap");
-        if (!wrap) {
-            return;
-        }
-        wrap.classList.toggle("alert-bottom-bar--expanded", expanded);
-        wrap.setAttribute("aria-expanded", expanded ? "true" : "false");
-    }
-
-    function renderAlertStrip() {
-        const strip = document.getElementById("alertStrip");
-        if (!strip) {
-            return;
-        }
-        setAlertStripExpanded(false);
-        strip.replaceChildren();
-
-        const first = session.alerts[0] || {};
-        const county = first.areaDesc ? first.areaDesc.split(";")[0].trim() : "Your area";
-        const count = session.alerts.length;
-        const until = alertUntilText(first);
-
-        const segCounty = makeAlertSeg("pin");
-        appendAlertSegText(segCounty, county, true);
-        strip.appendChild(segCounty);
-
-        const segCount = makeAlertSeg("alert");
-        appendAlertSegText(segCount, String(count), true);
-        appendAlertSegText(segCount, count === 1 ? " alert" : " alerts", false);
-        strip.appendChild(segCount);
-
-        const segUntil = makeAlertSeg("clock");
-        appendAlertSegText(segUntil, until || "In effect", false);
-        strip.appendChild(segUntil);
-
-        const segSource = makeAlertSeg("source");
-        appendAlertSegText(segSource, "NWS", true);
-        strip.appendChild(segSource);
-    }
-
-    function updateAlertMenuHeader() {
-        const sub = document.getElementById("alertMenuSub");
-        if (!sub) {
-            return;
-        }
-        const n = session.alerts.length;
-        sub.textContent = `${n} active alert${n === 1 ? "" : "s"}`;
-    }
-
-    function updateAlertBadge() {
-        const badge = document.getElementById("alertBadge");
-        if (!badge) {
-            return;
-        }
-        if (session.alerts.length > 0) {
-            document.getElementById("alertBadgeCount").textContent = session.alerts.length;
-            badge.setAttribute("data-tier", normalizeAlertTier(session.alerts[0].tier));
-            badge.classList.remove("hidden");
-            badge.hidden = false;
-        } else {
-            badge.classList.add("hidden");
-            badge.hidden = true;
-        }
-    }
-
-    function openAlertOverlay() {
-        if (!session.alerts.length) {
-            return;
-        }
-        const overlay = document.getElementById("alertOverlay");
-        const closeBtn = document.getElementById("alertClose");
-        if (!overlay || !closeBtn) {
-            return;
-        }
-        const wasClosed = overlay.classList.contains("hidden");
-
-        clearCloseFallbackTimer();
-        clearCloseAnimationListener();
-        session.closing = false;
-        overlay.classList.remove("alert-closing");
-
-        if (wasClosed) {
-            session.lastFocused = document.activeElement;
-            overlay.classList.remove("hidden");
-            overlay.hidden = false;
-            document.addEventListener("keydown", onAlertKeydown);
-        }
-
-        refreshAlertOverlayContent();
-        closeBtn.focus();
-    }
-
-    function clearCloseFallbackTimer() {
-        if (closeFallbackTimer !== null) {
-            clearTimeout(closeFallbackTimer);
-            closeFallbackTimer = null;
-        }
-    }
-
-    function clearCloseAnimationListener() {
-        if (closeAnimationListener && closeAnimationOverlay) {
-            closeAnimationOverlay.removeEventListener("animationend", closeAnimationListener);
-            closeAnimationListener = null;
-            closeAnimationOverlay = null;
-        }
-    }
-
-    function finishCloseAlertOverlay(overlay) {
-        clearCloseFallbackTimer();
-        clearCloseAnimationListener();
-        overlay.classList.remove("alert-closing");
-        overlay.classList.add("hidden");
-        overlay.hidden = true;
-        session.closing = false;
-        hideAlertDetail();
-        document.removeEventListener("keydown", onAlertKeydown);
-        updateAlertBadge();
-        if (session.lastFocused && typeof session.lastFocused.focus === "function") {
-            session.lastFocused.focus();
-        }
-    }
-
-    function closeAlertOverlaySilently() {
-        const overlay = document.getElementById("alertOverlay");
-        if (!overlay || overlay.classList.contains("hidden")) {
-            return;
-        }
-
-        if (prefersReducedMotion() || session.closing) {
-            finishCloseAlertOverlay(overlay);
-            return;
-        }
-
-        session.closing = true;
-        overlay.classList.add("alert-closing");
-
-        const onClosed = (event) => {
-            if (event.target !== overlay || event.animationName !== "alertScrimOut") {
-                return;
+    // Back from an alert's details returns to the list first.
+    function onScreenBack() {
+        if (!byId("alertDetail").classList.contains("hidden")) {
+            hideDetail();
+            const first = byId("alertList").querySelector("button");
+            if (first) {
+                first.focus();
             }
-            finishCloseAlertOverlay(overlay);
-        };
-        closeAnimationListener = onClosed;
-        closeAnimationOverlay = overlay;
-        overlay.addEventListener("animationend", onClosed);
-
-        clearCloseFallbackTimer();
-        closeFallbackTimer = setTimeout(() => {
-            closeFallbackTimer = null;
-            if (!session.closing) {
-                return;
-            }
-            finishCloseAlertOverlay(overlay);
-        }, CLOSE_FALLBACK_MS);
+            return true;
+        }
+        return false;
     }
 
-    function dismissAlertOverlay() {
+    function onScreenClose() {
         session.autoPopDismissed = true;
-        closeAlertOverlaySilently();
+        setHeaderColor("");
+        hideDetail();
+        renderBar();
     }
 
-    function onAlertKeydown(event) {
-        if (event.key === "Escape") {
-            dismissAlertOverlay();
+    function open() {
+        if (!session.alerts.length || !deps.frame) {
             return;
         }
-        if (event.key !== "Tab") {
-            return;
-        }
-        const menu = document.getElementById("alertOverlay");
-        if (!menu) {
-            return;
-        }
-        const focusable = menu.querySelectorAll(
-            'button:not([hidden]):not(.hidden), [href], [tabindex]:not([tabindex="-1"])'
-        );
-        const visible = [...focusable].filter((el) => el.offsetParent !== null);
-        if (!visible.length) {
-            return;
-        }
-        const first = visible[0];
-        const last = visible[visible.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
-            event.preventDefault();
-            last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-            event.preventDefault();
+        hideDetail();
+        renderList();
+        deps.frame.openScreen("alert", {
+            title: "Weather Alert",
+            onClose: onScreenClose,
+            onBack: onScreenBack,
+        });
+        setHeaderColor(colorFor(session.alerts));
+        renderBar();
+        const first = byId("alertList").querySelector("button");
+        if (first) {
             first.focus();
         }
-    }
-
-    function wireControls() {
-        const close = document.getElementById("alertClose");
-        const back = document.getElementById("alertBack");
-        if (close?.dataset.alertWired) {
-            return;
-        }
-        if (close) {
-            close.dataset.alertWired = "1";
-            close.addEventListener("click", dismissAlertOverlay);
-        }
-        if (back) {
-            back.dataset.alertWired = "1";
-            back.addEventListener("click", () => {
-                hideAlertDetail();
-                document.getElementById("alertClose")?.focus();
-            });
-        }
-        wireAlertStrip();
-    }
-
-    function wireAlertStrip() {
-        const wrap = document.getElementById("alertStripWrap");
-        if (!wrap || wrap.dataset.alertWired) {
-            return;
-        }
-        wrap.dataset.alertWired = "1";
-        wrap.setAttribute("role", "button");
-        wrap.setAttribute("tabindex", "0");
-        wrap.setAttribute("aria-expanded", "false");
-        wrap.setAttribute("aria-label", "Alert summary — activate to show the full text");
-
-        const isExpanded = () => wrap.classList.contains("alert-bottom-bar--expanded");
-
-        // Press-and-hold peeks at the full text; releasing collapses it again.
-        // The click that fires after a hold-release must not re-toggle.
-        const HOLD_MS = 350;
-        let holdTimer = null;
-        let holdPeek = false;
-        let suppressClick = false;
-
-        const endHold = () => {
-            clearTimeout(holdTimer);
-            holdTimer = null;
-            if (holdPeek) {
-                holdPeek = false;
-                suppressClick = true;
-                setTimeout(() => { suppressClick = false; }, 0);
-                setAlertStripExpanded(false);
-            }
-        };
-
-        wrap.addEventListener("pointerdown", (e) => {
-            if (e.pointerType === "mouse" && e.button !== 0) {
-                return;
-            }
-            clearTimeout(holdTimer);
-            holdTimer = setTimeout(() => {
-                holdPeek = true;
-                setAlertStripExpanded(true);
-            }, HOLD_MS);
-        });
-        wrap.addEventListener("pointerup", endHold);
-        wrap.addEventListener("pointercancel", endHold);
-        wrap.addEventListener("pointerleave", endHold);
-        wrap.addEventListener("contextmenu", (e) => e.preventDefault());
-
-        wrap.addEventListener("click", () => {
-            if (suppressClick) {
-                suppressClick = false;
-                return;
-            }
-            setAlertStripExpanded(!isExpanded());
-        });
-        wrap.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setAlertStripExpanded(!isExpanded());
-            }
-        });
     }
 
     return {
         init,
         resetForSearch,
         checkAlerts,
-        syncOverlay: syncAlertOverlay,
+        sync,
+        syncOverlay: sync,
         getStormLightningRank,
-        openOverlay: openAlertOverlay,
+        open,
+        openOverlay: open,
     };
 })();

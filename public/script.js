@@ -434,9 +434,7 @@ function openChannel(target) {
     closeHome();
     if (target === "today") {
         CirrusFrame.showView("current");
-        return;
-    }
-    if (target === 0) {
+    } else if (target === 0) {
         CirrusFrame.showView("today");
     } else if (target === 1) {
         CirrusFrame.showView("tomorrow");
@@ -444,6 +442,8 @@ function openChannel(target) {
         CirrusFrame.showView("fiveday");
         CirrusViews.openDay(target);
     }
+    // a severe alert that arrived while on Home opens now
+    CirrusAlerts.sync();
 }
 
 /* ---------- Start up ---------- */
@@ -460,6 +460,7 @@ CirrusSearch.init({
 });
 CirrusAlerts.init({
     backendUrl: BACKEND_URL,
+    frame: CirrusFrame,
     show,
     hide,
     set,
@@ -470,13 +471,22 @@ CirrusAlerts.init({
         return 0;
     },
     formatCityTime: (unixSeconds, offset) => CirrusUnits.cityClockTime(unixSeconds, offset),
-    prefersReducedMotion,
     onAlertsChanged: () => {
         if (appState.weather) {
             CirrusAtmosphere.refresh(appState.weather.conditionId);
         }
     },
-    allowAutoPop: () => !CirrusSearch.isOpen(),
+    // Severe alerts open by themselves only when the frame is on screen.
+    allowAutoPop: () => {
+        if (CirrusSearch.isOpen()) {
+            return false;
+        }
+        return !(isDesktop() && document.body.classList.contains("is-home"));
+    },
+    onBadgeOpen: () => {
+        closeHome();
+        CirrusAlerts.open();
+    },
 });
 CirrusSettings.init({ frame: CirrusFrame, units: CirrusUnits });
 

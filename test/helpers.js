@@ -120,6 +120,7 @@ function documentStub() {
             return nodes.get(id);
         },
         createElement: (tagName) => element(document, tagName),
+        createElementNS: (namespace, tagName) => element(document, tagName),
         querySelectorAll: () => [],
         contains: () => true,
         addEventListener(type, handler) {
