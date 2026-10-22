@@ -131,6 +131,11 @@
   box-shadow: var(--globe-dot-glow);
 }
 
+/* while the globe moves, the faded markers are in old spots: taps go to the globe */
+.screen--globe.is-moving .globe-marker {
+  pointer-events: none;
+}
+
 .globe-marker.is-pending .globe-dot {
   background: var(--globe-dot-pending);
   box-shadow: none;
