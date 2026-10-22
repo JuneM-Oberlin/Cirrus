@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- Cirrus pointer: an original rounded mitten hand, index finger up.
+       Hotspot is the fingertip (9, 2). -->
+  <g stroke="#1b2a3a" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+    <!-- cuff -->
+    <path d="M10.5 25.5 H22.5 V29.2 Q22.5 30.4 21.3 30.4 H11.7 Q10.5 30.4 10.5 29.2 Z" fill="#8fd3f4"/>
+    <!-- thumb -->
+    <path d="M9.6 17.2 C7.4 15.8 4.6 16.6 4.9 18.9 C5.1 20.5 7.6 22.6 9.8 23.4" fill="#ffffff"/>
+    <!-- palm with folded fingers -->
+    <path d="M7.4 13.5 V22.4 C7.4 24.4 9 25.9 11 25.9 H21 C23 25.9 24.4 24.3 24.4 22.3 V16.6
+             C24.4 15.2 23.2 14.2 21.9 14.4 C21.7 13 20.4 12.2 19.1 12.6 C18.7 11.3 17.3 10.7 16 11.2
+             C15.6 10.2 14.6 9.7 13.6 9.9 V13.5 Z" fill="#ffffff"/>
+    <!-- index finger -->
+    <path d="M7.4 14.2 V4.2 C7.4 2.6 8.6 1.4 10.1 1.4 C11.6 1.4 12.8 2.6 12.8 4.2 V14.2" fill="#ffffff"/>
+  </g>
+  <!-- knuckle creases and a soft shade -->
+  <g fill="none" stroke="#9bb4c8" stroke-width="1.1" stroke-linecap="round">
+    <path d="M16 11.4 V15"/>
+    <path d="M19.1 12.8 V16"/>
+    <path d="M21.9 14.6 V17.2"/>
+  </g>
+  <path d="M8.6 21.8 C10.8 24.2 18 24.6 23 22.4" fill="none" stroke="#c7d8e6" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

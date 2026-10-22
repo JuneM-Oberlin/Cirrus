@@ -116,6 +116,10 @@
   --rule-thick: 3px;
   --touch-min: 44px;
 
+  /* ---- Pointer: Cirrus's own hand cursor (fingertip hotspot), with
+         a PNG and the system pointer as fallbacks ---- */
+  --cursor-point: url("cursors/hand.svg") 10 2, url("cursors/hand.png") 10 2, pointer;
+
   /* ---- Focus ---- */
   --focus-width: 3px;
   --focus-offset: 2px;

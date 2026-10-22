@@ -65,8 +65,13 @@ input {
   color: inherit;
 }
 
-button {
-  cursor: pointer;
+/* The hand appears over everything you can press. */
+button:not(:disabled),
+a[href],
+label[for],
+[role="button"],
+[role="radio"] {
+  cursor: var(--cursor-point);
 }
 
 button:disabled {

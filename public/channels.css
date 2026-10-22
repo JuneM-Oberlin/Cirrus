@@ -133,7 +133,7 @@
     background: linear-gradient(180deg, #fdffff 0%, #eef4f7 50%, #d6e2e9 100%);
     border: 1.5px solid #36c3f2;
     border-radius: 999px;
-    cursor: pointer;
+    cursor: var(--cursor-point);
     box-shadow: var(--wii-pill-rest-shadow);
   }
 
@@ -204,7 +204,7 @@
   }
 
   .channel-tile--live {
-    cursor: pointer;
+    cursor: var(--cursor-point);
   }
 
   .channel-screen {
@@ -457,7 +457,7 @@
       0 0 0 4px rgb(52, 190, 237),
       inset -4px -4px 10px rgba(0, 0, 0, 0.26),
       10px 12px 2px -2px rgb(188, 189, 195);
-    cursor: pointer;
+    cursor: var(--cursor-point);
   }
 
   .channel-tray-button:disabled {
