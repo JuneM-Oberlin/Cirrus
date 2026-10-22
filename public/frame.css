@@ -387,6 +387,79 @@
   overflow: hidden;
 }
 
+/* ---------- Page dots down the right edge ---------- */
+
+.view-dots {
+  position: absolute;
+  top: 0;
+  right: var(--dots-right);
+  bottom: var(--panel-footer-space);
+  z-index: var(--z-footer);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* screens cover the views, so their dots step aside too */
+.frame[data-screen] .view-dots {
+  visibility: hidden;
+}
+
+.view-dot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dot-hit-width);
+  height: var(--dot-hit-height);
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.view-dot::before {
+  content: "";
+  width: var(--dot-size);
+  height: var(--dot-size);
+  background: var(--dot-face);
+  border: var(--hairline) solid var(--dot-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--dot-shadow);
+}
+
+.view-dot.is-current::before {
+  width: var(--dot-size-current);
+  height: var(--dot-size-current);
+  background: var(--dot-current-face);
+  border-color: var(--dot-current-border);
+  box-shadow: var(--dot-current-glow);
+}
+
+.view-dot:focus-visible {
+  outline-offset: calc(-1 * var(--focus-width));
+}
+
+/* the view's name appears beside a dot you point at */
+.view-dot-name {
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  padding: var(--space-1) var(--space-3);
+  background: var(--dot-tip-face);
+  border-radius: var(--radius-pill);
+  font-size: var(--dot-tip-font);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.view-dot:hover .view-dot-name,
+.view-dot:focus-visible .view-dot-name {
+  opacity: 1;
+}
+
 /* ---------- Big-number layout (Current / Today / Tomorrow) ---------- */
 
 .hero {
@@ -531,7 +604,7 @@
 .view--fiveday {
   display: flex;
   align-items: center;
-  padding-right: var(--space-4);
+  padding-right: var(--dots-gutter);
   padding-bottom: var(--panel-footer-slim);
   padding-left: var(--space-4);
 }
@@ -1150,6 +1223,15 @@ body.is-home .frame {
 
   .panel-asof {
     padding: var(--space-1) var(--space-4);
+  }
+
+  /* phones navigate by swipe, so the dots only show where you are */
+  .view-dots {
+    pointer-events: none;
+  }
+
+  .view-dot-name {
+    display: none;
   }
 
   /* bubbles pair up in two columns on phones */

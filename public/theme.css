@@ -246,6 +246,22 @@
   --credit-font: 12px;
   --credit-text: rgba(255, 255, 255, 0.92);
 
+  /* ---- Page dots ---- */
+  --dots-right: 4px;
+  --dots-gutter: 48px;
+  --dot-hit-width: 40px;
+  --dot-hit-height: 40px;
+  --dot-size: 11px;
+  --dot-size-current: 18px;
+  --dot-face: rgba(255, 255, 255, 0.75);
+  --dot-border: rgba(0, 20, 80, 0.35);
+  --dot-shadow: 0 1px 3px rgba(0, 10, 50, 0.45);
+  --dot-current-face: linear-gradient(180deg, #a6ecff 0%, #36c3f2 45%, #0d8fd6 100%);
+  --dot-current-border: #ffffff;
+  --dot-current-glow: 0 0 0 2px rgba(255, 255, 255, 0.35), 0 0 12px 3px rgba(52, 190, 237, 0.7);
+  --dot-tip-face: rgba(4, 18, 70, 0.88);
+  --dot-tip-font: 14px;
+
   /* ---- Reading bubbles (feels like, humidity, rain chance, ...) ---- */
   --reading-gap: 10px;
   --reading-top: 28px;
@@ -547,6 +563,12 @@
     --wind-font: clamp(22px, 3.6vh, 30px);
     --asof-font: 13px;
     --credit-font: 11px;
+    --dots-right: 1px;
+    --dots-gutter: 14px;
+    --dot-hit-width: 12px;
+    --dot-hit-height: 16px;
+    --dot-size: 6px;
+    --dot-size-current: 10px;
     --reading-gap: 8px;
     --reading-top: 18px;
     --reading-pad-x: 12px;

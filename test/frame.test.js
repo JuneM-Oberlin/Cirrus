@@ -111,6 +111,24 @@ test("frame steps through the view stack and names each neighbour", () => {
     assert.equal(document.getElementById("frameTitle").textContent, "Thursday");
 });
 
+test("page dots show where you are and jump straight to a view", () => {
+    const { document, frame } = loadFrame(["uv", "current", "today", "fiveday"]);
+    frame.init({});
+    const dots = document.getElementById("viewDots").children;
+
+    assert.equal(dots.length, 4, "one dot per view");
+    assert.equal(dots[1].getAttribute("aria-label"), "Current");
+    assert.equal(dots[1].getAttribute("aria-current"), "true");
+    assert.equal(dots[1].tabIndex, 0, "only the current dot is in the Tab order");
+    assert.equal(dots[0].tabIndex, -1);
+
+    dots[3].dispatch("click");
+    assert.equal(frame.currentViewId(), "fiveday");
+    assert.equal(dots[3].classList.contains("is-current"), true);
+    assert.equal(dots[1].getAttribute("aria-current"), null);
+    assert.equal(document.getElementById("frameTitle").textContent, "5-Day Forecast");
+});
+
 test("frame screens take over the title, show Back, and restore the view on close", () => {
     const { document, frame } = loadFrame(["current", "today"]);
     frame.init({});

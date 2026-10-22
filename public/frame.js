@@ -182,6 +182,47 @@ const CirrusFrame = (function () {
         asOf.classList.toggle("hidden", !state.asOf);
     }
 
+    /* ---------- Page dots: where you are in the stack ---------- */
+
+    function buildDots() {
+        const nav = byId("viewDots");
+        nav.replaceChildren();
+        state.views.forEach((id) => {
+            const dot = document.createElement("button");
+            dot.type = "button";
+            dot.className = "view-dot";
+            dot.setAttribute("aria-label", VIEW_NAMES[id] || id);
+            const name = document.createElement("span");
+            name.className = "view-dot-name";
+            name.setAttribute("aria-hidden", "true");
+            name.textContent = VIEW_NAMES[id] || id;
+            dot.appendChild(name);
+            dot.addEventListener("click", () => showView(id));
+            nav.appendChild(dot);
+        });
+    }
+
+    // Only the current dot is in the Tab order; arrow keys move between views.
+    function renderDots() {
+        const dots = [...byId("viewDots").children];
+        const focused = document.activeElement;
+        const dotHadFocus = dots.includes(focused);
+        dots.forEach((dot, i) => {
+            const current = i === state.index;
+            dot.classList.toggle("is-current", current);
+            if (current) {
+                dot.setAttribute("aria-current", "true");
+                dot.tabIndex = 0;
+            } else {
+                dot.removeAttribute("aria-current");
+                dot.tabIndex = -1;
+            }
+        });
+        if (dotHadFocus && dots[state.index]) {
+            dots[state.index].focus();
+        }
+    }
+
     function markActiveView() {
         document.querySelectorAll(".view[data-view]").forEach((view, i) => {
             const active = i === state.index;
@@ -189,6 +230,7 @@ const CirrusFrame = (function () {
             view.setAttribute("aria-hidden", String(!active));
         });
         byId("panelTrack").style.setProperty("--view-index", String(state.index));
+        renderDots();
     }
 
     function showView(id) {
@@ -462,6 +504,7 @@ const CirrusFrame = (function () {
 
         updateClock();
         setInterval(updateClock, 1000);
+        buildDots();
         markActiveView();
         renderChrome();
     }
