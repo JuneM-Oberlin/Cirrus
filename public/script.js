@@ -524,6 +524,7 @@ function openChannel(target) {
 
 /* ---------- Start up ---------- */
 
+CirrusFeel.init();
 CirrusFrame.init({
     onHome: openHome,
     prefersReducedMotion,

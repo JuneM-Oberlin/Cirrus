@@ -37,6 +37,7 @@
 .frame-btn,
 .frame-clock {
   position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -66,24 +67,47 @@
   text-overflow: ellipsis;
 }
 
-.frame-btn:not(:disabled):hover {
+/* Hover and press light a layer under the label, so the change can fade
+   in (a gradient background can't fade by itself). Corner buttons brighten
+   to a lighter silver; middle buttons, and any button while pressed, light
+   up cyan with white text like the references. */
+.frame-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: var(--frame-btn-face-hover);
+  opacity: 0;
+  pointer-events: none;
 }
 
-/* Middle buttons light up cyan with white text, like the references. */
-.frame-btn--nav:not(:disabled):hover,
-.frame-btn--nav:not(:disabled):active,
-.frame-btn--nav.is-pressed {
+.frame-btn--nav::before,
+.frame-btn:not(:disabled):active::before {
   background: var(--frame-btn-face-active);
   box-shadow: var(--frame-btn-shadow-active);
+}
+
+.frame-btn:not(:disabled):active::before,
+.frame-btn--nav.is-pressed::before {
+  opacity: 1;
+}
+
+.frame-btn:not(:disabled):active,
+.frame-btn--nav.is-pressed {
   color: var(--frame-btn-text-active);
   text-shadow: var(--frame-btn-text-shadow-active);
 }
 
-.frame-btn:not(.frame-btn--nav):not(:disabled):active {
-  background: var(--frame-btn-face-active);
-  color: var(--frame-btn-text-active);
-  text-shadow: var(--frame-btn-text-shadow-active);
+/* only real pointers hover; touch screens would leave the button lit */
+@media (hover: hover) {
+  .frame-btn:not(:disabled):hover::before {
+    opacity: 1;
+  }
+
+  .frame-btn--nav:not(:disabled):hover {
+    color: var(--frame-btn-text-active);
+    text-shadow: var(--frame-btn-text-shadow-active);
+  }
 }
 
 .frame-btn:focus-visible {
@@ -308,9 +332,25 @@
   inset: calc(-1 * var(--search-go-hit)) 0;
 }
 
-.frame-search-go:hover,
-.frame-search-go:focus-visible {
+/* the cyan face sits under the gloss cap and fades in on hover */
+.frame-search-go-face {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
   background: var(--frame-btn-face-active);
+  border-radius: inherit;
+  opacity: 0;
+}
+
+.frame-search-go:hover .frame-search-go-face,
+.frame-search-go:focus-visible .frame-search-go-face,
+.frame-search-go:active .frame-search-go-face {
+  opacity: 1;
+}
+
+.frame-search-go:hover,
+.frame-search-go:focus-visible,
+.frame-search-go:active {
   border-color: var(--cyan-rim-hover);
   box-shadow: var(--search-go-shadow), var(--search-go-glow);
   color: var(--frame-btn-text-active);
@@ -318,7 +358,8 @@
 }
 
 .frame-search-go:hover::before,
-.frame-search-go:focus-visible::before {
+.frame-search-go:focus-visible::before,
+.frame-search-go:active::before {
   opacity: 0.45;
 }
 
@@ -619,6 +660,8 @@
 }
 
 .fiveday-col {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-rows: auto minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
   justify-items: center;
@@ -634,8 +677,25 @@
   text-shadow: var(--panel-text-shadow);
 }
 
-.fiveday-col:hover {
+/* a brighter face fades in under the column on hover */
+.fiveday-col::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: var(--fiveday-col-face-hover);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fiveday-col:active::before {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .fiveday-col:hover::before {
+    opacity: 1;
+  }
 }
 
 .fiveday-col:focus-visible {
@@ -1148,6 +1208,8 @@
 }
 
 .chip-btn {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1167,11 +1229,37 @@
   white-space: nowrap;
 }
 
-.chip-btn:hover,
-.chip-btn.is-selected {
+/* the cyan face is a layer, so hovering and choosing fade it in */
+.chip-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: var(--frame-btn-face-active);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chip-btn:active::before,
+.chip-btn.is-selected::before {
+  opacity: 1;
+}
+
+.chip-btn:active,
+.chip-btn.is-selected {
   color: var(--frame-btn-text-active);
   text-shadow: var(--frame-btn-text-shadow-active);
+}
+
+@media (hover: hover) {
+  .chip-btn:hover::before {
+    opacity: 1;
+  }
+
+  .chip-btn:hover {
+    color: var(--frame-btn-text-active);
+    text-shadow: var(--frame-btn-text-shadow-active);
+  }
 }
 
 .chip-btn:focus-visible {

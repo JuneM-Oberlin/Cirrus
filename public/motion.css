@@ -46,11 +46,34 @@
   80% { transform: translate(calc(var(--heat-amp, var(--heat-amp-default)) * -0.6), calc(var(--heat-amp, var(--heat-amp-default)) * 0.3)) rotate(-0.3deg); }
 }
 
+/* a quick squash down, then a spring back up that overshoots a little */
 @keyframes wiiSquashPress {
-  0% { transform: none; }
-  35% { transform: var(--motion-squash-down); }
-  70% { transform: var(--motion-squash-up); }
-  100% { transform: none; }
+  0% {
+    transform: none;
+    animation-timing-function: var(--ease-press);
+  }
+  30% {
+    transform: var(--motion-squash-down);
+    animation-timing-function: var(--spring-pop);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+/* a soft band of light crossing a glossy face */
+@keyframes shineSweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-100%) skewX(var(--shine-skew));
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(var(--shine-travel)) skewX(var(--shine-skew));
+  }
 }
 
 /* the search button glows while pressed, then settles into the searching halo */
@@ -84,20 +107,127 @@
   50%, 100% { opacity: 0.2; }
 }
 
-/* ---------- Frame ---------- */
+/* ---------- Tactile buttons ---------- */
 
-.frame-btn,
-.chip-btn,
-.fiveday-col {
-  transition:
-    background var(--dur-fast) var(--nintendo-soft),
-    color var(--dur-fast) var(--nintendo-soft);
+/* Highlight layers fade in on hover; a press lights them at once. */
+.frame-btn::before,
+.chip-btn::before,
+.fiveday-col::before,
+.frame-search-go-face {
+  transition: opacity var(--dur-fast) var(--ease-fade);
 }
 
-.frame-btn:not(:disabled):active,
-.chip-btn:active,
-.frame-search-go:active {
-  animation: wiiSquashPress var(--dur-squash) var(--nintendo-spring);
+.frame-btn:active::before,
+.chip-btn:active::before,
+.fiveday-col:active::before,
+.frame-search-go:active .frame-search-go-face {
+  transition: none;
+}
+
+/* Hover grow uses the scale property and the press squash uses transform,
+   so the two stack instead of fighting over one value. */
+.frame-btn {
+  transition: color var(--dur-fast) var(--ease-fade);
+}
+
+.chip-btn {
+  transition:
+    scale var(--dur-spring-hover) var(--spring-hover),
+    color var(--dur-fast) var(--ease-fade);
+}
+
+.frame-location,
+.fiveday-col,
+.home-badge,
+.frame-btn > *,
+.frame-location-text,
+.alert-bar-more,
+.alert-bar .alert-icon,
+.globe-marker > *,
+.view-dot::before {
+  transition: scale var(--dur-spring-hover) var(--spring-hover);
+}
+
+/* a pointer (not a finger) makes things grow and shine */
+@media (hover: hover) and (pointer: fine) {
+  /* row buttons sit edge to edge, so their label and arrow grow instead */
+  .frame-btn:not(:disabled):hover > :not(.shine) {
+    scale: var(--grow-label);
+  }
+
+  .frame-location:hover {
+    scale: var(--grow-wide);
+  }
+
+  .frame-search-go:hover,
+  .chip-btn:hover,
+  .home-badge:hover,
+  .alert-bar:hover .alert-bar-more,
+  .alert-bar:hover .alert-icon {
+    scale: var(--grow);
+  }
+
+  .fiveday-col:hover {
+    z-index: 1;
+    scale: var(--grow-col);
+  }
+
+  .view-dot:hover::before {
+    scale: var(--grow-dot);
+  }
+
+  .globe-marker:hover > *,
+  .globe-marker:focus-visible > * {
+    scale: var(--grow-marker);
+  }
+
+  :hover > .shine::before {
+    animation: shineSweep var(--dur-shine) var(--ease-fade);
+  }
+}
+
+.shine {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.shine::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--shine-width);
+  background: var(--shine-band);
+  opacity: 0;
+  transform: translateX(-100%) skewX(var(--shine-skew));
+}
+
+/* Press: feel.js adds .is-squashing and takes it off when the squash ends,
+   so even a quick click plays the whole squash and bounce. */
+.is-squashing {
+  animation: wiiSquashPress var(--dur-squash) linear;
+}
+
+/* Row buttons, the location pill, and the alert bar squash their contents;
+   globe markers are placed with transform, so their parts squash instead. */
+.frame-btn.is-squashing,
+.frame-location.is-squashing,
+.alert-bar.is-squashing,
+.globe-marker.is-squashing,
+.view-dot.is-squashing {
+  animation: none;
+}
+
+.frame-btn.is-squashing > :not(.shine),
+.frame-location.is-squashing .frame-location-text,
+.alert-bar.is-squashing > :not(.shine),
+.globe-marker.is-squashing > *,
+.view-dot.is-squashing::before {
+  animation: wiiSquashPress var(--dur-squash) linear;
 }
 
 .frame-search-well {
@@ -108,8 +238,9 @@
 
 .frame-search-go {
   transition:
-    box-shadow var(--dur-medium) var(--nintendo-soft),
-    color var(--dur-fast) var(--nintendo-soft);
+    scale var(--dur-spring-hover) var(--spring-hover),
+    box-shadow var(--dur-medium) var(--ease-fade),
+    color var(--dur-fast) var(--ease-fade);
 }
 
 .frame-search-go::before {
@@ -180,19 +311,14 @@
   .channel-grid--enter .channel-tile:nth-child(12) { animation-delay: calc(var(--stagger-gap) + 11 * var(--stagger-step)); }
 
   .channel-tile--live {
-    transition: transform var(--dur-spring-hover) var(--spring-hover), box-shadow var(--dur-medium) var(--nintendo-soft);
+    position: relative;
+    transition: scale var(--dur-spring-hover) var(--spring-hover), box-shadow var(--dur-medium) var(--nintendo-soft);
   }
 
   .channel-tile--live:hover {
     z-index: 2;
-    transform: var(--motion-tile-hover);
+    scale: var(--grow-tile);
     box-shadow: var(--cyan-glow);
-  }
-
-  .channel-tile--live:active,
-  .channel-search button:active,
-  .channel-tray-button:active {
-    animation: wiiSquashPress var(--dur-squash) var(--nintendo-spring);
   }
 
   .channel-today-icon {
@@ -206,18 +332,21 @@
   .channel-search button,
   .channel-tray-button {
     transition:
-      transform var(--dur-spring-hover) var(--spring-hover),
+      translate var(--dur-spring-hover) var(--spring-hover),
+      scale var(--dur-spring-hover) var(--spring-hover),
       box-shadow var(--dur-medium) var(--nintendo-soft),
       border-color var(--dur-fast) var(--nintendo-soft);
   }
 
   .channel-search button:hover {
     border-color: var(--cyan-rim-hover);
-    transform: var(--motion-lift);
+    translate: var(--lift);
+    scale: var(--grow-search);
   }
 
   .channel-tray-button:not(:disabled):hover {
-    transform: var(--motion-lift-tray);
+    translate: var(--lift-tray);
+    scale: var(--grow-tray);
   }
 
   .channel-search button.search-press-feedback {
@@ -252,9 +381,10 @@
   .alert-bar,
   .temp--freezing,
   .temp--hot,
-  .frame-btn:active,
-  .chip-btn:active,
-  .frame-search-go:active,
+  .is-squashing,
+  .is-squashing > *,
+  .is-squashing::before,
+  .is-squashing .frame-location-text,
   .channel-letterbox,
   .channel-letterbox::before,
   .channel-tray,
@@ -262,17 +392,31 @@
   .channel-grid--enter .channel-tile,
   .channel-today-icon,
   .channel-grid-hint,
-  .channel-tile--live:active,
-  .channel-search button:active,
-  .channel-tray-button:active,
   .channel-search button.search-press-feedback,
   .channel-clock-colon {
     animation: none !important;
   }
 
-  .channel-tile--live:hover,
-  .channel-search button:hover,
-  .channel-tray-button:not(:disabled):hover {
-    transform: none !important;
+  /* no shine and nothing grows; highlights still change color */
+  .shine {
+    display: none;
+  }
+
+  .frame-location,
+  .frame-search-go,
+  .chip-btn,
+  .fiveday-col,
+  .home-badge,
+  .frame-btn > *,
+  .frame-location-text,
+  .alert-bar-more,
+  .alert-bar .alert-icon,
+  .globe-marker > *,
+  .view-dot::before,
+  .channel-tile--live,
+  .channel-search button,
+  .channel-tray-button {
+    scale: none !important;
+    translate: none !important;
   }
 }

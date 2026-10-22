@@ -516,7 +516,7 @@
 
   /* ---- Motion distances and timings ---- */
   --dur-entrance: 700ms;
-  --dur-squash: 400ms;
+  --dur-squash: 460ms;
   --dur-press-glow: 620ms;
   --dur-bob: 3.2s;
   --dur-hint: 2s;
@@ -532,11 +532,27 @@
   --motion-bob: translateY(-8px);
   --motion-hint: translateY(-4px);
   --motion-squash-down: translateY(3px) scale(1.06, 0.9);
-  --motion-squash-up: translateY(-1px) scale(0.97, 1.04);
   --motion-scan-drift: translateY(3px);
-  --motion-lift: translateY(-2px) scale(1.03);
-  --motion-lift-tray: translateY(-3px) scale(1.05);
-  --motion-tile-hover: scale(1.06);
+  /* how much things grow and lift under the pointer */
+  --grow: 1.05;
+  --grow-wide: 1.015;
+  --grow-col: 1.04;
+  --grow-label: 1.1;
+  --grow-dot: 1.45;
+  --grow-marker: 1.1;
+  --grow-tile: 1.06;
+  --grow-search: 1.03;
+  --grow-tray: 1.05;
+  --lift: 0 -2px;
+  --lift-tray: 0 -3px;
+  /* the press: a quick dip, then the spring brings it back */
+  --ease-press: cubic-bezier(0.2, 0.7, 0.4, 1);
+  /* the shine that sweeps across glossy buttons on hover */
+  --shine-band: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.6) 50%, rgba(255, 255, 255, 0) 100%);
+  --shine-width: 45%;
+  --shine-skew: -20deg;
+  --shine-travel: 330%;
+  --dur-shine: 700ms;
   --motion-shiver: 1.2px;
   --heat-amp-default: 0.5px;
   --press-glow:
