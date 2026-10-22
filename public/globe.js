@@ -12,7 +12,12 @@
 
    Zooming in tilts the view: the facing point slides south of the spot
    you are looking at and the disc slides down, so the horizon curves
-   across the top of the panel like the references. */
+   across the top of the panel like the references.
+
+   Zoom levels are numbers from 0 (the whole Earth) to the last entry of
+   ZOOM_LEVELS. The buttons and keys step between whole levels; a scroll
+   wheel, a trackpad pinch, two fingers, or a double tap can stop anywhere
+   in between, always zooming toward the spot under the pointer. */
 
 const CirrusGlobe = (function () {
     const DEG = Math.PI / 180;
@@ -28,9 +33,9 @@ const CirrusGlobe = (function () {
     ];
 
     // Globe radius as a share of the panel's shorter side, per zoom level.
-    const ZOOM_LEVELS = [0.42, 0.8, 1.35, 2.2, 3.4];
+    const ZOOM_LEVELS = [0.42, 0.8, 1.35, 2.2, 3.4, 5.6];
     const DEFAULT_LEVEL = 2;
-    const DETAIL_LEVEL = 2;
+    const MAX_LEVEL = ZOOM_LEVELS.length - 1;
     const ROTATE_STEP = 20;
     const PAN_STEP = 10;
     const MAX_TILT = 58 * DEG;
@@ -38,7 +43,13 @@ const CirrusGlobe = (function () {
     const MAX_REGIONS_PER_LOOK = 2;
     const PENDING_RETRY_MS = 20000;
     const BASE_SIZE = { width: 2048, height: 1024 };
-    const DETAIL_SPAN = { lon: 90, lat: 60 };
+    // Sharper pictures of the area in view as you zoom in: a regional one
+    // from level 2, and a close one (a third of the size, three times as
+    // sharp) from level 3.5. Each is refetched once you move near its edge.
+    const DETAIL_LAYERS = [
+        { fromLevel: 2, span: { lon: 90, lat: 60 } },
+        { fromLevel: 3.5, span: { lon: 30, lat: 20 } },
+    ];
     const DETAIL_SIZE = { width: 2048, height: 1366 };
 
     let deps = {
@@ -55,9 +66,16 @@ const CirrusGlobe = (function () {
     let home = { lat: 38, lon: -100 };
     let regionIndex = 0;
     let base = null;
-    let detail = null;
+    // one loaded picture (or null) per entry of DETAIL_LAYERS
+    const details = DETAIL_LAYERS.map(() => null);
     let detailTimer = null;
     let animation = null;
+    // while the wheel or a double tap is zooming: the level it is heading
+    // for, and the screen point it zooms toward
+    let zoomTarget = null;
+    let zoomPoint = { x: 0, y: 0 };
+    let settleTimer = null;
+    let drawFrame = null;
     let isOpen = false;
     const regions = {};
 
@@ -74,20 +92,45 @@ const CirrusGlobe = (function () {
         return { width: canvas.clientWidth, height: canvas.clientHeight };
     }
 
+    function clampLevel(level) {
+        return Math.max(0, Math.min(MAX_LEVEL, level));
+    }
+
+    // The globe's size for any level, whole or in between. Between two
+    // levels the size grows by the same factor for each equal step, so
+    // zooming feels even all the way in.
+    function shareFor(level) {
+        const lower = Math.min(Math.floor(level), MAX_LEVEL - 1);
+        const t = level - lower;
+        return ZOOM_LEVELS[lower] * Math.pow(ZOOM_LEVELS[lower + 1] / ZOOM_LEVELS[lower], t);
+    }
+
+    // The opposite of shareFor: which level gives the globe this size.
+    function levelForShare(share) {
+        if (share <= ZOOM_LEVELS[0]) {
+            return 0;
+        }
+        for (let lower = 0; lower < MAX_LEVEL; lower++) {
+            const upper = ZOOM_LEVELS[lower + 1];
+            if (share <= upper) {
+                return lower + Math.log(share / ZOOM_LEVELS[lower]) / Math.log(upper / ZOOM_LEVELS[lower]);
+            }
+        }
+        return MAX_LEVEL;
+    }
+
     // Radius in CSS pixels for a zoom level.
     function radiusFor(level) {
         const size = canvasSize();
-        return ZOOM_LEVELS[level] * Math.min(size.width, size.height);
+        return shareFor(level) * Math.min(size.width, size.height);
     }
 
-    // How far to tilt so the horizon sits near the top of the panel.
+    // How far to tilt so the horizon sits near the top of the panel. The
+    // whole Earth (level 0) faces you straight on; the tilt grows in by level 1.
     function tiltFor(level, radius) {
-        if (level === 0) {
-            return 0;
-        }
         const height = canvasSize().height;
         const sinTilt = Math.min(Math.max(1 - (HORIZON_SHARE * height) / radius, 0), Math.sin(MAX_TILT));
-        return Math.asin(sinTilt);
+        return Math.asin(sinTilt * Math.min(level, 1));
     }
 
     function wrapLon(lon) {
@@ -123,6 +166,25 @@ const CirrusGlobe = (function () {
             depth: cosC,
             x: cam.cx + x * cam.radius,
             y: cam.cy - y * cam.radius,
+        };
+    }
+
+    // The place under a point on the screen (CSS pixels), or null for the
+    // sky around the globe. render() runs the same inverse projection
+    // inline for every pixel.
+    function placeAt(x, y) {
+        const size = canvasSize();
+        const cam = camera(size.width, size.height, 1);
+        const unitX = (x - cam.cx) / cam.radius;
+        const unitY = (cam.cy - y) / cam.radius;
+        const rho2 = unitX * unitX + unitY * unitY;
+        if (rho2 > 1) {
+            return null;
+        }
+        const z = Math.sqrt(1 - rho2);
+        return {
+            lat: Math.asin(z * cam.sinLat0 + unitY * cam.cosLat0) / DEG,
+            lon: wrapLon(cam.lon0 + Math.atan2(unitX, z * cam.cosLat0 - unitY * cam.sinLat0) / DEG),
         };
     }
 
@@ -180,30 +242,35 @@ const CirrusGlobe = (function () {
             .catch(() => setStatus("The satellite view isn't available right now."));
     }
 
-    // A sharper image of the area in view once you zoom in.
+    // Fetches a sharper picture for each detail layer the zoom has reached,
+    // unless the one it has still covers the view with room to spare.
     function scheduleDetail() {
         clearTimeout(detailTimer);
-        if (view.level < DETAIL_LEVEL) {
-            return;
-        }
         detailTimer = setTimeout(() => {
-            const minLon = Math.max(-180, view.lon - DETAIL_SPAN.lon / 2);
-            const maxLon = Math.min(180, view.lon + DETAIL_SPAN.lon / 2);
-            const minLat = Math.max(-90, view.lat - DETAIL_SPAN.lat / 2);
-            const maxLat = Math.min(90, view.lat + DETAIL_SPAN.lat / 2);
-            if (detail && view.lon > detail.minLon + 15 && view.lon < detail.maxLon - 15
-                && view.lat > detail.minLat + 10 && view.lat < detail.maxLat - 10) {
-                return;
-            }
-            const bounds = { minLon, minLat, maxLon, maxLat };
-            loadTexture(gibsUrl(minLon, minLat, maxLon, maxLat, DETAIL_SIZE), bounds)
-                .then((texture) => {
-                    detail = texture;
-                    if (isOpen && !animation) {
-                        render(1);
-                    }
-                })
-                .catch(() => {});
+            DETAIL_LAYERS.forEach((layer, index) => {
+                if (view.level < layer.fromLevel) {
+                    return;
+                }
+                const span = layer.span;
+                const have = details[index];
+                if (have && view.lon > have.minLon + span.lon / 6 && view.lon < have.maxLon - span.lon / 6
+                    && view.lat > have.minLat + span.lat / 6 && view.lat < have.maxLat - span.lat / 6) {
+                    return;
+                }
+                const minLon = Math.max(-180, view.lon - span.lon / 2);
+                const maxLon = Math.min(180, view.lon + span.lon / 2);
+                const minLat = Math.max(-90, view.lat - span.lat / 2);
+                const maxLat = Math.min(90, view.lat + span.lat / 2);
+                const bounds = { minLon, minLat, maxLon, maxLat };
+                loadTexture(gibsUrl(minLon, minLat, maxLon, maxLat, DETAIL_SIZE), bounds)
+                    .then((texture) => {
+                        details[index] = texture;
+                        if (isOpen && !animation && zoomTarget === null) {
+                            render(1);
+                        }
+                    })
+                    .catch(() => {});
+            });
         }, 400);
     }
 
@@ -246,10 +313,15 @@ const CirrusGlobe = (function () {
                 let r = ocean[0];
                 let g = ocean[1];
                 let b = ocean[2];
+                // the sharpest picture that covers this spot
                 let tex = base;
-                if (detail && lat >= detail.minLat && lat <= detail.maxLat
-                    && lon >= detail.minLon && lon <= detail.maxLon) {
-                    tex = detail;
+                for (let d = details.length - 1; d >= 0; d--) {
+                    const detail = details[d];
+                    if (detail && lat >= detail.minLat && lat <= detail.maxLat
+                        && lon >= detail.minLon && lon <= detail.maxLon) {
+                        tex = detail;
+                        break;
+                    }
                 }
                 if (tex) {
                     const u = Math.floor(((lon - tex.minLon) / (tex.maxLon - tex.minLon)) * (tex.width - 1));
@@ -298,7 +370,7 @@ const CirrusGlobe = (function () {
     function describe() {
         const nearest = nearestRegion(view.lat, view.lon);
         byId("globeCanvas").setAttribute("aria-label",
-            "Satellite globe centred on " + nearest.name + ", zoom level " + (view.level + 1) + " of " + ZOOM_LEVELS.length);
+            "Satellite globe centred on " + nearest.name + ", zoom level " + (Math.round(view.level) + 1) + " of " + ZOOM_LEVELS.length);
     }
 
     /* ---------- Markers ---------- */
@@ -469,8 +541,29 @@ const CirrusGlobe = (function () {
         byId("screenGlobe").classList.toggle("is-moving", moving);
     }
 
+    // Stops whatever is moving the globe (a glide, a move, a zoom).
+    // Returns true if something was moving.
+    function stopMotion() {
+        const wasMoving = animation !== null || settleTimer !== null;
+        if (animation) {
+            cancelAnimationFrame(animation);
+        }
+        animation = null;
+        zoomTarget = null;
+        clearTimeout(settleTimer);
+        settleTimer = null;
+        return wasMoving;
+    }
+
     function settle() {
         animation = null;
+        zoomTarget = null;
+        clearTimeout(settleTimer);
+        settleTimer = null;
+        if (drawFrame) {
+            cancelAnimationFrame(drawFrame);
+            drawFrame = null;
+        }
         setMoving(false);
         render(1);
         loadVisibleRegions();
@@ -486,11 +579,8 @@ const CirrusGlobe = (function () {
             radius: targetRadius,
             tilt: tiltFor(level, targetRadius),
         };
+        stopMotion();
         view.level = level;
-        if (animation) {
-            cancelAnimationFrame(animation);
-            animation = null;
-        }
         if (deps.prefersReducedMotion() || view.radius === 0) {
             Object.assign(view, target);
             settle();
@@ -518,9 +608,93 @@ const CirrusGlobe = (function () {
         animation = requestAnimationFrame(step);
     }
 
+    // The buttons and + / - keys step to the next whole level in or out,
+    // even when a pinch left the globe between two levels.
     function zoom(change) {
-        const level = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, view.level + change));
-        moveTo(view.lat, view.lon, level);
+        let level = Math.ceil(view.level - 0.01) - 1;
+        if (change > 0) {
+            level = Math.floor(view.level + 0.01) + 1;
+        }
+        moveTo(view.lat, view.lon, clampLevel(level));
+    }
+
+    // Draws one quick frame on the next animation frame, however many
+    // finger moves arrive before it.
+    function drawSoon() {
+        if (!drawFrame) {
+            drawFrame = requestAnimationFrame(() => {
+                drawFrame = null;
+                render(0.5);
+            });
+        }
+    }
+
+    // Sets the zoom level while keeping a place pinned to the screen point
+    // (x, y), so the globe grows toward the cursor or between your fingers.
+    // place is the lat/lon that should sit at (x, y); by default, whatever
+    // is there now. Over the sky there is nothing to pin.
+    function zoomAround(level, x, y, place) {
+        let pinned = place;
+        if (!pinned) {
+            pinned = placeAt(x, y);
+        }
+        view.level = level;
+        view.radius = radiusFor(level);
+        view.tilt = tiltFor(level, view.radius);
+        if (!pinned) {
+            return;
+        }
+        // turn the globe until the place is back under the point; each
+        // correction gets closer, and three are plenty
+        for (let i = 0; i < 3; i++) {
+            const now = placeAt(x, y);
+            if (!now) {
+                return;
+            }
+            view.lat = clampLat(view.lat + pinned.lat - now.lat);
+            view.lon = wrapLon(view.lon + wrapLon(pinned.lon - now.lon));
+        }
+    }
+
+    // Glides the zoom toward level, a little closer every frame, toward the
+    // screen point (x, y). Calling it again while it runs just changes where
+    // it is heading, so wheel turns add up smoothly. Markers come back once
+    // the zoom has rested for a moment.
+    function zoomToward(level, x, y) {
+        const target = clampLevel(level);
+        if (zoomTarget === null) {
+            stopMotion();
+        }
+        clearTimeout(settleTimer);
+        settleTimer = null;
+        zoomTarget = target;
+        zoomPoint = { x, y };
+        if (animation) {
+            return;
+        }
+        setMoving(true);
+        const settings = CirrusConfig.globeZoom;
+        let before = performance.now();
+        const step = (now) => {
+            const elapsed = now - before;
+            before = now;
+            const gap = zoomTarget - view.level;
+            // the share of the gap to close this frame, the same on any screen
+            const follow = 1 - Math.pow(1 - settings.followPerFrame, elapsed / (1000 / 60));
+            let next = view.level + gap * follow;
+            if (Math.abs(gap) < settings.closeEnough || deps.prefersReducedMotion()) {
+                next = zoomTarget;
+            }
+            zoomAround(next, zoomPoint.x, zoomPoint.y);
+            render(0.5);
+            if (next === zoomTarget) {
+                animation = null;
+                settleTimer = setTimeout(settle, settings.settleMs);
+                return;
+            }
+            animation = requestAnimationFrame(step);
+        };
+        animation = requestAnimationFrame(step);
     }
 
     function rotate(degrees) {
@@ -575,30 +749,165 @@ const CirrusGlobe = (function () {
         animation = requestAnimationFrame(step);
     }
 
-    function wireDrag() {
+    // A pointer's spot on the canvas, in the canvas's own CSS pixels.
+    function canvasPoint(event) {
+        const rect = byId("globeCanvas").getBoundingClientRect();
+        return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+
+    // Fingers and the cursor count when they are on the globe itself or on
+    // a city marker, not on the buttons around it.
+    function isOnGlobe(target) {
+        if (!target || !target.closest) {
+            return false;
+        }
+        return target === byId("globeCanvas") || Boolean(target.closest(".globe-marker"));
+    }
+
+    // Scroll to zoom toward the cursor. A trackpad pinch arrives as a
+    // scroll with the ctrl key held, in much smaller steps.
+    function onWheel(event) {
+        if (!isOnGlobe(event.target)) {
+            return;
+        }
+        event.preventDefault();
+        const settings = CirrusConfig.globeZoom;
+        let pixels = event.deltaY;
+        if (event.deltaMode === 1) {
+            pixels *= CirrusConfig.viewWheel.lineHeightPx;
+        } else if (event.deltaMode === 2) {
+            pixels *= canvasSize().height;
+        }
+        let levelsPerPixel = settings.levelsPerWheelPx;
+        if (event.ctrlKey) {
+            levelsPerPixel = settings.levelsPerPinchPx;
+        }
+        // turns made while it is still zooming add on to where it is heading
+        let from = view.level;
+        if (zoomTarget !== null) {
+            from = zoomTarget;
+        }
+        const point = canvasPoint(event);
+        zoomToward(from - pixels * levelsPerPixel, point.x, point.y);
+    }
+
+    // One finger (or the mouse) drags the globe around; two fingers pinch
+    // to zoom and move it together; a quick double tap zooms in one level
+    // toward the spot you tapped. The listeners sit on the whole screen so
+    // a pinch still works when a finger lands on a city marker.
+    function wirePointers() {
+        const screen = byId("screenGlobe");
         const canvas = byId("globeCanvas");
+        const settings = CirrusConfig.globeZoom;
+        // every finger (or the mouse) touching the canvas, by pointer id
+        const pointers = new Map();
         let last = null;
+        let pinch = null;
+        let lastTap = null;
         // how fast the globe was turning, in degrees per millisecond
         let velocity = { lon: 0, lat: 0 };
-        canvas.addEventListener("pointerdown", (event) => {
-            // grabbing a gliding globe stops it
-            if (animation) {
-                cancelAnimationFrame(animation);
-                animation = null;
+
+        function fingersApart() {
+            const [a, b] = [...pointers.values()];
+            return {
+                distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+                middle: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+            };
+        }
+
+        function startPinch() {
+            last = null;
+            const fingers = fingersApart();
+            pinch = {
+                distance: fingers.distance,
+                share: shareFor(view.level),
+                // the place between the fingers stays between them
+                place: placeAt(fingers.middle.x, fingers.middle.y),
+            };
+            setMoving(true);
+        }
+
+        // Two quick taps close together zoom in toward the second one.
+        function checkDoubleTap(event, point) {
+            const tap = { x: point.x, y: point.y, time: event.timeStamp };
+            if (lastTap && tap.time - lastTap.time < settings.doubleTapMs
+                && Math.hypot(tap.x - lastTap.x, tap.y - lastTap.y) < settings.doubleTapSlopPx) {
+                lastTap = null;
+                zoomToward(view.level + 1, tap.x, tap.y);
+                return;
             }
-            last = { x: event.clientX, y: event.clientY, time: performance.now() };
+            lastTap = tap;
+        }
+
+        screen.addEventListener("pointerdown", (event) => {
+            if (!isOnGlobe(event.target)) {
+                return;
+            }
+            pointers.set(event.pointerId, canvasPoint(event));
+            if (pointers.size === 2) {
+                stopMotion();
+                startPinch();
+                return;
+            }
+            if (pointers.size > 2) {
+                return;
+            }
+            // a press on a marker stays a click unless it turns into a drag
+            const onMarker = event.target !== canvas;
+            if (!onMarker) {
+                canvas.setPointerCapture(event.pointerId);
+            }
+            // grabbing a moving globe stops it
+            const interrupted = stopMotion();
+            const point = canvasPoint(event);
+            last = {
+                x: event.clientX,
+                y: event.clientY,
+                time: performance.now(),
+                downAt: event.timeStamp,
+                start: point,
+                moved: false,
+                onMarker,
+                interrupted,
+            };
             velocity = { lon: 0, lat: 0 };
-            canvas.setPointerCapture(event.pointerId);
         });
-        canvas.addEventListener("pointermove", (event) => {
+        screen.addEventListener("pointermove", (event) => {
+            if (!pointers.has(event.pointerId)) {
+                return;
+            }
+            pointers.set(event.pointerId, canvasPoint(event));
+            if (pinch) {
+                if (pointers.size < 2) {
+                    return;
+                }
+                const fingers = fingersApart();
+                const level = clampLevel(levelForShare(pinch.share * fingers.distance / pinch.distance));
+                zoomAround(level, fingers.middle.x, fingers.middle.y, pinch.place);
+                drawSoon();
+                return;
+            }
             if (!last || animation) {
+                return;
+            }
+            const point = canvasPoint(event);
+            if (!last.moved && Math.hypot(point.x - last.start.x, point.y - last.start.y) > settings.tapSlopPx) {
+                last.moved = true;
+                // a drag that began on a marker takes over from its click
+                if (last.onMarker) {
+                    canvas.setPointerCapture(event.pointerId);
+                }
+            }
+            if (last.onMarker && !last.moved) {
                 return;
             }
             const dx = event.clientX - last.x;
             const dy = event.clientY - last.y;
             const now = performance.now();
             const elapsed = Math.max(1, now - last.time);
-            last = { x: event.clientX, y: event.clientY, time: now };
+            last.x = event.clientX;
+            last.y = event.clientY;
+            last.time = now;
             const cosLat = Math.max(0.2, Math.cos(view.lat * DEG));
             const dLon = -dx / view.radius / DEG / cosLat;
             const dLat = dy / view.radius / DEG;
@@ -608,13 +917,45 @@ const CirrusGlobe = (function () {
             setMoving(true);
             render(0.5);
         });
-        const end = () => {
+        const end = (event) => {
+            if (!pointers.delete(event.pointerId)) {
+                return;
+            }
+            if (pinch) {
+                // lifting a finger ends the pinch; the other finger does
+                // nothing until it lifts too
+                if (!pinch.ended) {
+                    pinch.ended = true;
+                    settle();
+                }
+                if (pointers.size === 0) {
+                    pinch = null;
+                }
+                lastTap = null;
+                return;
+            }
             if (!last) {
                 return;
             }
-            // a pause before letting go means the globe should stay put
-            const stillFor = performance.now() - last.time;
+            const drag = last;
             last = null;
+            // a tap on a marker is its click, which opens the city
+            if (drag.onMarker && !drag.moved) {
+                lastTap = null;
+                return;
+            }
+            // a tap: nothing moved, so there is nothing to redraw
+            const quick = event.timeStamp - drag.downAt < settings.tapMaxMs;
+            if (!drag.moved && quick && event.type === "pointerup") {
+                if (drag.interrupted) {
+                    settle();
+                }
+                checkDoubleTap(event, canvasPoint(event));
+                return;
+            }
+            lastTap = null;
+            // a pause before letting go means the globe should stay put
+            const stillFor = performance.now() - drag.time;
             const speed = Math.hypot(velocity.lon, velocity.lat);
             if (deps.prefersReducedMotion() || stillFor > 80 || speed < CirrusConfig.globeGlide.stopBelowDegPerMs) {
                 settle();
@@ -622,8 +963,9 @@ const CirrusGlobe = (function () {
             }
             glide(velocity);
         };
-        canvas.addEventListener("pointerup", end);
-        canvas.addEventListener("pointercancel", end);
+        screen.addEventListener("pointerup", end);
+        screen.addEventListener("pointercancel", end);
+        screen.addEventListener("wheel", onWheel, { passive: false });
     }
 
     function onKeydown(event) {
@@ -722,10 +1064,7 @@ const CirrusGlobe = (function () {
         delete byId("frame").dataset.mode;
         document.removeEventListener("keydown", onKeydown);
         window.removeEventListener("resize", onResize);
-        if (animation) {
-            cancelAnimationFrame(animation);
-            animation = null;
-        }
+        stopMotion();
         deps.onEnd();
     }
 
@@ -746,7 +1085,7 @@ const CirrusGlobe = (function () {
         byId("globeRotateRight").addEventListener("click", () => rotate(ROTATE_STEP));
         byId("globeRestore").addEventListener("click", restore);
         byId("globeEnd").addEventListener("click", () => deps.frame.back());
-        wireDrag();
+        wirePointers();
         deps.frame.setHandlers({ onGlobe: () => deps.onOpen() });
     }
 
@@ -759,5 +1098,7 @@ const CirrusGlobe = (function () {
         stopDrift,
         project,
         nearestRegion,
+        shareFor,
+        levelForShare,
     };
 })();

@@ -49,6 +49,25 @@ const CirrusConfig = Object.freeze({
         maxDegPerMs: 0.5,
     },
 
+    // Zooming the globe. Levels run from 0 (the whole Earth) to 5 (close
+    // enough to see cities one by one). One mouse-wheel notch (100px) is
+    // half a level; a trackpad pinch sends small steps, so each counts more.
+    // The zoom closes followPerFrame of the gap each frame, and markers
+    // return after settleMs of rest. Taps: a double tap is two taps under
+    // doubleTapMs apart and doubleTapSlopPx apart, each held under
+    // tapMaxMs and moving less than tapSlopPx.
+    globeZoom: {
+        levelsPerWheelPx: 0.005,
+        levelsPerPinchPx: 0.02,
+        followPerFrame: 0.22,
+        closeEnough: 0.005,
+        settleMs: 180,
+        tapMaxMs: 300,
+        tapSlopPx: 10,
+        doubleTapMs: 320,
+        doubleTapSlopPx: 36,
+    },
+
     // The drawn hand: how far it leans while moving and how it hops.
     pointer: {
         leanPerSpeed: 10,

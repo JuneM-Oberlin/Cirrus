@@ -118,6 +118,8 @@
   text-shadow: var(--panel-text-shadow);
   transform: translate(calc(-1 * var(--globe-dot-size) / 2), -50%);
   pointer-events: auto;
+  /* a pinch that starts on a marker zooms the globe, not the page */
+  touch-action: none;
 }
 
 .globe-dot {
