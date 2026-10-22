@@ -735,6 +735,8 @@ const CirrusFrame = (function () {
         if (state.screen || !frameIsActive()) {
             wheel.lastAt = now;
             wheel.waiting = true;
+            wheel.fadeSize = size;
+            wheel.strongInARow = 0;
             return;
         }
         // sideways scrolls are left alone

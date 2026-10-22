@@ -172,12 +172,7 @@ test("scrolling over the frame moves one view per flick", () => {
     scroll(100, 5000);
     assert.equal(frame.screenName(), "settings");
 
-    // a trackpad still gliding when the screen closes doesn't move a view
-    scroll(30, 5016);
     frame.closeScreen();
-    scroll(28, 5032);
-    scroll(25, 5048);
-    assert.equal(frame.currentViewId(), "current");
 
     // a slow mouse notch on a Mac is only 4px, but it is still one notch
     scroll(4, 6000, { wheelDeltaY: -120 });
@@ -185,6 +180,27 @@ test("scrolling over the frame moves one view per flick", () => {
     scroll(4, 6300, { wheelDeltaY: -120 });
     assert.equal(frame.currentViewId(), "tomorrow");
     scroll(-4, 6600, { wheelDeltaY: 120 });
+    assert.equal(frame.currentViewId(), "today");
+});
+
+test("a trackpad still gliding when a screen closes doesn't move a view", () => {
+    const { document, frame } = loadFrame(["uv", "current", "today", "tomorrow"]);
+    frame.init({});
+    document.getElementById("alertOverlay").classList.add("hidden");
+    const frameElement = document.getElementById("frame");
+    function scroll(deltaY, timeStamp) {
+        frameElement.dispatch("wheel", { deltaX: 0, deltaY, deltaMode: 0, timeStamp, preventDefault() {} });
+    }
+
+    // a fresh page: flick the Settings cards, then close Settings mid-glide
+    frame.openScreen("settings", { title: "Settings" });
+    [[20, 1000], [45, 1016], [60, 1032], [55, 1048], [50, 1064], [45, 1080], [40, 1096]].forEach(([size, at]) => scroll(size, at));
+    frame.closeScreen();
+    [[36, 1112], [32, 1128], [29, 1144], [26, 1160], [23, 1176], [21, 1192], [19, 1208]].forEach(([size, at]) => scroll(size, at));
+    assert.equal(frame.currentViewId(), "current");
+
+    // once the glide has gone quiet, scrolling works again
+    scroll(60, 2000);
     assert.equal(frame.currentViewId(), "today");
 });
 

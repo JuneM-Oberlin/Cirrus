@@ -464,7 +464,19 @@ const CirrusGlobe = (function () {
                 return;
             }
             const layer = byId("globeMarkers");
-            if (layer.querySelector(".globe-marker:active") || layer.contains(document.activeElement)) {
+            const shown = new Set([...layer.querySelectorAll(".globe-marker")].map((button) => button.dataset.city));
+            const missing = citiesOnScreen(allCities()).some((item) => !shown.has(item.city.name));
+            if (layer.querySelector(".globe-marker:active")) {
+                refreshMarkers();
+                // new cities wait until the press is over
+                if (missing) {
+                    placeMarkersSoon();
+                }
+                return;
+            }
+            // new cities (a region just loaded) need a rebuild, which moves
+            // focus to the new copy of the focused marker
+            if (layer.contains(document.activeElement) && !missing) {
                 refreshMarkers();
                 return;
             }
@@ -727,6 +739,14 @@ const CirrusGlobe = (function () {
             // the oldest fetch leaves the one-minute window first
             lookAgainIn(MINUTE_MS - (now - extraFetchTimes[0]) + 100);
         }
+        // cities that failed a moment ago are due again a little later
+        const failedWaits = citiesOnScreen(extraCities())
+            .map((item) => extras[item.city.query])
+            .filter((known) => known && known.pending && !known.loading && now - known.triedAt <= PENDING_RETRY_MS)
+            .map((known) => known.triedAt + PENDING_RETRY_MS + 100 - now);
+        if (failedWaits.length > 0) {
+            lookAgainIn(Math.min(...failedWaits));
+        }
     }
 
     /* ---------- Moving the camera ---------- */
@@ -750,11 +770,13 @@ const CirrusGlobe = (function () {
         const wasMoving = animation !== null || settleTimer !== null;
         if (animation) {
             cancelAnimationFrame(animation);
-            // a glide between levels stopped part-way: the level becomes
-            // whatever size the globe is drawn at now
+            // A zoom glide stopped part-way: the level becomes whatever size
+            // the globe is drawn at now. A spin or a finished glide leaves the
+            // size alone, so the level stays exactly as it was (rounding could
+            // otherwise drop 2.5 to 2.4999…, under a tier's threshold).
             const size = canvasSize();
             const shorterSide = Math.min(size.width, size.height);
-            if (shorterSide > 0 && view.radius > 0) {
+            if (shorterSide > 0 && view.radius > 0 && Math.abs(view.radius - radiusFor(view.level)) > 0.5) {
                 view.level = clampLevel(levelForShare(view.radius / shorterSide));
             }
         }
@@ -869,7 +891,21 @@ const CirrusGlobe = (function () {
             if (!now) {
                 return;
             }
-            view.lat = clampLat(view.lat + pinned.lat - now.lat);
+            // How far the place under the point moves for each degree the view
+            // turns north. It is about 1 near the middle, but far south, where
+            // the camera can't tilt any further, it can be 2 or 3, so measure it.
+            const nudge = 0.01;
+            view.lat += nudge;
+            const nudged = placeAt(x, y);
+            view.lat -= nudge;
+            let gain = 1;
+            if (nudged) {
+                gain = (nudged.lat - now.lat) / nudge;
+            }
+            if (gain < 0.25) {
+                gain = 1;
+            }
+            view.lat = clampLat(view.lat + (pinned.lat - now.lat) / gain);
             view.lon = wrapLon(view.lon + wrapLon(pinned.lon - now.lon));
         }
     }
