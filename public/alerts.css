@@ -1,0 +1,737 @@
+/* ALERTS — full-screen severe weather overlay (restyled in a later commit) */
+
+/* =========================================================================
+   SEVERE WEATHER ALERTS — Wii HOME Menu overlay
+   Resting visuals only; motion lives in animations.css.
+   ========================================================================= */
+
+/* Reusable Wii cyan pill (the signature control). Severity variants below
+   only swap the rim/halo. */
+.pill {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1.5px solid #36c3f2;
+  background: linear-gradient(180deg, #fdffff 0%, #eef4f7 50%, #d6e2e9 100%);
+  color: #3a3a3a;
+  font-family: inherit;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  box-shadow: var(--wii-pill-rest-shadow);
+}
+
+/* Full-screen takeover: scrim lets the dimmed app show through */
+.alert-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: rgba(4, 7, 16, 0.42);
+}
+
+.alert-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.022) 0 1px,
+    transparent 1px 4px
+  );
+  pointer-events: none;
+}
+
+/* Translucent black letterbox bars (top + bottom chrome) */
+.alert-top-bar,
+.alert-bottom-bar {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  background: var(--alert-chrome);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.alert-top-bar::before,
+.alert-bottom-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.38) 0 1px,
+    transparent 1px 3px
+  );
+  mix-blend-mode: multiply;
+}
+
+.alert-top-bar::after,
+.alert-bottom-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.045) 0 1px,
+    transparent 1px 3px
+  );
+  opacity: 0.55;
+}
+
+.alert-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: max(116px, 14vh);
+  padding: 30px 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.alert-top-left {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.alert-tri {
+  width: 26px;
+  height: 26px;
+  color: var(--alert-tri);
+  flex-shrink: 0;
+}
+
+.alert-menu-title {
+  color: #eef4f9;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.05;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+.alert-menu-sub {
+  color: var(--alert-sub);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-top: 1px;
+}
+
+.alert-close {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  padding: 9px 22px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* Center band — channels (or detail) float over the dimmed app */
+.alert-center {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 2vh, 22px) clamp(16px, 4vw, 32px);
+  overflow: hidden;
+  container-type: size;
+  container-name: alert-center;
+}
+
+.alert-center.alert-center--detail {
+  justify-content: stretch;
+}
+
+.alert-channels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 580px;
+}
+
+.alert-channel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  min-height: 146px;
+  padding: 20px 24px;
+  border-radius: 32px;
+  text-align: left;
+}
+
+.alert-channel::before {
+  border-radius: 32px 32px 50% 50% / 30px 30px 22px 22px;
+  height: 36%;
+}
+
+/* Severity reads from the badge; the pill rim stays the standard cyan */
+.alert-sev {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 4px 13px;
+  border-radius: 999px;
+}
+
+.alert-sev--warning { background: #e0584f; color: #3a0c0a; }
+.alert-sev--watch { background: #ef9f27; color: #4a2a02; }
+.alert-sev--advisory { background: #e0b000; color: #463600; }
+.alert-sev--statement { background: #36c3f2; color: #0c3247; }
+.alert-sev--unknown { background: rgba(200, 210, 220, 0.35); color: #2a3844; }
+
+.alert-ch-event {
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.12;
+  color: #27384a;
+}
+
+.alert-ch-until {
+  font-size: 14px;
+  font-weight: 700;
+  color: #5a6b7a;
+}
+
+/* Detail view (fills the center band) */
+.alert-detail {
+  width: 100%;
+  max-width: min(760px, 100%);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.5vh, 12px);
+}
+
+.alert-back {
+  flex-shrink: 0;
+  align-self: flex-start;
+  padding: 8px 22px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.alert-detail-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  color: #d4e0ea;
+  --gloss: 0.08;
+  --gloss-stop: 32%;
+  background-color: rgba(0, 0, 0, 0.52);
+  border-radius: 20px;
+  padding: clamp(14px, 2.5vh, 20px) clamp(16px, 3vw, 22px);
+}
+
+.alert-detail-event {
+  color: #fff;
+  font-size: clamp(18px, 3.2vh, 24px);
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: clamp(4px, 1vh, 8px);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  overflow-wrap: anywhere;
+}
+
+.alert-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  color: #ffd9d5;
+  font-size: clamp(12px, 1.8vh, 14px);
+  font-weight: 700;
+  margin-bottom: clamp(2px, 0.8vh, 4px);
+}
+
+.alert-detail-office {
+  color: #9fb4c6;
+  font-size: clamp(12px, 1.6vh, 13px);
+  font-weight: 700;
+  margin-bottom: clamp(6px, 1.2vh, 10px);
+}
+
+.alert-detail-desc {
+  color: #d4e0ea;
+  font-size: clamp(16px, 2vh, 16px);
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.alert-detail-instruction {
+  margin-top: clamp(8px, 1.5vh, 12px);
+  padding: clamp(10px, 1.5vh, 12px) clamp(12px, 2vw, 14px);
+  border-radius: 14px;
+  background: rgba(224, 88, 79, 0.12);
+  border: 1px solid rgba(224, 88, 79, 0.3);
+  color: #ffd9d5;
+  font-size: clamp(16px, 2vh, 16px);
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@container alert-center (max-height: 420px) {
+  .alert-detail-body {
+    padding: 12px 14px;
+  }
+
+  .alert-detail-event {
+    font-size: 17px;
+  }
+
+  .alert-detail-instruction {
+    margin-top: 8px;
+    padding: 8px 10px;
+  }
+}
+
+@container alert-center (max-height: 320px) {
+  .alert-detail {
+    gap: 6px;
+  }
+
+  .alert-back {
+    padding: 6px 18px;
+    font-size: 13px;
+  }
+
+  .alert-detail-body {
+    padding: 10px 12px;
+  }
+
+  .alert-detail-event {
+    font-size: 16px;
+    line-height: 1.12;
+  }
+
+  .alert-detail-meta,
+  .alert-detail-office {
+    font-size: 12px;
+  }
+}
+
+/* Bottom bar — P1-P4-style status strip. Tap toggles the full (untruncated)
+   text; press-and-hold peeks at it. */
+.alert-bottom-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: max(156px, 19vh);
+  padding: 30px 32px 34px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.alert-strip {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  align-items: stretch;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.alert-seg {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #eef3f8;
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+  text-align: center;
+  overflow: hidden;
+}
+
+.alert-seg:last-child { border-right: 0; }
+.alert-seg b { color: var(--alert-seg-accent); font-weight: 800; }
+
+/* Keep each segment to a single line — long area names truncate, never wrap */
+.alert-seg b,
+.alert-seg .alert-seg-txt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Expanded (tap / hold-to-peek): segments wrap to show the full text */
+.alert-bottom-bar--expanded .alert-strip {
+  border-radius: 20px;
+}
+
+.alert-bottom-bar--expanded .alert-seg b,
+.alert-bottom-bar--expanded .alert-seg .alert-seg-txt {
+  white-space: normal;
+  overflow: visible;
+}
+
+.alert-seg-ic {
+  width: 16px;
+  height: 16px;
+  color: var(--alert-seg-accent);
+  flex-shrink: 0;
+}
+
+.alert-strip-label {
+  position: relative;
+  z-index: 2;
+  color: #d3dde7;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* Alert reopen badge — sits in the history row, right-aligned */
+.alert-badge {
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 5px 14px 5px 12px;
+  border-radius: 999px;
+  border: none;
+  background: var(--footer-accent-background);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.32);
+}
+
+.alert-badge-tri {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+/* static gloss cap on the cyan pills */
+.pill::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 2px;
+  height: 42%;
+  border-radius: 999px 999px 60% 60% / 999px 999px 22px 22px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.15) 100%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+:is(.alert-badge, .alert-close, .alert-back, .alert-channel, .alert-bottom-bar):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+}
+
+/* =========================================================================
+   SEVERE WEATHER ALERTS — motion
+   ========================================================================= */
+
+/* Overlay menu pops in like a Wii channel; scrim fades */
+.alert-overlay:not(.hidden):not(.alert-closing) {
+  animation: alertScrimIn 0.45s var(--nintendo-soft) both;
+}
+
+/* letterbox bars slide in from the edges like console chrome */
+.alert-overlay:not(.hidden):not(.alert-closing) .alert-top-bar {
+  animation: alertBarDown 0.7s var(--nintendo-spring) both;
+}
+
+.alert-overlay:not(.hidden):not(.alert-closing) .alert-bottom-bar {
+  animation: alertBarUp 0.7s var(--nintendo-spring) both;
+}
+
+/* closing: reverse the entrance — scrim fades, bars retract to the edges */
+.alert-overlay.alert-closing {
+  animation: alertScrimOut 0.55s var(--nintendo-soft) both;
+}
+
+.alert-overlay.alert-closing .alert-top-bar {
+  animation: alertBarUpOut 0.55s var(--nintendo-soft) both;
+}
+
+.alert-overlay.alert-closing .alert-bottom-bar {
+  animation: alertBarDownOut 0.55s var(--nintendo-soft) both;
+}
+
+@keyframes alertScrimIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes alertScrimOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes alertBarDown {
+  0% { opacity: 0; transform: translateY(-100%); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes alertBarUp {
+  0% { opacity: 0; transform: translateY(100%); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes alertBarUpOut {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-100%); }
+}
+
+@keyframes alertBarDownOut {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(100%); }
+}
+
+/* Bottom status strip — pressing squashes the pill like the other controls,
+   and expanding (tap or hold-to-peek) lands with a springy boing. The
+   `--expanded:active` variant keeps the boing winning over the press squash
+   when the hold threshold trips mid-press. */
+.alert-bottom-bar:active .alert-strip {
+  animation: wiiSquashPress 0.35s var(--nintendo-spring);
+}
+
+.alert-bottom-bar--expanded:active .alert-strip,
+.alert-bottom-bar--expanded .alert-strip {
+  animation: nintendoBounce 0.55s var(--nintendo-spring);
+}
+
+/* Alert channels — shared pill press/hover + staggered entrance */
+.alert-channel,
+.alert-close,
+.alert-back {
+  transition:
+    transform 0.35s var(--nintendo-spring),
+    box-shadow 0.25s var(--nintendo-soft),
+    border-color 0.2s var(--nintendo-soft);
+}
+
+.alert-channel:hover,
+.alert-close:hover,
+.alert-back:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+
+.alert-channel:active,
+.alert-close:active,
+.alert-back:active {
+  animation: wiiSquashPress 0.4s var(--nintendo-spring);
+}
+
+.alert-channel::before,
+.alert-close::before,
+.alert-back::before {
+  transform-origin: top center;
+  transition:
+    transform 0.18s var(--nintendo-press),
+    opacity 0.18s var(--nintendo-press);
+}
+
+.alert-channel:active::before,
+.alert-close:active::before,
+.alert-back:active::before {
+  transform: scaleY(0.72);
+  opacity: 0.8;
+}
+
+.alert-channels .alert-channel {
+  animation: nintendoPop 0.5s var(--nintendo-spring) backwards;
+}
+
+.alert-channels .alert-channel:nth-child(1) { animation-delay: 0.06s; }
+.alert-channels .alert-channel:nth-child(2) { animation-delay: 0.12s; }
+.alert-channels .alert-channel:nth-child(3) { animation-delay: 0.18s; }
+.alert-channels .alert-channel:nth-child(4) { animation-delay: 0.24s; }
+.alert-channels .alert-channel:nth-child(5) { animation-delay: 0.30s; }
+
+/* Warning triangle — slow attention pulse (status indicator, not a control) */
+.alert-tri {
+  animation: alertTriPulse 2s var(--nintendo-soft) infinite;
+}
+
+.alert-badge {
+  transition: transform 0.35s var(--nintendo-spring), box-shadow 0.25s var(--nintendo-soft);
+}
+
+.alert-badge:hover {
+  transform: translateY(-2px) scale(1.03);
+}
+
+.alert-badge:active {
+  transform: translateY(1px) scale(0.96);
+}
+
+@keyframes alertTriPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* CRT scan-line drift on letterbox chrome (decorative; transform-only per DESIGN.md) */
+.alert-overlay:not(.hidden) .alert-top-bar::before,
+.alert-overlay:not(.hidden) .alert-bottom-bar::before {
+  animation: alertScanDrift 10s linear infinite;
+}
+
+@keyframes alertScanDrift {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+
+/* Static noise flicker on the highlight scan layer */
+.alert-overlay:not(.hidden) .alert-top-bar::after,
+.alert-overlay:not(.hidden) .alert-bottom-bar::after {
+  animation: alertScanStatic 5s steps(10) infinite;
+}
+
+@keyframes alertScanStatic {
+  0%, 100% { opacity: 0.45; }
+  10% { opacity: 0.62; }
+  22% { opacity: 0.38; }
+  35% { opacity: 0.55; }
+  48% { opacity: 0.42; }
+  61% { opacity: 0.58; }
+  74% { opacity: 0.36; }
+  87% { opacity: 0.52; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* alerts: kill pulse/slide/squash, keep the static chrome + pills */
+  .alert-overlay:not(.hidden),
+  .alert-overlay:not(.hidden) .alert-top-bar,
+  .alert-overlay:not(.hidden) .alert-bottom-bar,
+  .alert-overlay.alert-closing,
+  .alert-overlay.alert-closing .alert-top-bar,
+  .alert-overlay.alert-closing .alert-bottom-bar,
+  .alert-channels .alert-channel,
+  .alert-tri,
+  .alert-channel:active,
+  .alert-close:active,
+  .alert-back:active,
+  .alert-bottom-bar:active .alert-strip,
+  .alert-bottom-bar--expanded .alert-strip {
+    animation: none !important;
+  }
+
+  .alert-overlay:not(.hidden) .alert-top-bar::before,
+  .alert-overlay:not(.hidden) .alert-bottom-bar::before {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .alert-overlay:not(.hidden) .alert-top-bar::after,
+  .alert-overlay:not(.hidden) .alert-bottom-bar::after {
+    animation: none !important;
+    opacity: 0.55 !important;
+  }
+
+  .alert-channel:hover,
+  .alert-close:hover,
+  .alert-back:hover,
+  .alert-badge:hover {
+    transform: none;
+  }
+
+  .alert-channel::before,
+  .alert-close::before,
+  .alert-back::before {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
+@media (max-width: 767px) {
+  /*  alert overlay (unchanged by the redesign */
+  .alert-top-bar {
+    min-height: 72px;
+    padding: 18px 24px;
+  }
+
+  .alert-bottom-bar {
+    min-height: unset;
+    gap: 8px;
+    padding: 14px 20px 16px;
+  }
+
+  .alert-seg {
+    flex: 0 0 auto; /* short segs keep their content readable... */
+    padding: 7px 4px;
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .alert-seg:first-child {
+    flex: 1 1 0; /* ...and the long area name takes what's left, truncating */
+  }
+
+  .alert-seg-ic {
+    width: 14px;
+    height: 14px;
+  }
+
+  .alert-strip-label {
+    font-size: 12px;
+  }
+
+  .alert-center {
+    padding: 10px 24px;
+  }
+
+  .alert-detail {
+    max-width: 100%;
+  }
+
+  .alert-detail-body {
+    border-radius: 18px;
+  }
+}

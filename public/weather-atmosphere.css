@@ -1,12 +1,9 @@
-/* Weather atmosphere overlays on the globe background */
+/* Weather atmosphere overlays (rain video, snow, fog, clouds) inside the panel */
 
 .weather-atmosphere {
-  position: fixed;
-  top: var(--header-height);
-  left: 0;
-  width: 100vw;
-  bottom: 0;
-  z-index: 8;
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-atmosphere);
   pointer-events: none;
   overflow: hidden;
   opacity: 1;
@@ -158,11 +155,6 @@
 @keyframes atmoCloudDrift {
   from { transform: translateX(-3%); }
   to   { transform: translateX(3%); }
-}
-
-/* Globe stays readable under a light rain veil */
-.globe-bg.atmosphere-active {
-  opacity: 0.52 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

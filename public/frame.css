@@ -1,0 +1,647 @@
+/* FRAME — the shared screen chrome every view sits inside:
+   silver button rows top and bottom, a green header strip with a lime
+   location pill, and the royal blue panel in between. */
+
+.frame {
+  position: relative;
+  z-index: var(--z-frame);
+  display: grid;
+  grid-template-rows:
+    calc(var(--frame-row-height) + env(safe-area-inset-top))
+    var(--frame-header-height)
+    auto
+    minmax(0, 1fr)
+    calc(var(--frame-row-height) + env(safe-area-inset-bottom));
+  height: 100dvh;
+  background: var(--frame-bg);
+}
+
+/* ---------- Silver button rows ---------- */
+
+.frame-row {
+  display: grid;
+  grid-template-columns: var(--frame-columns);
+  background: var(--frame-bg);
+}
+
+.frame-row--top {
+  padding-top: env(safe-area-inset-top);
+  border-bottom: var(--rule-thick) solid var(--frame-edge);
+}
+
+.frame-row--bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: var(--rule-thick) solid var(--frame-edge);
+}
+
+.frame-btn,
+.frame-clock {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  background: var(--frame-btn-face);
+  border: 0;
+  box-shadow: var(--frame-btn-shadow);
+  color: var(--frame-btn-text);
+  font-size: var(--frame-btn-font);
+  font-weight: var(--fw-bold);
+  text-shadow: var(--frame-btn-text-shadow);
+  white-space: nowrap;
+}
+
+/* thin double divider between neighbouring buttons */
+.frame-row > * + * {
+  border-left: var(--rule) solid var(--frame-divider);
+  box-shadow: var(--frame-btn-shadow), inset var(--hairline) 0 0 var(--frame-divider-light);
+}
+
+.frame-btn-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.frame-btn:not(:disabled):hover {
+  background: var(--frame-btn-face-hover);
+}
+
+/* Middle buttons light up cyan with white text, like the references. */
+.frame-btn--nav:not(:disabled):hover,
+.frame-btn--nav:not(:disabled):active,
+.frame-btn--nav.is-pressed {
+  background: var(--frame-btn-face-active);
+  box-shadow: var(--frame-btn-shadow-active);
+  color: var(--frame-btn-text-active);
+  text-shadow: var(--frame-btn-text-shadow-active);
+}
+
+.frame-btn:not(.frame-btn--nav):not(:disabled):active {
+  background: var(--frame-btn-face-active);
+  color: var(--frame-btn-text-active);
+  text-shadow: var(--frame-btn-text-shadow-active);
+}
+
+.frame-btn:focus-visible {
+  outline-color: var(--focus-ring-on-light);
+  outline-offset: calc(-1 * var(--focus-width) - var(--rule));
+}
+
+/* An empty slot keeps the frame's rhythm but does nothing. */
+.frame-btn.is-empty {
+  color: transparent;
+  text-shadow: none;
+}
+
+.frame-btn.is-empty > * {
+  visibility: hidden;
+}
+
+.frame-tri {
+  flex: 0 0 auto;
+  width: var(--frame-tri-size);
+  height: var(--frame-tri-size);
+  fill: currentColor;
+}
+
+/* Digital clock in the top-left slot */
+.frame-clock {
+  gap: var(--space-1);
+  color: var(--frame-clock-text);
+  font-family: var(--font-digital);
+  font-size: var(--frame-clock-font);
+  font-weight: var(--fw-regular);
+  font-variant-numeric: tabular-nums;
+}
+
+.frame-clock-digits {
+  font-family: inherit;
+}
+
+.frame-clock-meridiem {
+  align-self: flex-end;
+  margin-bottom: var(--space-3);
+  font-family: var(--font-ui);
+  font-size: var(--frame-clock-meridiem-font);
+  font-weight: var(--fw-heavy);
+}
+
+/* ---------- Green header strip ---------- */
+
+.frame-header {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-4);
+  min-width: 0;
+  padding-right: var(--space-4);
+  background: var(--header-strip);
+  border-bottom: var(--rule) solid var(--header-strip-edge);
+}
+
+.frame-title {
+  display: flex;
+  flex: 0 0 var(--title-block-width);
+  align-items: center;
+  min-width: 0;
+  padding: 0 var(--space-5);
+  background: var(--title-block);
+  color: var(--title-text);
+  font-size: var(--title-font);
+  font-weight: var(--fw-heavy);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-caps);
+  text-shadow: var(--title-text-shadow);
+  text-transform: uppercase;
+}
+
+.frame-title.is-long {
+  font-size: var(--title-font-long);
+}
+
+.frame-location,
+.frame-search {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  margin: var(--pill-inset) 0;
+  padding: 0 var(--space-6);
+  background: var(--pill-face);
+  border: var(--hairline) solid var(--pill-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--pill-shadow);
+  color: var(--pill-text);
+  font-size: var(--pill-font);
+  font-weight: var(--fw-bold);
+  text-shadow: var(--title-text-shadow);
+}
+
+/* glossy highlight along the top edge of the pill */
+.frame-location::before,
+.frame-search::before {
+  content: "";
+  position: absolute;
+  top: var(--hairline);
+  right: var(--space-4);
+  left: var(--space-4);
+  z-index: -1;
+  height: 45%;
+  background: var(--pill-gloss);
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+}
+
+.frame-location-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.frame-location:focus-visible,
+.frame-search:focus-within {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--hairline);
+}
+
+.frame-search {
+  justify-content: stretch;
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-4);
+}
+
+.frame-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--space-4);
+  background: var(--search-field-bg);
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: var(--search-field-text);
+  font-size: var(--pill-font);
+  font-weight: var(--fw-bold);
+  text-shadow: none;
+}
+
+.frame-search-input::placeholder {
+  color: var(--search-field-placeholder);
+  font-weight: var(--fw-regular);
+}
+
+.frame-search-input:focus {
+  outline: none;
+}
+
+.frame-search-go {
+  flex: 0 0 auto;
+  min-width: var(--touch-min);
+  height: 100%;
+  margin-left: var(--space-2);
+  padding: 0 var(--space-4);
+  background: transparent;
+  border: 0;
+  color: var(--pill-text);
+  font-size: var(--frame-btn-font);
+  font-weight: var(--fw-heavy);
+  text-shadow: var(--title-text-shadow);
+}
+
+/* ---------- Royal blue panel ---------- */
+
+.frame-panel {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--panel-face);
+  color: var(--panel-text);
+  text-shadow: var(--panel-text-shadow);
+}
+
+/* faint horizontal light streaks over everything */
+.frame-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-footer);
+  background: var(--panel-streaks);
+  pointer-events: none;
+}
+
+/* satellite imagery of the city, tinted by the blue underneath */
+.panel-sat {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-sat);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  mix-blend-mode: luminosity;
+  opacity: var(--panel-sat-opacity);
+  transition: opacity var(--dur-slow) ease;
+  pointer-events: none;
+}
+
+.panel-sat.is-empty {
+  opacity: 0;
+}
+
+.panel-viewport {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-view);
+  overflow: hidden;
+  touch-action: pan-x pinch-zoom;
+}
+
+.panel-track {
+  height: 100%;
+  transform: translateY(calc(var(--view-index, 0) * -100%));
+  transition: transform var(--dur-slow) var(--nintendo-soft);
+}
+
+.view {
+  position: relative;
+  height: 100%;
+  padding: var(--panel-pad-top) var(--panel-pad-x) var(--panel-footer-space);
+  overflow: hidden;
+}
+
+/* ---------- Big-number layout (Current / Today / Tomorrow) ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  grid-template-areas:
+    "temps icon"
+    "cond  icon";
+  align-content: start;
+  align-items: center;
+  column-gap: var(--space-6);
+  height: 100%;
+}
+
+.hero-temps {
+  grid-area: temps;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.hero-temp {
+  color: var(--temp-high);
+  font-size: var(--hero-temp-size);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  text-shadow: var(--temp-high-shadow);
+}
+
+.hero-temp--current {
+  color: var(--temp-current);
+  text-shadow: var(--temp-shadow);
+}
+
+.hero-low {
+  color: var(--temp-low);
+  font-size: calc(var(--hero-temp-size) * 0.5);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-tight);
+  text-shadow: var(--temp-shadow);
+}
+
+.hero-cond {
+  grid-area: cond;
+  align-self: start;
+  margin-top: var(--space-3);
+  overflow-wrap: anywhere;
+  font-size: var(--hero-cond-size);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-snug);
+  text-align: center;
+}
+
+.hero-icon {
+  grid-area: icon;
+  justify-self: center;
+  width: var(--hero-icon-size);
+  height: var(--hero-icon-size);
+  object-fit: contain;
+  filter: var(--hero-icon-shadow);
+}
+
+/* ---------- Empty state ---------- */
+
+.view-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  height: 100%;
+  text-align: center;
+}
+
+.view-empty-text {
+  max-width: 28ch;
+  font-size: var(--hero-cond-size);
+  line-height: var(--lh-snug);
+}
+
+/* ---------- Panel footer: credit, wind band, As-of strip ---------- */
+
+.panel-footer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-footer);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  align-items: end;
+  pointer-events: none;
+}
+
+.panel-credit {
+  padding: 0 var(--space-4) var(--space-2);
+  color: var(--credit-text);
+  font-size: var(--credit-font);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+}
+
+.panel-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.panel-wind {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-6) var(--space-2) var(--space-8);
+  background: var(--wind-band);
+  text-align: right;
+}
+
+.panel-wind-main {
+  font-size: var(--wind-font);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+}
+
+.panel-wind-sub {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  column-gap: var(--space-4);
+  max-width: 100%;
+  color: var(--panel-text-soft);
+  font-size: var(--wind-sub-font);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+}
+
+.panel-asof {
+  padding: var(--space-1) var(--space-6);
+  background: var(--asof-strip);
+  font-size: var(--asof-font);
+  font-weight: var(--fw-bold);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* each stat stays on one line; the row wraps between stats */
+.panel-stat {
+  white-space: nowrap;
+}
+
+/* ---------- Loading / error pills ---------- */
+
+.panel-status {
+  position: absolute;
+  top: var(--space-4);
+  left: 50%;
+  z-index: var(--z-status);
+  max-width: calc(100% - 2 * var(--space-5));
+  padding: var(--space-3) var(--space-6);
+  background: var(--status-face);
+  border: var(--hairline) solid var(--status-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--status-shadow);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.panel-status--error {
+  background: var(--status-error-face);
+  border-radius: var(--radius-lg);
+}
+
+/* on sub-screens the status pill sits low so it never covers the content */
+.frame[data-screen] .panel-status {
+  top: auto;
+  bottom: var(--space-6);
+}
+
+.panel-status--note {
+  top: auto;
+  bottom: var(--panel-footer-space);
+  font-size: var(--fs-sm);
+}
+
+.panel-badge {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: var(--z-status);
+}
+
+.view-empty-btn {
+  width: auto;
+  min-width: var(--chip-min-width);
+}
+
+/* ---------- Sub-screens (search, settings, alert, day, globe) ---------- */
+
+.screen {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-screen);
+  padding: var(--panel-pad-top) var(--panel-pad-x) var(--panel-footer-space);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--panel-face);
+}
+
+.screen-heading {
+  margin-bottom: var(--space-5);
+  font-size: var(--hero-cond-size);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+}
+
+.screen-note {
+  margin-top: var(--space-5);
+  color: var(--panel-text-soft);
+  font-size: var(--fs-base);
+  line-height: var(--lh-body);
+}
+
+/* Silver buttons used inside the panel (recent cities, choices) */
+.chip-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--chip-min-width)), 1fr));
+  gap: var(--space-3);
+  list-style: none;
+}
+
+.chip-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--chip-height);
+  padding: 0 var(--space-4);
+  overflow: hidden;
+  background: var(--chip-face);
+  border: var(--rule) solid var(--chip-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--chip-shadow);
+  color: var(--frame-btn-text);
+  font-size: var(--chip-font);
+  font-weight: var(--fw-bold);
+  text-overflow: ellipsis;
+  text-shadow: var(--frame-btn-text-shadow);
+  white-space: nowrap;
+}
+
+.chip-btn:hover,
+.chip-btn.is-selected {
+  background: var(--frame-btn-face-active);
+  color: var(--frame-btn-text-active);
+  text-shadow: var(--frame-btn-text-shadow-active);
+}
+
+.chip-btn:focus-visible {
+  outline-offset: var(--focus-offset);
+}
+
+/* ---------- Desktop Home menu vs frame ---------- */
+
+body.is-home .frame {
+  display: none;
+}
+
+.home {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  body.is-home .home {
+    display: flex;
+  }
+}
+
+@media (max-width: 767px) {
+  /* phones never show the Home menu, so the frame is always on screen */
+  body.is-home .frame {
+    display: grid;
+  }
+
+  .frame-header {
+    gap: var(--space-2);
+    padding-right: var(--space-2);
+  }
+
+  .frame-title {
+    padding: 0 var(--space-3);
+  }
+
+  .frame-location {
+    padding: 0 var(--space-4);
+  }
+
+  .hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-content: center;
+    column-gap: var(--space-3);
+  }
+
+  .panel-footer {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .panel-credit {
+    padding: 0 var(--space-3) var(--space-2);
+    white-space: nowrap;
+  }
+
+  .panel-wind {
+    padding: var(--space-2) var(--space-4) var(--space-2) var(--space-6);
+  }
+
+  .panel-asof {
+    padding: var(--space-1) var(--space-4);
+  }
+
+  .panel-stat--extra {
+    display: none;
+  }
+}

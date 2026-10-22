@@ -1,12 +1,12 @@
+/* Desktop Home: the channel menu. Tiles show a live preview of today and
+   the next five days; choosing one opens the forecast frame at the
+   matching view. Phones never show this screen. */
+
 const CirrusDesktopChannels = (function () {
     const DESKTOP_QUERY = "(min-width: 768px)";
     const state = {
-        view: "grid",
-        takeoverTarget: null,
         weather: null,
         forecast: [],
-        globeImage: null,
-        origin: null,
         clockTimer: null,
     };
 
@@ -21,18 +21,11 @@ const CirrusDesktopChannels = (function () {
         return desktopMedia && desktopMedia.matches;
     }
 
-    function titleCase(value) {
-        return String(value || "")
-            .split(/\s+/)
-            .filter(Boolean)
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ");
-    }
-
     function iconPath(conditionId, weatherCode) {
-        const key = weatherCode && weatherCode.endsWith("n")
-            ? `${conditionId}n`
-            : conditionId;
+        let key = conditionId;
+        if (weatherCode && weatherCode.endsWith("n")) {
+            key = `${conditionId}n`;
+        }
         return `icons/${iconMap[key] ?? "default.png"}`;
     }
 
@@ -40,17 +33,13 @@ const CirrusDesktopChannels = (function () {
         byId(id).textContent = value;
     }
 
-    function formatDescription(value) {
-        const text = titleCase(value);
-        return text ? `${text}.` : "Weather details are unavailable.";
-    }
-
+    // Until a city loads there is nothing to be "as of", so keep the dashes.
     function updateAsOf() {
-        const offset = state.weather ? state.weather.timezoneOffset : 0;
-        const now = deps.formatCityNow(offset);
-        const text = `As of ${now.time}, ${now.date}`;
-        setText("channelAsOf", text);
-        setText("channelTakeoverAsOf", text);
+        if (!state.weather) {
+            setText("channelAsOf", "As of --:--");
+            return;
+        }
+        setText("channelAsOf", deps.formatAsOf(state.weather));
     }
 
     function updateClock() {
@@ -101,110 +90,10 @@ const CirrusDesktopChannels = (function () {
         }
     }
 
-    function currentTakeoverData() {
-        if (!state.weather) {
-            return null;
-        }
-        if (state.takeoverTarget === "today") {
-            return {
-                high: state.weather.tempMax,
-                low: state.weather.tempMin,
-                title: `Today in ${state.weather.city} — ${titleCase(state.weather.condition)}`,
-                description: formatDescription(state.weather.description || state.weather.condition),
-                icon: iconPath(state.weather.conditionId, state.weather.weatherCode),
-                iconAlt: state.weather.description || state.weather.condition,
-                wind: `${deps.degreesToCompass(state.weather.windDeg)} ${Math.round(state.weather.windSpeed)} mph`,
-                extra: `Humidity ${state.weather.humidity}% · Visibility ${(state.weather.visibility / 1609.34).toFixed(1)} mi`,
-                conditionId: state.weather.conditionId,
-            };
-        }
-
-        const day = state.forecast[state.takeoverTarget];
-        if (!day) {
-            return null;
-        }
-        const precipInches = (day.precipitation ?? 0) / 25.4;
-        return {
-            high: day.high,
-            low: day.low,
-            title: `${String(day.day || "Forecast").toUpperCase()} — ${titleCase(day.condition)}`,
-            description: formatDescription(day.description || day.condition),
-            icon: iconPath(day.conditionId),
-            iconAlt: day.description || day.condition,
-            wind: `Wind ${Math.round(day.windSpeed ?? 0)} mph`,
-            extra: `Rain ${day.rainChance ?? 0}% · Precip ${precipInches > 0 ? precipInches.toFixed(2) : "0"} in`,
-            conditionId: day.conditionId,
-        };
-    }
-
-    function updateTakeover() {
-        const data = currentTakeoverData();
-        if (!data) {
-            return;
-        }
-
-        setText("channelTakeoverHigh", `${Math.round(data.high)}°`);
-        setText("channelTakeoverLow", `${Math.round(data.low)}°`);
-        setText("channelTakeoverTitle", data.title);
-        setText("channelTakeoverDescription", data.description);
-        setText("channelTakeoverWind", data.wind);
-        setText("channelTakeoverExtra", data.extra);
-
-        const icon = byId("channelTakeoverIcon");
-        icon.src = data.icon;
-        icon.alt = data.iconAlt;
-
-        const screen = byId("channelTakeoverScreen");
-        screen.style.setProperty(
-            "--channel-globe-image",
-            state.globeImage ? `url("${state.globeImage}")` : "none"
-        );
-        byId("channelNasaCredit").classList.toggle("hidden", !state.globeImage);
-        deps.refreshAtmosphere(data.conditionId);
-        updateAsOf();
-    }
-
-    function showGrid({ restoreFocus = false } = {}) {
-        if (!state.weather) {
-            state.view = "grid";
-            state.takeoverTarget = null;
-            return;
-        }
-
-        state.view = "grid";
-        state.takeoverTarget = null;
-        byId("channelGridWrap").classList.remove("hidden");
-        byId("channelTakeover").classList.add("hidden");
-        byId("channelTrayGrid").classList.add("is-active");
-        byId("channelTrayToday").classList.remove("is-active");
-        deps.refreshAtmosphere(state.weather.conditionId);
-
-        if (restoreFocus && state.origin && document.contains(state.origin)) {
-            state.origin.focus();
-        }
-    }
-
-    function openTakeover(target, origin) {
-        if (!state.weather || (target !== "today" && !state.forecast[target])) {
-            return;
-        }
-
-        state.view = "takeover";
-        state.takeoverTarget = target;
-        state.origin = origin || document.activeElement;
-        byId("channelGridWrap").classList.add("hidden");
-        byId("channelTakeover").classList.remove("hidden");
-        byId("channelTrayGrid").classList.remove("is-active");
-        byId("channelTrayToday").classList.toggle("is-active", target === "today");
-        updateTakeover();
-
-        window.requestAnimationFrame(() => byId("channelBack").focus());
-    }
-
     function fillGrid() {
         const weather = state.weather;
         setText("channelTodayTitle", `Today Channel · ${weather.city}`);
-        setText("channelTodayTemp", `${Math.round(weather.temperature)}°`);
+        setText("channelTodayTemp", deps.formatTemp(weather.temperature));
         const todayIcon = byId("channelTodayIcon");
         todayIcon.src = iconPath(weather.conditionId, weather.weatherCode);
         todayIcon.alt = weather.description || weather.condition;
@@ -212,13 +101,13 @@ const CirrusDesktopChannels = (function () {
         const dayTiles = [...document.querySelectorAll(".channel-tile--day")];
         state.forecast.forEach((day, index) => {
             const tile = dayTiles[index];
-            tile.setAttribute("aria-label", `Open ${day.day} forecast channel`);
+            tile.setAttribute("aria-label", `Open ${day.day} forecast`);
             tile.querySelector(".channel-day-label").textContent = day.day;
             const icon = tile.querySelector(".channel-day-icon");
             icon.src = iconPath(day.conditionId);
             icon.alt = day.condition || "Forecast";
-            tile.querySelector(".channel-day-high").textContent = `${Math.round(day.high)}°`;
-            tile.querySelector(".channel-day-low").textContent = `${Math.round(day.low)}°`;
+            tile.querySelector(".channel-day-high").textContent = deps.formatTemp(day.high);
+            tile.querySelector(".channel-day-low").textContent = deps.formatTemp(day.low);
         });
     }
 
@@ -246,6 +135,13 @@ const CirrusDesktopChannels = (function () {
         deps.onSearch(city);
     }
 
+    function openChannel(target) {
+        if (!state.weather) {
+            return;
+        }
+        deps.onOpenChannel(target);
+    }
+
     function init(dependencies) {
         deps = dependencies;
         desktopMedia = window.matchMedia(DESKTOP_QUERY);
@@ -259,12 +155,14 @@ const CirrusDesktopChannels = (function () {
         document.querySelectorAll("[data-channel-target]").forEach((tile) => {
             tile.addEventListener("click", () => {
                 const value = tile.dataset.channelTarget;
-                openTakeover(value === "today" ? "today" : Number(value), tile);
+                if (value === "today") {
+                    openChannel("today");
+                } else {
+                    openChannel(Number(value));
+                }
             });
         });
-        byId("channelBack").addEventListener("click", () => showGrid({ restoreFocus: true }));
-        byId("channelTrayGrid").addEventListener("click", () => showGrid());
-        byId("channelTrayToday").addEventListener("click", (event) => openTakeover("today", event.currentTarget));
+        byId("channelTrayToday").addEventListener("click", () => openChannel("today"));
         desktopMedia.addEventListener("change", onViewportChange);
         onViewportChange();
     }
@@ -278,27 +176,12 @@ const CirrusDesktopChannels = (function () {
         state.forecast = forecastDays.slice(0, 5);
         fillGrid();
         byId("channelPrompt").classList.add("hidden");
+        byId("channelGridWrap").classList.remove("hidden");
         byId("channelTrayToday").disabled = false;
         byId("channelGrid").classList.remove("channel-grid--enter");
         void byId("channelGrid").offsetWidth;
         byId("channelGrid").classList.add("channel-grid--enter");
-
-        if (state.view === "takeover" && state.takeoverTarget !== null) {
-            openTakeover(state.takeoverTarget, state.origin);
-        } else {
-            showGrid();
-        }
         updateAsOf();
-    }
-
-    function setGlobeImage(url) {
-        state.globeImage = url || null;
-        if (!isDesktop()) {
-            return;
-        }
-        if (state.view === "takeover") {
-            updateTakeover();
-        }
     }
 
     function setSearching(isSearching) {
@@ -314,7 +197,6 @@ const CirrusDesktopChannels = (function () {
     return {
         init: init,
         render: render,
-        setGlobeImage: setGlobeImage,
         setSearching: setSearching,
     };
 })();

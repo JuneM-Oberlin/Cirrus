@@ -2,374 +2,266 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Cirrus</title>
-  <meta name="description" content="A Nintendo inspired weather app with current conditions and a 5-day forecast for any city.">
+  <meta name="description" content="A console-inspired weather channel: current conditions, today, tomorrow, and a 5-day forecast for any city.">
   <link rel="icon" href="icons/clear-day.png">
-  <link rel="stylesheet" href="theme.css?v=20261022a">
-  <link rel="stylesheet" href="style.css?v=20260708a">
-  <link rel="stylesheet" href="animations.css?v=20260708a">
-  <link rel="stylesheet" href="weather-atmosphere.css?v=20260705">
-  <link rel="stylesheet" href="responsive.css?v=20260708a">
+  <link rel="stylesheet" href="theme.css?v=20261022b">
+  <link rel="stylesheet" href="base.css?v=20261022a">
+  <link rel="stylesheet" href="frame.css?v=20261022a">
+  <link rel="stylesheet" href="channels.css?v=20261022a">
+  <link rel="stylesheet" href="alerts.css?v=20261022a">
+  <link rel="stylesheet" href="weather-atmosphere.css?v=20261022a">
+  <link rel="stylesheet" href="motion.css?v=20261022a">
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
   <h1 class="visually-hidden">Cirrus Weather</h1>
 
-  <div class="page">
+  <!-- NASA globe image behind the desktop Home menu -->
+  <div id="globeBg" class="globe-bg globe-hidden" aria-hidden="true"></div>
 
-    <!-- green header bar -->
-    <div class="header">
-      <div class="header-brand" aria-hidden="true">CIRRUS</div>
-      <div class="header-tabs" role="tablist" aria-label="Weather views">
-        <div class="header-tab active" id="tabToday" role="tab" tabindex="0" aria-selected="true"
-             aria-controls="todayView" onclick="switchTab('today')" onkeydown="onTabKeydown(event, 'today')">TODAY</div>
-        <div class="header-tab" id="tabForecast" role="tab" tabindex="-1" aria-selected="false"
-             aria-controls="forecastView" onclick="switchTab('forecast')" onkeydown="onTabKeydown(event, 'forecast')">5-DAY FORECAST</div>
+  <!-- DESKTOP HOME: channel menu. Tiles open the forecast frame. -->
+  <main class="home desktop-channels" id="desktopChannels" aria-label="Cirrus channels">
+    <section class="channel-letterbox" aria-labelledby="channelMenuTitle">
+      <div class="channel-letterbox-copy">
+        <h2 id="channelMenuTitle">Weather Channels</h2>
+        <p>Pick a channel · <span id="channelAsOf">As of --:--</span></p>
       </div>
-      <div class="header-city" id="cityName">--</div>
-    </div>
-
-    <!-- NASA globe background (outside views so it can be shown for both tabs) -->
-    <div id="globeBg" class="globe-bg globe-hidden"></div>
-    <div id="weatherAtmosphere" class="weather-atmosphere is-hidden" data-effect="clear" aria-hidden="true">
-      <video
-        id="atmoRainVideo"
-        class="atmo-rain-video is-hidden"
-        autoplay
-        loop
-        muted
-        playsinline
-        preload="auto"
-        aria-hidden="true"
-      >
-        <!-- /stream serves Range responses (required by iOS Safari);
-             /media is the static-server fallback for frontend-only dev -->
-        <source src="stream/rain-overlay.mp4" type="video/mp4">
-        <source src="media/rain-overlay.mp4" type="video/mp4">
-      </video>
-      <div class="atmo-precip atmo-precip--snow"></div>
-      <div id="atmoLightningLayer" class="atmo-lightning-layer is-hidden" aria-hidden="true"></div>
-      <div class="atmo-fog"></div>
-      <div class="atmo-clouds"></div>
-    </div>
-
-    <div class="page-content">
-
-      <div class="search-row">
-        <input id="cityInput" type="text" placeholder="Enter city" aria-label="City name"
-          onkeydown="if(event.key === 'Enter') searchCity()">
-        <button onclick="searchCity()" aria-label="Search">
-          <span class="search-btn-label">Search</span>
-          <svg class="search-btn-glyph" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="#3a3a3a" stroke-width="2.4"></circle><line x1="15" y1="15" x2="20" y2="20" stroke="#3a3a3a" stroke-width="2.4" stroke-linecap="round"></line></svg>
+      <div class="channel-search">
+        <input id="desktopCityInput" type="text" placeholder="Enter city" aria-label="City name">
+        <button type="button" id="desktopSearchButton" aria-label="Search">
+          <span>Search</span>
         </button>
       </div>
+    </section>
 
-      <div class="history-row">
-        <div id="historyList" class="history"></div>
-        <button type="button" id="alertBadge" class="alert-badge hidden" hidden
-                aria-label="View active weather alerts" onclick="CirrusAlerts.openOverlay()">
-          <svg class="alert-badge-tri" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M12 3 L22 20 H2 Z" fill="currentColor"></path>
-            <rect x="11" y="9" width="2" height="6" rx="1" fill="#3a0c0a"></rect>
-            <rect x="11" y="16" width="2" height="2" rx="1" fill="#3a0c0a"></rect>
-          </svg>
-          <span id="alertBadgeCount">0</span>
-        </button>
-      </div>
+    <section class="channel-stage" aria-live="polite">
+      <p id="homeStatus" class="home-status hidden" role="status"></p>
+      <p class="channel-prompt" id="channelPrompt">Search a city to tune the channels</p>
 
-      <div id="loading" class="glass-panel glass-panel--pill hidden" aria-live="polite">Fetching weather</div>
-      <div id="errorMsg" class="error hidden" role="alert" aria-live="polite"></div>
-      <p id="alertFetchMsg" class="alert-fetch-msg hidden" role="status" aria-live="polite"></p>
+      <div class="channel-grid-wrap hidden" id="channelGridWrap">
+        <div class="channel-grid" id="channelGrid">
+          <button type="button" class="channel-tile channel-tile--live channel-tile--today"
+                  data-channel-target="today" aria-label="Open current conditions">
+            <span class="channel-screen channel-screen--today">
+              <span class="channel-today-title" id="channelTodayTitle">Today Channel · --</span>
+              <span class="channel-today-weather">
+                <span class="channel-today-temp" id="channelTodayTemp">--°</span>
+                <img class="channel-today-icon" id="channelTodayIcon" src="icons/default.png" alt="">
+              </span>
+            </span>
+          </button>
 
-    
-      <div class="view-viewport">
-      <div class="view-track" id="viewTrack">
+          <button type="button" class="channel-tile channel-tile--live channel-tile--day"
+                  data-channel-target="0" aria-label="Open forecast day 1">
+            <span class="channel-screen channel-screen--day">
+              <span class="channel-day-label">--</span>
+              <span class="channel-day-weather">
+                <img class="channel-day-icon" src="icons/default.png" alt="">
+                <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
+              </span>
+            </span>
+          </button>
+          <button type="button" class="channel-tile channel-tile--live channel-tile--day"
+                  data-channel-target="1" aria-label="Open forecast day 2">
+            <span class="channel-screen channel-screen--day">
+              <span class="channel-day-label">--</span>
+              <span class="channel-day-weather">
+                <img class="channel-day-icon" src="icons/default.png" alt="">
+                <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
+              </span>
+            </span>
+          </button>
+          <button type="button" class="channel-tile channel-tile--live channel-tile--day"
+                  data-channel-target="2" aria-label="Open forecast day 3">
+            <span class="channel-screen channel-screen--day">
+              <span class="channel-day-label">--</span>
+              <span class="channel-day-weather">
+                <img class="channel-day-icon" src="icons/default.png" alt="">
+                <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
+              </span>
+            </span>
+          </button>
+          <button type="button" class="channel-tile channel-tile--live channel-tile--day"
+                  data-channel-target="3" aria-label="Open forecast day 4">
+            <span class="channel-screen channel-screen--day">
+              <span class="channel-day-label">--</span>
+              <span class="channel-day-weather">
+                <img class="channel-day-icon" src="icons/default.png" alt="">
+                <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
+              </span>
+            </span>
+          </button>
+          <button type="button" class="channel-tile channel-tile--live channel-tile--day"
+                  data-channel-target="4" aria-label="Open forecast day 5">
+            <span class="channel-screen channel-screen--day">
+              <span class="channel-day-label">--</span>
+              <span class="channel-day-weather">
+                <img class="channel-day-icon" src="icons/default.png" alt="">
+                <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
+              </span>
+            </span>
+          </button>
 
-      <!-- TODAY VIEW -->
-      <div id="todayView" class="view-pane" role="tabpanel" aria-labelledby="tabToday">
-
-        <p id="todayEmpty" class="forecast-empty">Search a city to see today’s weather.</p>
-
-        <div id="weatherDisplay" class="weather-card glass-panel glass-panel--card hidden">
-
-          <!-- LEFT: temp + condition -->
-          <div class="card-left">
-            <div id="tempMain" class="temp">--°</div>
-            <div id="condition" class="condition">
-              <span id="conditionText">--</span>
-              <span id="feelsExplanation" class="feels-expl"></span>
-              <span id="feelsLine" class="feels-line"></span>
-            </div>
-          </div>
-
-          <!-- RIGHT: weather icon -->
-          <div id="weatherIcon" class="icon"></div>
-
-          <!-- DETAIL STRIP -->
-          <div class="details-row">
-            <div class="detail">
-              <span class="detail-label">Feels Like</span>
-              <span class="detail-val" id="feelsLike">--</span>
-            </div>
-            <div class="detail">
-              <span class="detail-label">Humidity</span>
-              <span class="detail-val" id="humidity">--</span>
-            </div>
-            <div class="detail">
-              <span class="detail-label">Wind</span>
-              <span class="detail-val" id="wind">--</span>
-            </div>
-            <div class="detail">
-              <span class="detail-label">Visibility</span>
-              <span class="detail-val" id="visibility">--</span>
-            </div>
-            <div class="detail">
-              <span class="detail-label"><span class="dl-full">Cloud Cover</span><span class="dl-short" aria-hidden="true">Clouds</span></span>
-              <span class="detail-val" id="cloudCover">--</span>
-            </div>
-            <div class="detail">
-              <span class="detail-label">Pressure</span>
-              <span class="detail-val" id="pressure">--</span>
-            </div>
-          </div>
-
-          <div class="aux-grid">
-            <!-- WIND + TIMESTAMP BAR -->
-            <div class="wind-bar glass-panel">
-              <span class="wind-label"><span class="wind-label-full">Wind Direction</span><span class="wind-label-short" aria-hidden="true">Wind Dir</span></span>
-              <span class="wind-val" id="windDir">--</span>
-              <span class="timestamp" id="timestamp">--</span>
-            </div>
-
-            <!-- SUNRISE / SUNSET BAR -->
-            <div class="sun-bar glass-panel">
-              <div class="sun-item">
-                <img src="icons/clear-day.png" alt="Sunrise" class="sun-icon">
-                <span class="sun-label">Sunrise</span>
-                <span class="sun-val" id="sunrise">--</span>
-              </div>
-              <div class="sun-divider"></div>
-              <div class="sun-item">
-                <img src="icons/clear-night.png" alt="Sunset" class="sun-icon">
-                <span class="sun-label">Sunset</span>
-                <span class="sun-val" id="sunset">--</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Mobile-only timestamp pill (desktop shows it inside the wind bar) -->
-          <div class="today-stamp">
-            <span id="timestampMobile" class="timestamp">--</span>
-          </div>
-
+          <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
+          <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
+          <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
+          <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
+          <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
+          <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
         </div>
+        <p class="channel-grid-hint">Pick a channel to open it</p>
       </div>
+    </section>
 
-      <!-- FORECAST VIEW (stays rendered for the swipe; inert while off-screen) -->
-      <div id="forecastView" class="view-pane" role="tabpanel" aria-labelledby="tabForecast"
-           inert aria-hidden="true">
-
-        <p id="forecastEmpty" class="forecast-empty">Search a city to see the 5-day forecast.</p>
-        <div class="forecast-strip" id="forecastStrip"></div>
-        <p id="forecastHint" class="forecast-hint hidden">Tap a day for details</p>
-
-        <!-- Selected day details (hidden until a day is clicked) -->
-        <div id="forecastDetails" class="forecast-details hidden"></div>
-
-        <div class="forecast-footer" id="forecastFooter">AS OF --:-- --, --/--</div>
-      </div>
-
-      </div> <!-- /view-track -->
-      </div> <!-- /view-viewport -->
-
-    </div> <!-- /page-content -->
-
-    <!-- Variant C: desktop-only Wii channel menu. Mobile keeps the interface above. -->
-    <main class="desktop-channels" id="desktopChannels" aria-label="Weather channels">
-      <section class="channel-letterbox" aria-labelledby="channelMenuTitle">
-        <div class="channel-letterbox-copy">
-          <h2 id="channelMenuTitle">Weather Channels</h2>
-          <p>Pick a channel · <span id="channelAsOf">As of --:-- --, --/--</span></p>
-        </div>
-        <div class="channel-search">
-          <input id="desktopCityInput" type="text" placeholder="Enter city" aria-label="City name">
-          <button type="button" id="desktopSearchButton" aria-label="Search">
-            <span>Search</span>
+    <nav class="channel-tray" aria-label="Channel controls">
+      <svg class="channel-tray-wave" viewBox="0 0 1440 150" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <pattern id="channelTrayCrt" width="6" height="4" patternUnits="userSpaceOnUse">
+            <rect class="channel-tray-crt-dark" x="0" y="0" width="6" height="1.2"></rect>
+            <rect class="channel-tray-crt-light" x="0" y="2" width="6" height="0.8"></rect>
+          </pattern>
+        </defs>
+        <path class="channel-tray-fill" d="M0,13 C300,13 400,78 720,78 C1040,78 1140,13 1440,13 L1440,150 L0,150 Z"></path>
+        <path class="channel-tray-crt" d="M0,13 C300,13 400,78 720,78 C1040,78 1140,13 1440,13 L1440,150 L0,150 Z" fill="url(#channelTrayCrt)"></path>
+        <path class="channel-tray-shade" d="M0,24 C300,24 400,89 720,89 C1040,89 1140,24 1440,24"></path>
+        <path class="channel-tray-rim" d="M0,13 C300,13 400,78 720,78 C1040,78 1140,13 1440,13"></path>
+      </svg>
+      <div class="channel-tray-controls">
+        <div class="channel-tray-corner channel-tray-corner--left">
+          <div class="channel-tray-groove" aria-hidden="true"></div>
+          <button type="button" class="channel-tray-button is-active" id="channelTrayGrid" aria-label="All channels" title="All channels">
+            <svg class="channel-tray-crescent" aria-hidden="true" viewBox="0 0 131 128"><path d="M 103.15 52.253 C 118.738 37.646 120.095 11.919 100.046 4.543 C 92.058 1.604 83.428 0 74.425 0 C 33.321 0 0 33.435 0 74.679 C 0 81.851 1.008 88.788 2.889 95.353 C 8.8 115.984 34.686 116.41 50.346 101.735 L 103.15 52.253 Z"></path></svg>
+            <span>Cirrus</span>
           </button>
         </div>
-      </section>
-
-      <section class="channel-stage" aria-live="polite">
-        <p class="channel-prompt" id="channelPrompt">Search a city to tune the channels</p>
-
-        <div class="channel-grid-wrap hidden" id="channelGridWrap">
-          <div class="channel-grid" id="channelGrid">
-            <button type="button" class="channel-tile channel-tile--live channel-tile--today"
-                    data-channel-target="today" aria-label="Open today channel">
-              <span class="channel-screen channel-screen--today">
-                <span class="channel-today-title" id="channelTodayTitle">Today Channel · --</span>
-                <span class="channel-today-weather">
-                  <span class="channel-today-temp" id="channelTodayTemp">--°</span>
-                  <img class="channel-today-icon" id="channelTodayIcon" src="icons/default.png" alt="">
-                </span>
-              </span>
-            </button>
-
-            <button type="button" class="channel-tile channel-tile--live channel-tile--day"
-                    data-channel-target="0" aria-label="Open forecast channel 1">
-              <span class="channel-screen channel-screen--day">
-                <span class="channel-day-label">--</span>
-                <span class="channel-day-weather">
-                  <img class="channel-day-icon" src="icons/default.png" alt="">
-                  <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
-                </span>
-              </span>
-            </button>
-            <button type="button" class="channel-tile channel-tile--live channel-tile--day"
-                    data-channel-target="1" aria-label="Open forecast channel 2">
-              <span class="channel-screen channel-screen--day">
-                <span class="channel-day-label">--</span>
-                <span class="channel-day-weather">
-                  <img class="channel-day-icon" src="icons/default.png" alt="">
-                  <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
-                </span>
-              </span>
-            </button>
-            <button type="button" class="channel-tile channel-tile--live channel-tile--day"
-                    data-channel-target="2" aria-label="Open forecast channel 3">
-              <span class="channel-screen channel-screen--day">
-                <span class="channel-day-label">--</span>
-                <span class="channel-day-weather">
-                  <img class="channel-day-icon" src="icons/default.png" alt="">
-                  <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
-                </span>
-              </span>
-            </button>
-            <button type="button" class="channel-tile channel-tile--live channel-tile--day"
-                    data-channel-target="3" aria-label="Open forecast channel 4">
-              <span class="channel-screen channel-screen--day">
-                <span class="channel-day-label">--</span>
-                <span class="channel-day-weather">
-                  <img class="channel-day-icon" src="icons/default.png" alt="">
-                  <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
-                </span>
-              </span>
-            </button>
-            <button type="button" class="channel-tile channel-tile--live channel-tile--day"
-                    data-channel-target="4" aria-label="Open forecast channel 5">
-              <span class="channel-screen channel-screen--day">
-                <span class="channel-day-label">--</span>
-                <span class="channel-day-weather">
-                  <img class="channel-day-icon" src="icons/default.png" alt="">
-                  <span class="channel-day-temps"><b class="channel-day-high">--°</b><b class="channel-day-low">--°</b></span>
-                </span>
-              </span>
-            </button>
-
-            <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
-            <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
-            <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
-            <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
-            <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
-            <div class="channel-tile channel-tile--empty" aria-hidden="true"><span class="channel-screen channel-screen--empty"><b>Cirrus</b><span>Empty Channel</span></span></div>
-          </div>
-          <p class="channel-grid-hint">Pick a channel to open it</p>
+        <div class="channel-clock" aria-label="Current local time">
+          <div class="channel-clock-time"><span id="channelClockHour">--</span><span class="channel-clock-colon">:</span><span id="channelClockMinute">--</span><b id="channelClockMeridiem">--</b></div>
+          <div class="channel-clock-date" id="channelClockDate">--</div>
         </div>
+        <div class="channel-tray-corner channel-tray-corner--right">
+          <div class="channel-tray-groove" aria-hidden="true"></div>
+          <button type="button" class="channel-tray-button" id="channelTrayToday" aria-label="Open current conditions" title="Open current conditions" disabled>
+            <svg class="channel-tray-crescent" aria-hidden="true" viewBox="0 0 131 128"><path d="M 103.15 52.253 C 118.738 37.646 120.095 11.919 100.046 4.543 C 92.058 1.604 83.428 0 74.425 0 C 33.321 0 0 33.435 0 74.679 C 0 81.851 1.008 88.788 2.889 95.353 C 8.8 115.984 34.686 116.41 50.346 101.735 L 103.15 52.253 Z"></path></svg>
+            <img src="icons/clear-night.png" alt="">
+          </button>
+        </div>
+      </div>
+    </nav>
+  </main>
 
-        <div class="channel-takeover hidden" id="channelTakeover">
-          <button type="button" class="channel-back" id="channelBack" aria-label="Back to channels">Back</button>
-          <div class="channel-takeover-screen" id="channelTakeoverScreen">
-            <div class="channel-takeover-body">
-              <div class="channel-takeover-left">
-                <div class="channel-takeover-temps">
-                  <span class="channel-takeover-high" id="channelTakeoverHigh">--°</span>
-                  <span class="channel-takeover-low" id="channelTakeoverLow">--°</span>
-                </div>
-                <div class="channel-takeover-summary">
-                  <h3 id="channelTakeoverTitle">--</h3>
-                  <p id="channelTakeoverDescription">--</p>
-                </div>
-              </div>
-              <div class="channel-takeover-right">
-                <img class="channel-takeover-icon" id="channelTakeoverIcon" src="icons/default.png" alt="">
-                <div class="channel-takeover-stats">
-                  <strong id="channelTakeoverWind">Wind -- mph</strong>
-                  <span id="channelTakeoverExtra">--</span>
-                </div>
-              </div>
+  <!-- THE FORECAST FRAME: silver rows, green header, blue panel -->
+  <div class="frame" id="frame">
+
+    <nav class="frame-row frame-row--top" aria-label="Frame controls, top">
+      <div class="frame-clock" id="frameClock" role="timer" aria-label="Local time">
+        <span class="frame-clock-digits" id="clockDigits">--:--</span>
+        <span class="frame-clock-meridiem" id="clockMeridiem"></span>
+      </div>
+      <button type="button" class="frame-btn frame-btn--nav" id="navUp">
+        <svg class="frame-tri" viewBox="0 0 12 10" aria-hidden="true" focusable="false"><path d="M6 0 12 10H0Z"></path></svg>
+        <span class="frame-btn-label"></span>
+      </button>
+      <button type="button" class="frame-btn" id="settingsButton">
+        <span class="frame-btn-label"></span>
+      </button>
+    </nav>
+
+    <header class="frame-header">
+      <h2 class="frame-title" id="frameTitle" aria-live="polite">Current</h2>
+      <button type="button" class="frame-location" id="locationPill" aria-label="Choose a city">
+        <span class="frame-location-text" id="locationName">Choose a city</span>
+      </button>
+      <form class="frame-search hidden" id="searchForm" role="search">
+        <label class="visually-hidden" for="cityInput">City name</label>
+        <input id="cityInput" class="frame-search-input" type="text" placeholder="Enter a city"
+               autocomplete="off" autocapitalize="words" enterkeyhint="search">
+        <button type="submit" class="frame-search-go">Go</button>
+      </form>
+    </header>
+
+    <div class="frame-alert-slot" id="frameAlertSlot"></div>
+
+    <section class="frame-panel" id="framePanel" aria-label="Weather">
+      <div class="panel-sat is-empty" id="panelSat" aria-hidden="true"></div>
+
+      <div id="weatherAtmosphere" class="weather-atmosphere is-hidden" data-effect="clear" aria-hidden="true">
+        <video id="atmoRainVideo" class="atmo-rain-video is-hidden" autoplay loop muted playsinline
+               preload="auto" aria-hidden="true">
+          <!-- /stream serves Range responses (required by iOS Safari);
+               /media is the static-server fallback for frontend-only dev -->
+          <source src="stream/rain-overlay.mp4" type="video/mp4">
+          <source src="media/rain-overlay.mp4" type="video/mp4">
+        </video>
+        <div class="atmo-precip atmo-precip--snow"></div>
+        <div id="atmoLightningLayer" class="atmo-lightning-layer is-hidden" aria-hidden="true"></div>
+        <div class="atmo-fog"></div>
+        <div class="atmo-clouds"></div>
+      </div>
+
+      <div class="panel-viewport" id="panelViewport">
+        <div class="panel-track" id="panelTrack">
+
+          <section class="view view--current" data-view="current" id="viewCurrent" aria-label="Current conditions">
+            <div class="view-empty" id="currentEmpty">
+              <p class="view-empty-text">Choose a city to tune in.</p>
+              <button type="button" class="chip-btn view-empty-btn" id="emptyChoose">Choose a city</button>
             </div>
-            <span class="channel-nasa-credit hidden" id="channelNasaCredit">Image owned by NASA</span>
-            <div class="channel-takeover-asof" id="channelTakeoverAsOf">As of --:-- --, --/--</div>
-          </div>
+            <div class="hero hidden" id="currentHero">
+              <div class="hero-temps">
+                <span class="hero-temp hero-temp--current" id="currentTemp">--</span>
+              </div>
+              <p class="hero-cond" id="currentCond">--</p>
+              <img class="hero-icon" id="currentIcon" src="icons/default.png" alt="">
+            </div>
+          </section>
+
         </div>
+      </div>
+
+      <section class="screen hidden" id="screenSearch" aria-label="Choose a city">
+        <h3 class="screen-heading" id="recentHeading">Recent cities</h3>
+        <ul class="chip-list" id="recentList"></ul>
+        <p class="screen-note">Type a city in the green bar above and press Go. Cirrus remembers the cities you pick.</p>
       </section>
 
-      <nav class="channel-tray" aria-label="Channel controls">
-        <svg class="channel-tray-wave" viewBox="0 0 1440 150" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <pattern id="channelTrayCrt" width="6" height="4" patternUnits="userSpaceOnUse">
-              <rect x="0" y="0" width="6" height="1.2" fill="rgba(0,0,0,0.16)"></rect>
-              <rect x="0" y="2" width="6" height="0.8" fill="rgba(255,255,255,0.35)"></rect>
-            </pattern>
-          </defs>
-          <path d="M0,13 C300,13 400,78 720,78 C1040,78 1140,13 1440,13 L1440,150 L0,150 Z" fill="rgb(225,226,230)"></path>
-          <path class="channel-tray-crt" d="M0,13 C300,13 400,78 720,78 C1040,78 1140,13 1440,13 L1440,150 L0,150 Z" fill="url(#channelTrayCrt)"></path>
-          <path d="M0,24 C300,24 400,89 720,89 C1040,89 1140,24 1440,24" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="16"></path>
-          <path d="M0,13 C300,13 400,78 720,78 C1040,78 1140,13 1440,13" fill="none" stroke="rgb(54,191,237)" stroke-width="5"></path>
+      <p id="loading" class="panel-status hidden" role="status" aria-live="polite">Fetching weather</p>
+      <p id="errorMsg" class="panel-status panel-status--error hidden" role="alert"></p>
+      <p id="alertFetchMsg" class="panel-status panel-status--note hidden" role="status" aria-live="polite"></p>
+      <button type="button" id="alertBadge" class="alert-badge panel-badge hidden" hidden
+              aria-label="View active weather alerts" onclick="CirrusAlerts.openOverlay()">
+        <svg class="alert-badge-tri" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 3 L22 20 H2 Z" fill="currentColor"></path>
         </svg>
-        <div class="channel-tray-controls">
-          <div class="channel-tray-corner channel-tray-corner--left">
-            <div class="channel-tray-groove" aria-hidden="true"></div>
-            <button type="button" class="channel-tray-button is-active" id="channelTrayGrid" aria-label="All channels" title="All channels">
-              <svg class="channel-tray-crescent" aria-hidden="true" viewBox="0 0 131 128"><path d="M 103.15 52.253 C 118.738 37.646 120.095 11.919 100.046 4.543 C 92.058 1.604 83.428 0 74.425 0 C 33.321 0 0 33.435 0 74.679 C 0 81.851 1.008 88.788 2.889 95.353 C 8.8 115.984 34.686 116.41 50.346 101.735 L 103.15 52.253 Z"></path></svg>
-              <span>Cirrus</span>
-            </button>
-          </div>
-          <div class="channel-clock" aria-label="Current local time">
-            <div class="channel-clock-time"><span id="channelClockHour">--</span><span class="channel-clock-colon">:</span><span id="channelClockMinute">--</span><b id="channelClockMeridiem">--</b></div>
-            <div class="channel-clock-date" id="channelClockDate">--</div>
-          </div>
-          <div class="channel-tray-corner channel-tray-corner--right">
-            <div class="channel-tray-groove" aria-hidden="true"></div>
-            <button type="button" class="channel-tray-button" id="channelTrayToday" aria-label="Open today" title="Open today" disabled>
-              <svg class="channel-tray-crescent" aria-hidden="true" viewBox="0 0 131 128"><path d="M 103.15 52.253 C 118.738 37.646 120.095 11.919 100.046 4.543 C 92.058 1.604 83.428 0 74.425 0 C 33.321 0 0 33.435 0 74.679 C 0 81.851 1.008 88.788 2.889 95.353 C 8.8 115.984 34.686 116.41 50.346 101.735 L 103.15 52.253 Z"></path></svg>
-              <img src="icons/clear-night.png" alt="">
-            </button>
-          </div>
-        </div>
-      </nav>
-    </main>
+        <span id="alertBadgeCount">0</span>
+      </button>
 
-    <!-- Mobile bottom dock: tab buttons + live clock (phones only; desktop keeps header tabs) -->
-    <div class="mobile-dock" id="mobileDock">
-      <div class="dock-band" id="dockBand">As of --:-- --, --/--</div>
-      <div class="dock-bar" role="tablist" aria-label="Weather views">
-        <div class="dock-item">
-          <button type="button" id="dockTabToday" class="dock-btn" role="tab" aria-selected="true"
-                  aria-controls="todayView" aria-label="Today"
-                  onclick="switchTab('today')" onkeydown="onTabKeydown(event, 'today', true)">
-            <img class="dock-icon dock-icon--night" src="icons/clear-night.png" alt="">
-            <img class="dock-icon dock-icon--day" src="icons/clear-day.png" alt="">
-          </button>
-          <span class="dock-label" aria-hidden="true">Today</span>
+      <footer class="panel-footer">
+        <p class="panel-credit">Data: OpenWeather · NWS<br>Imagery: NASA GIBS</p>
+        <div class="panel-readout">
+          <div class="panel-wind hidden" id="panelWind">
+            <span class="panel-wind-main" id="panelWindMain"></span>
+            <span class="panel-wind-sub" id="panelWindSub"></span>
+          </div>
+          <p class="panel-asof hidden" id="panelAsOf"></p>
         </div>
-        <div class="dock-clock">
-          <span class="dock-time" id="dockTime">--:--</span>
-          <span class="dock-date" id="dockDate">--</span>
-        </div>
-        <div class="dock-item">
-          <button type="button" id="dockTabForecast" class="dock-btn" role="tab" aria-selected="false" tabindex="-1"
-                  aria-controls="forecastView" aria-label="5-day forecast"
-                  onclick="switchTab('forecast')" onkeydown="onTabKeydown(event, 'forecast', true)">
-            <img class="dock-icon" src="icons/mostly-cloudy-day.png" alt="">
-          </button>
-          <span class="dock-label" aria-hidden="true">5-Day</span>
-        </div>
-      </div>
-    </div>
+      </footer>
+    </section>
 
+    <nav class="frame-row frame-row--bottom" aria-label="Frame controls, bottom">
+      <button type="button" class="frame-btn" id="backButton">
+        <span class="frame-btn-label"></span>
+      </button>
+      <button type="button" class="frame-btn frame-btn--nav" id="navDown">
+        <svg class="frame-tri" viewBox="0 0 12 10" aria-hidden="true" focusable="false"><path d="M0 0H12L6 10Z"></path></svg>
+        <span class="frame-btn-label"></span>
+      </button>
+      <button type="button" class="frame-btn" id="globeButton">
+        <span class="frame-btn-label"></span>
+      </button>
+    </nav>
   </div>
 
   <!-- Severe weather alert overlay (full-screen takeover) -->
@@ -380,8 +272,6 @@
       <div class="alert-top-left">
         <svg class="alert-tri" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M12 3 L22 20 H2 Z" fill="currentColor"></path>
-          <rect x="11" y="9" width="2" height="6" rx="1" fill="#3a0c0a"></rect>
-          <rect x="11" y="16" width="2" height="2" rx="1" fill="#3a0c0a"></rect>
         </svg>
         <div>
           <div class="alert-menu-title" id="alertMenuTitle">Weather Alert</div>
@@ -407,13 +297,15 @@
   </div>
 
   <script src="iconMap.js?v=20260701"></script>
+  <script src="units.js?v=20261022a"></script>
   <script src="atmo-rain-video.js?v=20260706e"></script>
   <script src="atmo-lightning.js?v=20260626c"></script>
-  <script src="search-ui.js?v=20260706"></script>
-  <script src="alerts.js?v=20260710a"></script>
+  <script src="alerts.js?v=20261022a"></script>
   <script src="atmosphere.js?v=20260706"></script>
-  <script src="forecast.js?v=20260706e"></script>
-  <script src="channels.js?v=20260721a"></script>
-  <script src="script.js?v=20260721a"></script>
+  <script src="frame.js?v=20261022a"></script>
+  <script src="views.js?v=20261022a"></script>
+  <script src="search.js?v=20261022a"></script>
+  <script src="channels.js?v=20261022a"></script>
+  <script src="script.js?v=20261022a"></script>
 </body>
 </html>

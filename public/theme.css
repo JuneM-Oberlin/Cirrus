@@ -70,6 +70,198 @@
   --nintendo-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --nintendo-soft: cubic-bezier(0.32, 0.72, 0, 1);
   --nintendo-press: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --dur-instant: 120ms;
+  --dur-fast: 200ms;
+  --dur-medium: 350ms;
+  --dur-slow: 600ms;
+  --dur-fade: 1200ms;
+
+  /* ---- Spacing scale ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 56px;
+  --hairline: 1px;
+  --rule: 2px;
+  --rule-thick: 3px;
+  --touch-min: 44px;
+
+  /* ---- Focus ---- */
+  --focus-width: 3px;
+  --focus-offset: 2px;
+  --focus-ring-on-light: #0a5fa3;
+
+  /* ---- Radii ---- */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* ---- Type scale ---- */
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-base: 16px;
+  --fs-md: 18px;
+  --fs-lg: 22px;
+  --fs-xl: 28px;
+  --fw-regular: 400;
+  --fw-bold: 700;
+  --fw-heavy: 800;
+  --lh-tight: 1;
+  --lh-snug: 1.2;
+  --lh-body: 1.45;
+  --tracking-caps: 0.06em;
+  --tracking-tight: -0.03em;
+
+  /* ---- Frame: silver button rows ---- */
+  --frame-row-height: 64px;
+  --frame-btn-font: 20px;
+  --frame-tri-size: 16px;
+  --frame-columns: 1fr 1.35fr 1fr;
+  --frame-bg: #b9c1c8;
+  --frame-btn-face: linear-gradient(180deg, #ffffff 0%, #f2f4f6 46%, #dfe3e7 100%);
+  --frame-btn-face-hover: linear-gradient(180deg, #ffffff 0%, #f7f9fa 46%, #e9edf0 100%);
+  --frame-btn-face-active: linear-gradient(180deg, #6fd6fb 0%, #2aaee9 34%, #0d76bd 52%, #0a64aa 100%);
+  --frame-btn-text: #2f3337;
+  --frame-btn-text-muted: #6b747c;
+  --frame-btn-text-active: #ffffff;
+  --frame-btn-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2px 3px rgba(110, 125, 140, 0.22);
+  --frame-btn-shadow-active:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 4px rgba(0, 40, 90, 0.35);
+  --frame-btn-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+  --frame-btn-text-shadow-active: 0 1px 2px rgba(0, 30, 70, 0.55);
+  --frame-divider: #a7b0b8;
+  --frame-divider-light: rgba(255, 255, 255, 0.9);
+  --frame-edge: #2c7bd4;
+  --frame-clock-text: #3c4247;
+  --frame-clock-font: 30px;
+  --frame-clock-meridiem-font: 13px;
+
+  /* ---- Frame: green header strip ---- */
+  --frame-header-height: 64px;
+  --header-strip: linear-gradient(180deg, #2b8c22 0%, #166a10 100%);
+  --header-strip-edge: #0d4f08;
+  --title-block: linear-gradient(180deg, #33a826 0%, #1a7a12 50%, #0f5c0a 100%);
+  --title-block-width: 310px;
+  --title-font: 30px;
+  --title-font-long: 22px;
+  --title-text: #ffffff;
+  --title-text-shadow: 0 2px 2px rgba(0, 30, 0, 0.5);
+  --pill-face: linear-gradient(180deg, #a8f78c 0%, #5cd84c 30%, #2aa820 58%, #1d8f15 100%);
+  --pill-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.05) 100%);
+  --pill-border: #0e6a09;
+  --pill-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -2px 3px rgba(0, 60, 0, 0.3),
+    0 2px 4px rgba(0, 30, 0, 0.35);
+  --pill-text: #ffffff;
+  --pill-font: 30px;
+  --pill-inset: 8px;
+  --search-field-bg: #ffffff;
+  --search-field-text: #12361a;
+  --search-field-placeholder: #5d7a62;
+
+  /* ---- Frame: royal blue panel ---- */
+  --panel-face: linear-gradient(160deg, #2d68e2 0%, #1b4cc4 36%, #1038a4 68%, #0a2682 100%);
+  --panel-streaks:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0) 18%,
+      rgba(255, 255, 255, 0.07) 21%,
+      rgba(255, 255, 255, 0) 24%,
+      rgba(255, 255, 255, 0) 58%,
+      rgba(255, 255, 255, 0.05) 61%,
+      rgba(255, 255, 255, 0) 64%),
+    repeating-linear-gradient(180deg,
+      rgba(255, 255, 255, 0) 0,
+      rgba(255, 255, 255, 0) 5px,
+      rgba(255, 255, 255, 0.025) 5px,
+      rgba(255, 255, 255, 0.025) 6px);
+  --panel-sat-opacity: 0.42;
+  --panel-text: #ffffff;
+  --panel-text-soft: rgba(255, 255, 255, 0.9);
+  --panel-text-shadow: 0 2px 3px rgba(0, 10, 50, 0.6);
+  --panel-pad-x: clamp(24px, 6vw, 96px);
+  --panel-pad-top: clamp(16px, 6vh, 64px);
+  --panel-footer-space: 128px;
+
+  /* ---- Panel readouts ---- */
+  --temp-current: #ffffff;
+  --temp-high: #ffd21c;
+  --temp-low: #7cecff;
+  --temp-shadow: 0 4px 0 rgba(0, 20, 80, 0.35), 0 8px 18px rgba(0, 10, 50, 0.45);
+  --temp-high-shadow: 0 4px 0 #8a6400, 0 8px 18px rgba(0, 10, 50, 0.45);
+  --hero-temp-size: clamp(96px, 17vh, 168px);
+  --hero-cond-size: clamp(22px, 3.8vh, 36px);
+  --hero-icon-size: clamp(130px, 26vh, 240px);
+  --hero-icon-shadow: drop-shadow(0 10px 18px rgba(0, 10, 50, 0.5));
+  --wind-font: clamp(26px, 4.6vh, 42px);
+  --wind-sub-font: 14px;
+  --wind-band: linear-gradient(to right, rgba(5, 22, 86, 0) 0%, rgba(5, 22, 86, 0.78) 34%, #061a66 100%);
+  --asof-strip: linear-gradient(to right, rgba(200, 20, 60, 0) 0%, #b8102f 34%, #d42a55 100%);
+  --asof-font: 15px;
+  --credit-font: 12px;
+  --credit-text: rgba(255, 255, 255, 0.92);
+
+  /* ---- Panel status pills (loading / error) ---- */
+  --status-face: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.06) 55%), rgba(6, 24, 92, 0.82);
+  --status-border: rgba(255, 255, 255, 0.35);
+  --status-error-face: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.04) 55%), rgba(150, 16, 40, 0.9);
+  --status-shadow: 0 6px 18px rgba(0, 10, 50, 0.4);
+
+  /* ---- Silver buttons inside the panel (recent cities, choices) ---- */
+  --chip-face: var(--frame-btn-face);
+  --chip-border: rgba(255, 255, 255, 0.85);
+  --chip-shadow: 0 3px 8px rgba(0, 10, 50, 0.35), inset 0 -2px 3px rgba(110, 125, 140, 0.22);
+  --chip-height: 52px;
+  --chip-font: 18px;
+  --chip-min-width: 220px;
+
+  /* ---- Layering ---- */
+  --z-sat: 0;
+  --z-atmosphere: 1;
+  --z-view: 2;
+  --z-footer: 3;
+  --z-screen: 4;
+  --z-status: 5;
+  --z-frame: 10;
+  --z-overlay: 1000;
+}
+
+/* Phones: same frame, shorter rows and smaller type. */
+@media (max-width: 767px) {
+  :root {
+    --frame-row-height: 54px;
+    --frame-btn-font: 15px;
+    --frame-tri-size: 12px;
+    --frame-clock-font: 20px;
+    --frame-clock-meridiem-font: 11px;
+    --frame-header-height: 52px;
+    --title-block-width: 38%;
+    --title-font: 19px;
+    --title-font-long: 15px;
+    --pill-font: 19px;
+    --pill-inset: 6px;
+    --panel-pad-x: 20px;
+    --panel-pad-top: 20px;
+    --panel-footer-space: 132px;
+    --hero-temp-size: clamp(72px, 13vh, 112px);
+    --hero-cond-size: clamp(18px, 2.8vh, 24px);
+    --hero-icon-size: clamp(96px, 16vh, 140px);
+    --wind-font: clamp(22px, 3.6vh, 30px);
+    --wind-sub-font: 12px;
+    --asof-font: 13px;
+    --credit-font: 11px;
+    --chip-height: 48px;
+    --chip-font: 16px;
+  }
 }
 
 body.theme-day {
