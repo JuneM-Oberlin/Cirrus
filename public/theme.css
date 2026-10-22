@@ -226,6 +226,22 @@
   --panel-footer-slim: 48px;
   --fiveday-max-height: 100%;
 
+  /* ---- 6-Hour tiles ---- */
+  --sixhour-strip-face: linear-gradient(to right, #0a1d55 0%, rgba(10, 29, 85, 0.85) 60%, rgba(10, 29, 85, 0) 100%);
+  --sixhour-strip-font: clamp(18px, 3vh, 26px);
+  --sixhour-tile-face:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.12) 46%,
+      rgba(255, 255, 255, 0) 47%),
+    linear-gradient(180deg, #78b4f2 0%, #3f86e2 46%, #1d55bf 47%, #173f9c 100%);
+  --sixhour-tile-border: rgba(210, 230, 255, 0.85);
+  --sixhour-tile-shadow: 0 6px 14px rgba(0, 10, 50, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --sixhour-icon-size: clamp(90px, 19vh, 176px);
+  --sixhour-time-font: clamp(16px, 2.6vh, 23px);
+  --sixhour-temp-font: clamp(20px, 3.6vh, 32px);
+  --sixhour-gap: 18px;
+
   /* ---- Panel status pills (loading / error) ---- */
   --status-face: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.06) 55%), rgba(6, 24, 92, 0.82);
   --status-border: rgba(255, 255, 255, 0.35);
@@ -285,6 +301,11 @@
     --fiveday-low-font: clamp(24px, 4.2vh, 34px);
     --panel-footer-slim: 44px;
     --fiveday-max-height: 440px;
+    --sixhour-strip-font: 18px;
+    --sixhour-icon-size: clamp(60px, 10vh, 84px);
+    --sixhour-time-font: 14px;
+    --sixhour-temp-font: 18px;
+    --sixhour-gap: 12px;
   }
 }
 

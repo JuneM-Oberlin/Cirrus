@@ -469,6 +469,89 @@
   text-shadow: var(--temp-shadow);
 }
 
+/* ---------- 6-Hour weather: sub-header strip + four glossy tiles ---------- */
+
+.view--sixhour {
+  padding-top: 0;
+  padding-bottom: var(--panel-footer-slim);
+}
+
+.sixhour {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* the smaller sub-header under the green header */
+.sixhour-strip {
+  align-self: flex-start;
+  margin: 0 calc(-1 * var(--panel-pad-x));
+  padding: var(--space-2) var(--panel-pad-x);
+  padding-right: var(--space-9);
+  background: var(--sixhour-strip-face);
+  font-size: var(--sixhour-strip-font);
+  font-weight: var(--fw-bold);
+}
+
+.sixhour-list {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-content: center;
+  gap: var(--sixhour-gap);
+  list-style: none;
+}
+
+.sixhour-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3) var(--space-2) var(--space-4);
+  background: var(--sixhour-tile-face);
+  border: var(--rule) solid var(--sixhour-tile-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--sixhour-tile-shadow);
+  text-align: center;
+}
+
+.sixhour-icon {
+  width: var(--sixhour-icon-size);
+  height: var(--sixhour-icon-size);
+  object-fit: contain;
+  filter: var(--hero-icon-shadow);
+}
+
+.sixhour-temps {
+  display: flex;
+  gap: var(--space-2);
+  font-size: var(--sixhour-temp-font);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-tight);
+}
+
+.sixhour-high {
+  color: var(--temp-high);
+}
+
+.sixhour-low {
+  color: var(--temp-low);
+}
+
+.sixhour-time {
+  font-size: var(--sixhour-time-font);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+  white-space: pre-line;
+}
+
+.sixhour-note {
+  margin: auto;
+  font-size: var(--hero-cond-size);
+}
+
 /* ---------- Empty state ---------- */
 
 /* Until a city loads, every view shows its empty message instead. */
@@ -754,5 +837,10 @@ body.is-home .frame {
 
   .panel-stat--extra {
     display: none;
+  }
+
+  /* four tiles become a 2 x 2 grid on phones */
+  .sixhour-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

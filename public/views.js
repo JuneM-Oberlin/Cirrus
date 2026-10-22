@@ -210,7 +210,65 @@ const CirrusViews = (function () {
         });
     }
 
-    // data: { weather, forecast, loadedAt }
+    const BLOCK_HOURS = 6;
+
+    // Tomorrow's four six-hour tiles, titled with tomorrow's weekday.
+    function renderSixHour(sixHour, loadedAt) {
+        const list = byId("sixhourList");
+        const note = byId("sixhourNote");
+        list.replaceChildren();
+        if (!sixHour || !Array.isArray(sixHour.blocks)) {
+            note.classList.remove("hidden");
+            frame.setViewTitle("sixhour", "");
+            return;
+        }
+
+        const tomorrow = units.cityDateKey(loadedAt, sixHour.timezoneOffset, 1);
+        const blocks = sixHour.blocks.filter((block) => block.date === tomorrow);
+        note.classList.toggle("hidden", blocks.length > 0);
+        if (blocks.length > 0) {
+            frame.setViewTitle("sixhour", fullWeekday(blocks[0].day));
+        } else {
+            frame.setViewTitle("sixhour", "");
+        }
+
+        blocks.forEach((block) => {
+            const start = units.hourLabel(block.startHour);
+            const end = units.hourLabel(block.startHour + BLOCK_HOURS);
+            const condition = titleCase(block.condition);
+
+            const item = document.createElement("li");
+            item.className = "sixhour-tile";
+            item.setAttribute("aria-label",
+                start + " to " + end + ": " + condition + ", high " + units.temp(block.high)
+                + ", low " + units.temp(block.low) + ", chance of rain " + block.rainChance + "%");
+
+            const icon = document.createElement("img");
+            icon.className = "sixhour-icon";
+            setIcon(icon, block.conditionId, block.weatherCode, "");
+
+            const temps = document.createElement("p");
+            temps.className = "sixhour-temps";
+            temps.setAttribute("aria-hidden", "true");
+            const high = document.createElement("span");
+            high.className = "sixhour-high";
+            high.textContent = units.temp(block.high);
+            const low = document.createElement("span");
+            low.className = "sixhour-low";
+            low.textContent = units.temp(block.low);
+            temps.append(high, low);
+
+            const time = document.createElement("p");
+            time.className = "sixhour-time";
+            time.setAttribute("aria-hidden", "true");
+            time.textContent = start + " –\n" + end;
+
+            item.append(icon, temps, time);
+            list.appendChild(item);
+        });
+    }
+
+    // data: { weather, forecast, sixHour, loadedAt }
     function render(data) {
         byId("framePanel").classList.add("has-data");
         renderCurrent(data.weather);
@@ -218,6 +276,7 @@ const CirrusViews = (function () {
         renderDay("tomorrow", "tomorrow", data.forecast[1]);
         forecastDays = data.forecast;
         renderFiveDay(data.forecast);
+        renderSixHour(data.sixHour, data.loadedAt);
         frame.setAsOf(units.asOf(data.loadedAt, data.weather.timezoneOffset));
     }
 

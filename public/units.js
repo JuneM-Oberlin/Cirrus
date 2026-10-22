@@ -140,6 +140,17 @@ const CirrusUnits = (function () {
         return hours + ":" + minutes + " " + suffix;
     }
 
+    // "6:00 a.m." for a whole hour on a 24-hour clock (0-23).
+    function hourLabel(hour24) {
+        return clockTime(new Date(Date.UTC(2000, 0, 1, hour24 % 24, 0)));
+    }
+
+    // "2026-10-23" for the city's calendar date, daysAhead days from now.
+    function cityDateKey(unixMs, timezoneOffsetSeconds, daysAhead) {
+        const date = cityDate(unixMs + daysAhead * 86400000, timezoneOffsetSeconds);
+        return date.toISOString().slice(0, 10);
+    }
+
     function cityClockTime(unixSeconds, timezoneOffsetSeconds) {
         if (!unixSeconds) {
             return "--";
@@ -168,6 +179,8 @@ const CirrusUnits = (function () {
         pressure,
         cityDate,
         clockTime,
+        hourLabel,
+        cityDateKey,
         cityClockTime,
         asOf,
     };

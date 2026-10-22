@@ -74,6 +74,7 @@ fetch(`${BACKEND_URL}/health`).catch(() => {});
 const clientCache = {
     weather: new Map(),
     forecast: new Map(),
+    sixHour: new Map(),
 };
 
 const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -190,6 +191,14 @@ function fetchWeatherData(city) {
 
 function fetchForecastData(city) {
     return fetchCached("forecast", city, clientCache.forecast);
+}
+
+// The 6-hour view is a bonus: if it fails, the rest of the city still loads.
+function fetchSixHourData(city) {
+    return fetchCached("sixhour", city, clientCache.sixHour).catch((err) => {
+        console.log("6-hour forecast unavailable:", err);
+        return null;
+    });
 }
 
 /* ---------- Loading + error status ---------- */
@@ -326,13 +335,15 @@ const appState = {
     city: "",
     weather: null,
     forecast: [],
+    sixHour: null,
     loadedAt: 0,
 };
 
-function applyCity(city, weather, forecast, { visit = false } = {}) {
+function applyCity(city, weather, forecast, sixHour, { visit = false } = {}) {
     appState.city = city;
     appState.weather = weather;
     appState.forecast = forecast;
+    appState.sixHour = sixHour;
     appState.loadedAt = Date.now();
 
     document.body.classList.toggle("theme-day", !weather.weatherCode.endsWith("n"));
@@ -356,11 +367,12 @@ async function loadCity(city, options = {}) {
     }
     CirrusAlerts.resetForSearch();
     return withLoading(async () => {
-        const [weather, forecast] = await Promise.all([
+        const [weather, forecast, sixHour] = await Promise.all([
             fetchWeatherData(trimmed),
             fetchForecastData(trimmed),
+            fetchSixHourData(trimmed),
         ]);
-        applyCity(trimmed, weather, forecast, options);
+        applyCity(trimmed, weather, forecast, sixHour, options);
     });
 }
 

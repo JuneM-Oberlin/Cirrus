@@ -103,9 +103,12 @@ test("frame steps through the view stack and names each neighbour", () => {
     assert.equal(document.getElementById("navUp").disabled, true, "first view has an empty top slot");
     assert.deepEqual(changes, ["today", "current", "uv"]);
 
+    // a view can retitle the header without renaming its neighbour button
     frame.setViewTitle("today", "Thursday");
     frame.showView("current");
-    assert.equal(document.getElementById("navDown").label.textContent, "Thursday");
+    assert.equal(document.getElementById("navDown").label.textContent, "Today");
+    frame.showView("today");
+    assert.equal(document.getElementById("frameTitle").textContent, "Thursday");
 });
 
 test("frame screens take over the title, show Back, and restore the view on close", () => {
@@ -341,6 +344,7 @@ test("views fill Current, Today, and Tomorrow and hand readouts to the frame", (
     const frame = {
         setReadout: (id, readout) => { readouts[id] = readout; },
         setAsOf: (text) => { asOf = text; },
+        setViewTitle() {},
     };
     const unitsContext = runClassicScript("public/units.js", { console: quietConsole, localStorage: storageStub() });
     const context = runClassicScript("public/views.js", {
@@ -388,6 +392,7 @@ test("the 5-day view builds five columns with weekend names marked", () => {
     const frame = {
         setReadout() {},
         setAsOf() {},
+        setViewTitle() {},
         openScreen: (name, options) => opened.push([name, options.title]),
     };
     const unitsContext = runClassicScript("public/units.js", { console: quietConsole, localStorage: storageStub() });
@@ -416,4 +421,61 @@ test("the 5-day view builds five columns with weekend names marked", () => {
     columns[2].dispatch("click");
     assert.deepEqual(opened, [["day", "Sunday"]]);
     assert.equal(document.getElementById("dayHigh").textContent, "77°");
+});
+
+test("the 6-hour view shows tomorrow's four local blocks under tomorrow's weekday", () => {
+    const document = documentStub();
+    const titles = {};
+    const frame = {
+        setReadout() {},
+        setAsOf() {},
+        setViewTitle: (id, title) => { titles[id] = title; },
+    };
+    const unitsContext = runClassicScript("public/units.js", { console: quietConsole, localStorage: storageStub() });
+    const context = runClassicScript("public/views.js", {
+        document,
+        iconMap: { 804: "mostly-cloudy-day.png", "804n": "mostly-cloudy-night.png" },
+    });
+    const views = lexical(context, "CirrusViews");
+    views.init({ frame, units: lexical(unitsContext, "CirrusUnits") });
+
+    const block = (date, day, startHour, code) => ({
+        date, day, startHour, high: 66, low: 61, rainChance: 20,
+        condition: "overcast clouds", conditionId: 804, weatherCode: code,
+    });
+    const sixHour = {
+        timezoneOffset: -21600,
+        blocks: [
+            block("2026-10-21", "Wed", 18, "04n"),
+            block("2026-10-22", "Thu", 0, "04n"),
+            block("2026-10-22", "Thu", 6, "04d"),
+            block("2026-10-22", "Thu", 12, "04d"),
+            block("2026-10-22", "Thu", 18, "04n"),
+            block("2026-10-23", "Fri", 0, "04n"),
+        ],
+    };
+    // 01:30 UTC on 10/22 is 7:30 p.m. on 10/21 in Denver, so tomorrow is Thursday.
+    views.render({
+        loadedAt: Date.UTC(2026, 9, 22, 1, 30),
+        weather: { temperature: 70, feelsLike: 70, condition: "clear", windDeg: 0, windSpeed: 1,
+            weatherCode: "01n", conditionId: 800, visibility: 1000, pressure: 1000, timezoneOffset: -21600 },
+        forecast: [],
+        sixHour,
+    });
+
+    const tiles = document.getElementById("sixhourList").children;
+    assert.equal(tiles.length, 4);
+    assert.equal(titles.sixhour, "Thursday");
+    assert.equal(tiles[0].children[2].textContent, "12:00 a.m. –\n6:00 a.m.");
+    assert.equal(tiles[3].children[2].textContent, "6:00 p.m. –\n12:00 a.m.");
+    assert.equal(tiles[0].children[0].src, "icons/mostly-cloudy-night.png");
+    assert.equal(tiles[1].children[0].src, "icons/mostly-cloudy-day.png");
+    assert.match(tiles[1].getAttribute("aria-label"), /^6:00 a\.m\. to 12:00 p\.m\.: Overcast Clouds, high 66°, low 61°, chance of rain 20%$/);
+    assert.equal(document.getElementById("sixhourNote").classList.contains("hidden"), true);
+
+    views.render({ loadedAt: 0, weather: { temperature: 70, feelsLike: 70, condition: "clear", windDeg: 0,
+        windSpeed: 1, weatherCode: "01n", conditionId: 800, visibility: 1000, pressure: 1000, timezoneOffset: 0 },
+        forecast: [], sixHour: null });
+    assert.equal(document.getElementById("sixhourList").children.length, 0);
+    assert.equal(document.getElementById("sixhourNote").classList.contains("hidden"), false);
 });

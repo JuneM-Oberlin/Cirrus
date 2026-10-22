@@ -13,6 +13,11 @@ const CirrusFrame = (function () {
         fiveday: "5-Day Forecast",
         sixhour: "6-Hour Weather",
     };
+    // Phones show these shorter names on the narrow middle buttons.
+    const SHORT_NAMES = {
+        fiveday: "5-Day",
+        sixhour: "6-Hour",
+    };
     const LONG_TITLE_CHARS = 9;
     const SWIPE_MIN_PX = 50;
     const DESKTOP_QUERY = "(min-width: 768px)";
@@ -64,6 +69,15 @@ const CirrusFrame = (function () {
         return state.views.includes(id);
     }
 
+    // The name a neighbouring middle button shows, e.g. "6-Hour Weather".
+    function viewName(id) {
+        if (!isDesktop() && SHORT_NAMES[id]) {
+            return SHORT_NAMES[id];
+        }
+        return VIEW_NAMES[id] || id;
+    }
+
+    // The header title, which a view may override (6-Hour shows a weekday).
     function viewTitle(id) {
         if (state.titles[id]) {
             return state.titles[id];
@@ -100,19 +114,19 @@ const CirrusFrame = (function () {
         let downLabel = "";
         if (!state.screen) {
             if (state.index > 0) {
-                upLabel = viewTitle(state.views[state.index - 1]);
+                upLabel = viewName(state.views[state.index - 1]);
             }
             if (state.index < state.views.length - 1) {
-                downLabel = viewTitle(state.views[state.index + 1]);
+                downLabel = viewName(state.views[state.index + 1]);
             }
         }
         setSlot(up, upLabel);
         setSlot(down, downLabel);
         if (upLabel) {
-            up.setAttribute("aria-label", "Previous view: " + upLabel);
+            up.setAttribute("aria-label", "Previous view: " + VIEW_NAMES[state.views[state.index - 1]]);
         }
         if (downLabel) {
-            down.setAttribute("aria-label", "Next view: " + downLabel);
+            down.setAttribute("aria-label", "Next view: " + VIEW_NAMES[state.views[state.index + 1]]);
         }
     }
 
