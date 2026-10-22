@@ -6,6 +6,9 @@
   position: relative;
   z-index: var(--z-frame);
   display: grid;
+  /* one column that never grows past the screen (a long alert line used to
+     widen it on phones, letting focus scroll the page sideways) */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows:
     calc(var(--frame-row-height) + env(safe-area-inset-top))
     var(--frame-header-height)
