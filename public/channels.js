@@ -135,11 +135,12 @@ const CirrusDesktopChannels = (function () {
         deps.onSearch(city);
     }
 
-    function openChannel(target) {
+    // tile is the Home tile the channel zooms out of
+    function openChannel(target, tile) {
         if (!state.weather) {
             return;
         }
-        deps.onOpenChannel(target);
+        deps.onOpenChannel(target, tile);
     }
 
     function init(dependencies) {
@@ -156,13 +157,15 @@ const CirrusDesktopChannels = (function () {
             tile.addEventListener("click", () => {
                 const value = tile.dataset.channelTarget;
                 if (value === "today") {
-                    openChannel("today");
+                    openChannel("today", tile);
                 } else {
-                    openChannel(Number(value));
+                    openChannel(Number(value), tile);
                 }
             });
         });
-        byId("channelTrayToday").addEventListener("click", () => openChannel("today"));
+        byId("channelTrayToday").addEventListener("click", () => {
+            openChannel("today", document.querySelector(".channel-tile--today"));
+        });
         desktopMedia.addEventListener("change", onViewportChange);
         onViewportChange();
     }

@@ -1328,6 +1328,66 @@ body.is-home .frame {
   body.is-home .home {
     display: flex;
   }
+
+  /* while a channel zooms open or shut, Home and the frame both show */
+  body.is-launching .home {
+    display: flex;
+    pointer-events: none;
+  }
+}
+
+body.is-launching .frame {
+  display: grid;
+}
+
+body.is-returning .home {
+  z-index: var(--z-home-returning);
+}
+
+/* ---------- Launch zoom (launch.js) ---------- */
+
+/* a copy of the chosen Home tile that grows into the frame (body > keeps
+   the tile's own position rules from winning) */
+body > .launch-ghost {
+  position: fixed;
+  z-index: var(--z-launch);
+  margin: 0;
+  pointer-events: none;
+}
+
+/* phones: a Cirrus tile on the night sky as the app opens */
+.launch-splash {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-launch);
+  display: grid;
+  place-items: center;
+  background: var(--launch-splash-bg);
+  pointer-events: none;
+}
+
+.launch-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: var(--launch-tile-width);
+  aspect-ratio: var(--launch-tile-ratio);
+  background: var(--tile-today-face);
+  border-radius: var(--tile-radius);
+  box-shadow: var(--tile-ring), var(--launch-tile-glow);
+  color: var(--panel-text);
+  font-size: var(--launch-tile-font);
+  font-weight: var(--fw-heavy);
+  letter-spacing: var(--tracking-caps);
+  text-shadow: var(--tile-text-shadow);
+}
+
+.launch-tile-icon {
+  width: var(--launch-tile-icon);
+  height: var(--launch-tile-icon);
+  object-fit: contain;
 }
 
 @media (max-width: 767px) {

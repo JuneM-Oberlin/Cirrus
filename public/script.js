@@ -510,19 +510,26 @@ function closeHome() {
     document.body.classList.remove("is-home");
 }
 
-// Home tiles open the frame at the matching view.
-function openChannel(target) {
-    closeHome();
-    if (target === "today") {
-        CirrusFrame.showView("current");
-    } else if (target === 0) {
-        CirrusFrame.showView("today");
-    } else if (target === 1) {
-        CirrusFrame.showView("tomorrow");
-    } else {
-        CirrusFrame.showView("fiveday");
-        CirrusViews.openDay(target);
-    }
+// Home from the frame: the frame shrinks back into the tile it came from.
+function goHome() {
+    CirrusLaunch.closeTo(openHome);
+}
+
+// Home tiles open the frame at the matching view, zooming out of the tile.
+function openChannel(target, tile) {
+    CirrusLaunch.openFrom(tile, () => {
+        closeHome();
+        if (target === "today") {
+            CirrusFrame.showView("current");
+        } else if (target === 0) {
+            CirrusFrame.showView("today");
+        } else if (target === 1) {
+            CirrusFrame.showView("tomorrow");
+        } else {
+            CirrusFrame.showView("fiveday");
+            CirrusViews.openDay(target);
+        }
+    });
     // a severe alert that arrived while on Home opens now
     CirrusAlerts.sync();
 }
@@ -533,7 +540,7 @@ CirrusSound.init();
 CirrusPointer.init();
 CirrusFeel.init({ sound: CirrusSound, hapticMs: CirrusConfig.haptics.pressMs });
 CirrusFrame.init({
-    onHome: openHome,
+    onHome: goHome,
     onEnter: (element) => CirrusCountUp.playIn(element),
     onSound: (name) => {
         if (name === "chime") {
@@ -623,6 +630,8 @@ CirrusViews.showEmpty();
 CirrusSearch.renderRecents();
 if (isDesktop()) {
     openHome();
+} else {
+    CirrusLaunch.playIntro();
 }
 
 const startupRecents = loadHistory();

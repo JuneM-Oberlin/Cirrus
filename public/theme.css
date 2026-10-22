@@ -100,6 +100,16 @@
   --ease-slide: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-settle: cubic-bezier(0.45, 0, 0.55, 1);
   --dur-view-slide: 640ms;
+  /* launching a channel: the tile grows into the frame, Home zooms past */
+  --dur-launch: 600ms;
+  --ease-launch: cubic-bezier(0.65, 0, 0.25, 1);
+  --launch-zoom-past: 1.15;
+  --launch-splash-bg: var(--sky-night);
+  --launch-tile-width: 220px;
+  --launch-tile-ratio: 380 / 205;
+  --launch-tile-font: 26px;
+  --launch-tile-icon: 52px;
+  --launch-tile-glow: 0 0 30px 6px rgba(52, 190, 237, 0.45);
   --dur-none: 0.01ms;
   --dur-fast: 200ms;
   --dur-medium: 350ms;
@@ -637,6 +647,8 @@
   --z-screen: 4;
   --z-status: 5;
   --z-frame: 10;
+  --z-home-returning: 11;
+  --z-launch: 50;
   --z-cursor: 1000;
 }
 

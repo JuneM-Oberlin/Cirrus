@@ -54,6 +54,15 @@ const CirrusConfig = Object.freeze({
         },
     },
 
+    // Phones open with a Cirrus tile that pops up and grows into the frame
+    // (the grow itself uses --dur-launch). Pop + pause + grow stays under 1s.
+    launch: {
+        popFromScale: 0.6,
+        popMs: 260,
+        holdMs: 60,
+        frameFromScale: 0.92,
+    },
+
     // A tiny buzz on press, on phones that support vibration.
     haptics: {
         pressMs: 8,
