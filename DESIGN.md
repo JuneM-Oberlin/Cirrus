@@ -184,7 +184,7 @@ animation ends, so a quick click still plays the whole squash.
 | Loading / error | Bouncing dots in the middle of the panel; error card pops in; a not-found town shakes the field |
 | Alerts arrive | Bar springs down, triangle wiggles once, a soft tone for warnings |
 | Weather icons | Idle: sun turns and pulses, clouds drift, rain drips, snow sways, moon glows (paused off-screen) |
-| Globe | Glides after a flick; markers fade while it moves |
+| Globe | Glides after a flick; scroll, pinch, and double tap zoom toward the pointer; markers fade while it moves |
 | A quiet minute | Globe turns by itself or the satellite picture pans; any input stops it |
 
 ### Reduced motion

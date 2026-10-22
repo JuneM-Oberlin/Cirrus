@@ -25,7 +25,7 @@ The interface is styled after a retro console weather channel: silver button row
 - Live current weather, a 5-day forecast, and 6-hour blocks from OpenWeatherMap
 - Today's UV index with WHO risk bands
 - US weather alerts from the National Weather Service
-- A spinning globe of major cities with their current weather
+- A spinning globe of cities with their current weather; zoom in (scroll, pinch, or double tap) and more cities appear
 - °F/°C and mph/km/h settings, remembered between visits
 - Recent cities remembered between visits
 - Original UI sounds and optional calm music, with a mute switch that is remembered
@@ -35,7 +35,7 @@ The interface is styled after a retro console weather channel: silver button row
 
 ## Views
 
-The frame has a silver button row at the top and bottom. The middle buttons step up and down through the view stack and name the neighboring view. Arrow keys, Page Up/Down, and vertical swipes on the panel do the same. A column of page dots on the panel's right edge shows where you are in the stack; on desktop, pointing at a dot shows its view's name and clicking jumps straight there.
+The frame has a silver button row at the top and bottom. The middle buttons step up and down through the view stack and name the neighboring view. Arrow keys, Page Up/Down, vertical swipes on the panel, and scrolling over the frame (one view per flick: scroll down from Current for Today, Tomorrow, and so on) do the same. A column of page dots on the panel's right edge shows where you are in the stack; on desktop, pointing at a dot shows its view's name and clicking jumps straight there.
 
 | View | Shows |
 |------|-------|
@@ -50,7 +50,7 @@ Other screens:
 
 - **Location**: tap the lime pill to search; recent cities are listed as buttons.
 - **Settings** (top right): a Units card (°F or °C, mph or km/h) and a Sound card (sound effects on or off, music on or off).
-- **Globe** (bottom right): zoom out/in, Next region, rotate left/right, Restore, End. Picking a city opens its weather; Back returns to the globe.
+- **Globe** (bottom right): zoom out/in, Next region, rotate left/right, Restore, End. Drag to spin it. Scroll, pinch (trackpad or two fingers), or double tap to zoom toward that spot. Zooming in brings out more cities: 42 major cities always, 53 more from about halfway in, and 73 more closer still. Picking a city opens its weather; Back returns to the globe.
 - **Weather Alert**: when the NWS has an active alert, the header turns red (warnings) or orange (watches), a bar shows under the header, and the alert screen lists the details.
 - **Home** (desktop only): the channel menu shown at launch. Each tile zooms open into its view.
 
@@ -71,7 +71,7 @@ Cirrus aims to feel like a console channel: charming, tactile, and polished. Eve
 
 **Reduced motion** turns off the bounces, idle animation, count-ups, launch zooms, drawn cursor, and easter-egg spin, and swaps them for short fades. High contrast mode keeps the system cursor.
 
-All CSS timings, spring curves, and colors are tokens in `public/theme.css`; everything only JavaScript needs (sound pitches and volumes, the count-up length, the idle delay, cursor lean) is in `public/feel-config.js`.
+All CSS timings, spring curves, and colors are tokens in `public/theme.css`; everything only JavaScript needs (sound pitches and volumes, the count-up length, the idle delay, cursor lean, how far a scroll or pinch zooms) is in `public/feel-config.js`.
 
 ### Libraries
 
@@ -202,6 +202,8 @@ The free plan has no multi-city endpoint, so each city is its own upstream call.
 - If the rate limit trips partway through, or one city fails, the rest come back `"pending": true` instead of failing the whole region. The globe draws pending cities as plain dots and asks again 20 seconds later.
 - The globe only requests the regions facing the camera.
 
+The extra cities that appear as you zoom in (`public/globe-cities.js`) don't use this endpoint: each one is a plain `GET /weather?city=` call, made only while that city is on screen at a zoom where it shows. The globe makes at most 12 of these a minute so your own searches keep room under the rate limit, waits a whole minute if the server answers `429`, and refreshes a city's weather after 10 minutes.
+
 Errors: `400` (missing or unknown region), `503`.
 
 ## Architecture
@@ -231,12 +233,12 @@ Each upstream source follows the same layering: client → parser → service �
 | `globe.css` | Globe screen and markers |
 | `weather-atmosphere.css` | Rain, snow, fog, and lightning overlays |
 | `motion.css` | Keyframes, button feel (grow, shine, squash), icon idle motion, loader, easter eggs, and the reduced-motion overrides |
-| `feel-config.js` | The timings and amounts only JavaScript uses: sounds, count-up, view-slide overshoot, globe glide, cursor lean, idle delay, easter eggs |
+| `feel-config.js` | The timings and amounts only JavaScript uses: sounds, count-up, view-slide overshoot, scrolling between views, globe glide and zoom, cursor lean, idle delay, easter eggs |
 | `units.js` | °F/°C and mph/km/h formatting, city-local dates and times, saved settings |
 | `feel.js` | Button press squash, shine layers, hover tick and press pop, phone buzz |
 | `sound.js` | The sound engine: synthesized effects, the music loop, and the remembered switches |
 | `pointer.js` | The drawn hand cursor (lean, hop, poke) and the touch ripple |
-| `frame.js` | Button rows, view stack and its bouncing slide, screens popping in and out, page dots, clock, keys and swipe |
+| `frame.js` | Button rows, view stack and its bouncing slide, screens popping in and out, page dots, clock, keys, swipe, and scroll |
 | `countup.js` | Big numbers rolling up when a view opens |
 | `launch.js` | Channel launch zoom from a Home tile (and back), and the phone intro |
 | `idle.js` | Attract mode after a quiet minute |
@@ -244,7 +246,8 @@ Each upstream source follows the same layering: client → parser → service �
 | `views.js` | Renders Current, Today, Tomorrow, 5-Day, 6-Hour, UV, and day detail |
 | `search.js` | Location screen and recent cities |
 | `settings.js` | Settings screen (Units and Sound cards) |
-| `globe.js` | Canvas globe (orthographic projection of NASA GIBS imagery), city markers, glide after a flick, idle spin |
+| `globe.js` | Canvas globe (orthographic projection of NASA GIBS imagery), city markers, drag and glide, scroll/pinch/double-tap zoom, idle spin |
+| `globe-cities.js` | The extra cities that appear as you zoom in, with their tier and search query |
 | `alerts.js` | Alert bar, badge, and alert screen |
 | `channels.js` | Desktop Home menu |
 | `atmosphere.js`, `atmo-*.js` | Weather overlays |
