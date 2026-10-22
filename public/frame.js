@@ -37,6 +37,10 @@ const CirrusFrame = (function () {
     // the slide animation of the view track, while it is running
     let slide = null;
 
+    // the scroll wheel: how far it has turned, and whether it is waiting
+    // for a flick to finish before it can move again
+    const wheel = { total: 0, lastAt: 0, lastSize: 0, movedAt: 0, waiting: false };
+
     const state = {
         views: [],
         index: 0,
@@ -629,7 +633,7 @@ const CirrusFrame = (function () {
         byId("frameClock").setAttribute("aria-label", "Local time " + hours + ":" + minutes + " " + meridiem);
     }
 
-    /* ---------- Keyboard and swipe ---------- */
+    /* ---------- Keyboard, swipe, and scroll ---------- */
 
     function isTypingTarget(target) {
         if (!target || !target.tagName) {
@@ -699,6 +703,75 @@ const CirrusFrame = (function () {
         });
     }
 
+    // Scroll wheels report lines or pages in some browsers; turn them into pixels.
+    function wheelPixels(event) {
+        if (event.deltaMode === 1) {
+            return event.deltaY * CirrusConfig.viewWheel.lineHeightPx;
+        }
+        if (event.deltaMode === 2) {
+            return event.deltaY * byId("panelViewport").offsetHeight;
+        }
+        return event.deltaY;
+    }
+
+    // Scrolling over the frame moves one view per flick: down goes on to
+    // the next view (Current, Today, Tomorrow...), up goes back. A trackpad
+    // keeps sending smaller and smaller scrolls after a flick, so after each
+    // move the wheel waits until the scrolling goes quiet, or until a
+    // clearly bigger push shows that a new flick has started.
+    function onWheel(event) {
+        // pinch zoom and sideways scrolls keep their usual meaning, and open
+        // screens (settings, the globe) handle their own scrolling
+        if (event.ctrlKey || state.screen || !frameIsActive()) {
+            return;
+        }
+        if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+            return;
+        }
+        const settings = CirrusConfig.viewWheel;
+        const pixels = wheelPixels(event);
+        const size = Math.abs(pixels);
+        const now = event.timeStamp;
+        const quiet = now - wheel.lastAt > settings.quietMs;
+        const newPush = now - wheel.movedAt > settings.cooldownMs
+            && size >= settings.newPushMinPx
+            && size > wheel.lastSize * settings.newPushRatio;
+        if (quiet || (wheel.waiting && newPush)) {
+            wheel.waiting = false;
+            wheel.total = 0;
+        }
+        wheel.lastAt = now;
+        wheel.lastSize = size;
+        if (wheel.waiting) {
+            event.preventDefault();
+            return;
+        }
+
+        let direction = 1;
+        if (pixels < 0) {
+            direction = -1;
+        }
+        const target = state.index + direction;
+        if (target < 0 || target >= state.views.length) {
+            // already at the first or last view: let the page scroll as usual
+            wheel.total = 0;
+            return;
+        }
+        event.preventDefault();
+        // turning the wheel the other way starts counting again
+        if (wheel.total * pixels < 0) {
+            wheel.total = 0;
+        }
+        wheel.total += pixels;
+        if (Math.abs(wheel.total) < settings.stepPx) {
+            return;
+        }
+        wheel.total = 0;
+        wheel.waiting = true;
+        wheel.movedAt = now;
+        step(direction, { feedback: true });
+    }
+
     function init(dependencies) {
         deps = Object.assign(deps, dependencies);
         state.views = [...document.querySelectorAll(".view[data-view]")].map((view) => view.dataset.view);
@@ -719,6 +792,7 @@ const CirrusFrame = (function () {
         });
         document.addEventListener("keydown", onKeydown);
         wireSwipe();
+        byId("frame").addEventListener("wheel", onWheel, { passive: false });
         window.matchMedia(DESKTOP_QUERY).addEventListener("change", renderChrome);
 
         updateClock();

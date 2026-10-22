@@ -15,6 +15,18 @@ const CirrusConfig = Object.freeze({
         overshootAt: 0.68,
     },
 
+    // Scrolling over the frame moves one view per flick. stepPx is how far
+    // to scroll before moving; after a move the wheel waits for quietMs of
+    // stillness, or a push newPushRatio times bigger than the last scroll.
+    viewWheel: {
+        stepPx: 40,
+        lineHeightPx: 16,
+        quietMs: 220,
+        cooldownMs: 350,
+        newPushRatio: 1.5,
+        newPushMinPx: 20,
+    },
+
     // The title, button labels, and wind line come in with the view.
     chrome: {
         titleShiftPercent: 70,

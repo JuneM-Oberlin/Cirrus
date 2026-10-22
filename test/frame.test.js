@@ -115,6 +115,64 @@ test("frame steps through the view stack and names each neighbour", () => {
     assert.equal(document.getElementById("frameTitle").textContent, "Thursday");
 });
 
+test("scrolling over the frame moves one view per flick", () => {
+    const { document, frame } = loadFrame(["uv", "current", "today", "tomorrow"]);
+    frame.init({});
+    document.getElementById("alertOverlay").classList.add("hidden");
+    const frameElement = document.getElementById("frame");
+    let blocked = 0;
+    function scroll(deltaY, timeStamp, extra = {}) {
+        frameElement.dispatch("wheel", {
+            deltaX: 0,
+            deltaY,
+            deltaMode: 0,
+            timeStamp,
+            preventDefault: () => { blocked += 1; },
+            ...extra,
+        });
+    }
+
+    // one mouse notch down moves from Current to Today
+    scroll(100, 1000);
+    assert.equal(frame.currentViewId(), "today");
+
+    // a trackpad's fading scrolls after the flick don't move again
+    scroll(60, 1016);
+    scroll(30, 1032);
+    scroll(10, 1048);
+    assert.equal(frame.currentViewId(), "today");
+
+    // a clearly bigger push is a new flick
+    scroll(90, 1500);
+    assert.equal(frame.currentViewId(), "tomorrow");
+
+    // after a quiet gap, small scrolls add up before moving back up
+    scroll(-20, 2000);
+    assert.equal(frame.currentViewId(), "tomorrow");
+    scroll(-25, 2016);
+    assert.equal(frame.currentViewId(), "today");
+
+    // pinch zoom (ctrl + wheel) and sideways scrolls are left alone
+    const before = blocked;
+    scroll(100, 3000, { ctrlKey: true });
+    scroll(10, 3500, { deltaX: 80 });
+    assert.equal(frame.currentViewId(), "today");
+    assert.equal(blocked, before);
+
+    // at the first view, scrolling further up is left to the page
+    frame.showView("uv");
+    const atTop = blocked;
+    scroll(-100, 4000);
+    assert.equal(frame.currentViewId(), "uv");
+    assert.equal(blocked, atTop);
+
+    // screens like Settings scroll on their own
+    frame.showView("current");
+    frame.openScreen("settings", { title: "Settings" });
+    scroll(100, 5000);
+    assert.equal(frame.screenName(), "settings");
+});
+
 test("page dots show where you are and jump straight to a view", () => {
     const { document, frame } = loadFrame(["uv", "current", "today", "fiveday"]);
     frame.init({});
