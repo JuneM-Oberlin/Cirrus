@@ -180,7 +180,30 @@
   --pill-inset: 8px;
   --search-field-bg: #ffffff;
   --search-field-text: #12361a;
-  --search-field-placeholder: #5d7a62;
+  --search-field-placeholder: #4f6b54;
+  /* Search: a white well pressed into the lime pill, plus a raised silver Go button */
+  --search-pad: 5px;
+  --search-font: 26px;
+  --search-well-face: linear-gradient(180deg, #dcebd8 0%, #f6fbf4 30%, #ffffff 55%, #ffffff 100%);
+  --search-well-rim: #0b5a07;
+  --search-well-shadow:
+    inset 0 2px 4px rgba(4, 50, 0, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 0 rgba(255, 255, 255, 0.4);
+  --search-well-focus-rim: #0a76c4;
+  --search-well-focus-glow: 0 0 0 2px #34beed, 0 0 14px 3px rgba(52, 190, 237, 0.6);
+  --search-icon: #2f7d27;
+  --search-icon-size: 26px;
+  --search-icon-stroke: 2.6;
+  --search-caret: #0a76c4;
+  --search-go-width: 124px;
+  --search-go-font: 22px;
+  --search-go-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2px 3px rgba(54, 195, 242, 0.3),
+    0 2px 4px rgba(0, 40, 0, 0.45);
+  --search-go-glow: 0 0 0 2px #34beed, 0 0 14px 3px rgba(52, 190, 237, 0.55);
+  --search-go-hit: 6px;
 
   /* ---- Frame: royal blue panel ---- */
   --panel-face: linear-gradient(160deg, #2d68e2 0%, #1b4cc4 36%, #1038a4 68%, #0a2682 100%);
@@ -475,6 +498,11 @@
     --title-font-long: 15px;
     --pill-font: 19px;
     --pill-inset: 6px;
+    --search-pad: 4px;
+    --search-font: 17px;
+    --search-icon-size: 17px;
+    --search-go-width: 60px;
+    --search-go-font: 16px;
     --panel-pad-x: 20px;
     --panel-pad-top: 20px;
     --panel-footer-space: 132px;

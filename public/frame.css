@@ -205,27 +205,58 @@
   white-space: nowrap;
 }
 
-.frame-location:focus-visible,
-.frame-search:focus-within {
+.frame-location:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--hairline);
 }
 
+/* While searching, the pill holds a field pressed into it and a raised Go button. */
 .frame-search {
   justify-content: stretch;
-  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-4);
+  gap: var(--space-2);
+  padding: var(--search-pad);
+}
+
+.frame-search-well {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--space-5);
+  background: var(--search-well-face);
+  border: var(--hairline) solid var(--search-well-rim);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--search-well-shadow);
+}
+
+/* the field you're typing in carries the cyan selection ring */
+.frame-search-well:focus-within {
+  border-color: var(--search-well-focus-rim);
+  box-shadow: var(--search-well-shadow), var(--search-well-focus-glow);
+}
+
+.frame-search-icon {
+  flex: 0 0 auto;
+  width: var(--search-icon-size);
+  height: var(--search-icon-size);
+  fill: none;
+  stroke: var(--search-icon);
+  stroke-linecap: round;
+  stroke-width: var(--search-icon-stroke);
 }
 
 .frame-search-input {
   flex: 1 1 auto;
   min-width: 0;
   height: 100%;
-  padding: 0 var(--space-4);
-  background: var(--search-field-bg);
+  padding: 0;
+  background: transparent;
   border: 0;
-  border-radius: var(--radius-pill);
+  caret-color: var(--search-caret);
   color: var(--search-field-text);
-  font-size: var(--pill-font);
+  font-size: var(--search-font);
   font-weight: var(--fw-bold);
   text-shadow: none;
 }
@@ -240,17 +271,60 @@
 }
 
 .frame-search-go {
+  position: relative;
+  isolation: isolate;
   flex: 0 0 auto;
-  min-width: var(--touch-min);
+  min-width: var(--search-go-width);
   height: 100%;
-  margin-left: var(--space-2);
-  padding: 0 var(--space-4);
-  background: transparent;
-  border: 0;
-  color: var(--pill-text);
-  font-size: var(--frame-btn-font);
+  padding: 0 var(--space-5);
+  background: var(--pill-silver-face);
+  border: var(--cyan-rim-width) solid var(--cyan-rim);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--search-go-shadow);
+  color: var(--pill-silver-text);
+  font-size: var(--search-go-font);
   font-weight: var(--fw-heavy);
-  text-shadow: var(--title-text-shadow);
+  text-shadow: var(--pill-silver-text-shadow);
+}
+
+/* gloss cap across the top of the button */
+.frame-search-go::before {
+  content: "";
+  position: absolute;
+  top: var(--hairline);
+  right: var(--space-3);
+  left: var(--space-3);
+  z-index: -1;
+  height: 46%;
+  background: var(--pill-gloss-cap);
+  border-radius: var(--pill-gloss-cap-radius);
+  pointer-events: none;
+}
+
+/* stretches the tap area to the full pill height on small screens */
+.frame-search-go::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--search-go-hit)) 0;
+}
+
+.frame-search-go:hover,
+.frame-search-go:focus-visible {
+  background: var(--frame-btn-face-active);
+  border-color: var(--cyan-rim-hover);
+  box-shadow: var(--search-go-shadow), var(--search-go-glow);
+  color: var(--frame-btn-text-active);
+  text-shadow: var(--frame-btn-text-shadow-active);
+}
+
+.frame-search-go:hover::before,
+.frame-search-go:focus-visible::before {
+  opacity: 0.45;
+}
+
+.frame-search-go:focus-visible {
+  outline-color: var(--focus-ring-on-light);
+  outline-offset: var(--hairline);
 }
 
 /* ---------- Royal blue panel ---------- */
@@ -912,6 +986,19 @@ body.is-home .frame {
 
   .frame-location {
     padding: 0 var(--space-4);
+  }
+
+  /* the phone field is narrow, so the city name gets the room the icon took */
+  .frame-search-well {
+    padding: 0 var(--space-3);
+  }
+
+  .frame-search-icon {
+    display: none;
+  }
+
+  .frame-search-go {
+    padding: 0 var(--space-3);
   }
 
   .hero {

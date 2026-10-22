@@ -98,8 +98,25 @@
 }
 
 .frame-btn:not(:disabled):active,
-.chip-btn:active {
+.chip-btn:active,
+.frame-search-go:active {
   animation: wiiSquashPress var(--dur-squash) var(--nintendo-spring);
+}
+
+.frame-search-well {
+  transition:
+    border-color var(--dur-fast) var(--nintendo-soft),
+    box-shadow var(--dur-fast) var(--nintendo-soft);
+}
+
+.frame-search-go {
+  transition:
+    box-shadow var(--dur-medium) var(--nintendo-soft),
+    color var(--dur-fast) var(--nintendo-soft);
+}
+
+.frame-search-go::before {
+  transition: opacity var(--dur-fast) var(--nintendo-soft);
 }
 
 /* floating weather icon on the big-number views */
@@ -240,6 +257,7 @@
   .temp--hot,
   .frame-btn:active,
   .chip-btn:active,
+  .frame-search-go:active,
   .channel-letterbox,
   .channel-letterbox::before,
   .channel-tray,
