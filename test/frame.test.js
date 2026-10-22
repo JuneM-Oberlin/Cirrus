@@ -333,3 +333,51 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
     assert.equal(document.getElementById("errorMsg").classList.contains("hidden"), false);
     assert.equal(document.getElementById("loading").classList.contains("hidden"), true);
 });
+
+test("views fill Current, Today, and Tomorrow and hand readouts to the frame", () => {
+    const document = documentStub();
+    const readouts = {};
+    let asOf = "";
+    const frame = {
+        setReadout: (id, readout) => { readouts[id] = readout; },
+        setAsOf: (text) => { asOf = text; },
+    };
+    const unitsContext = runClassicScript("public/units.js", { console: quietConsole, localStorage: storageStub() });
+    const context = runClassicScript("public/views.js", {
+        document,
+        iconMap: { 803: "partly-cloudy-day.png", "804n": "mostly-cloudy-night.png", 804: "mostly-cloudy-day.png" },
+    });
+    const views = lexical(context, "CirrusViews");
+    views.init({ frame, units: lexical(unitsContext, "CirrusUnits") });
+
+    views.render({
+        loadedAt: Date.UTC(2026, 9, 22, 1, 30),
+        weather: {
+            temperature: 69.4, feelsLike: 67.8, humidity: 36, condition: "overcast clouds",
+            description: "overcast clouds", windSpeed: 3, windDeg: 237, weatherCode: "04n",
+            conditionId: 804, visibility: 10000, cloudCover: 93, pressure: 1018,
+            sunrise: 1792588580, sunset: 1792627946, timezoneOffset: -21600,
+        },
+        forecast: [
+            { high: 73.3, low: 55.3, condition: "broken clouds", conditionId: 803, windSpeed: 2.3, rainChance: 0, precipitation: 0 },
+            { high: 79.6, low: 62.5, condition: "overcast clouds", conditionId: 804, windSpeed: 10.6, rainChance: 15, precipitation: 0.254 },
+        ],
+    });
+
+    assert.equal(document.getElementById("framePanel").classList.contains("has-data"), true);
+    assert.equal(document.getElementById("currentTemp").textContent, "69°");
+    assert.equal(document.getElementById("currentCond").textContent, "Overcast Clouds");
+    assert.equal(document.getElementById("currentIcon").src, "icons/mostly-cloudy-night.png", "night uses the moon icon");
+    assert.equal(readouts.current.main, "WSW 3 mph");
+    assert.equal(document.getElementById("todayHigh").textContent, "73°");
+    assert.equal(document.getElementById("todayLow").textContent, "55°");
+    assert.equal(document.getElementById("tomorrowIcon").src, "icons/mostly-cloudy-day.png", "forecast days use day icons");
+    assert.equal(readouts.tomorrow.main, "Wind 11 mph");
+    assert.equal(readouts.tomorrow.stats[0].text, "Chance of rain 15%");
+    assert.equal(readouts.tomorrow.stats[1].text, "Precipitation 0.01 in");
+    assert.equal(asOf, "As of 7:30 p.m., 10/21");
+
+    views.showEmpty();
+    assert.equal(document.getElementById("framePanel").classList.contains("has-data"), false);
+    assert.equal(readouts.today, null);
+});

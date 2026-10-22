@@ -65,16 +65,12 @@ const CirrusViews = (function () {
     }
 
     function showEmpty() {
-        byId("currentEmpty").classList.remove("hidden");
-        byId("currentHero").classList.add("hidden");
-        frame.setReadout("current", null);
+        byId("framePanel").classList.remove("has-data");
+        ["current", "today", "tomorrow"].forEach((id) => frame.setReadout(id, null));
         frame.setAsOf("");
     }
 
     function renderCurrent(weather) {
-        byId("currentEmpty").classList.add("hidden");
-        byId("currentHero").classList.remove("hidden");
-
         const temp = byId("currentTemp");
         temp.textContent = units.temp(weather.temperature);
         temp.setAttribute("aria-label", units.tempNumber(weather.temperature) + " " + units.tempUnitName());
@@ -98,9 +94,47 @@ const CirrusViews = (function () {
         });
     }
 
+    // Today and Tomorrow share one layout: yellow high, cyan low, the
+    // condition, a daytime icon, and wind plus rain chance in the readout.
+    function renderDay(prefix, viewId, day) {
+        if (!day) {
+            frame.setReadout(viewId, null);
+            return;
+        }
+        const high = byId(prefix + "High");
+        high.textContent = units.temp(day.high);
+        high.setAttribute("aria-label", "High " + units.tempNumber(day.high) + " " + units.tempUnitName());
+        const low = byId(prefix + "Low");
+        low.textContent = units.temp(day.low);
+        low.setAttribute("aria-label", "Low " + units.tempNumber(day.low) + " " + units.tempUnitName());
+
+        const condition = titleCase(day.condition);
+        byId(prefix + "Cond").textContent = condition;
+        setIcon(byId(prefix + "Icon"), day.conditionId, "", condition);
+
+        let rainChance = day.rainChance;
+        if (rainChance === undefined || rainChance === null) {
+            rainChance = 0;
+        }
+        let precipInches = 0;
+        if (day.precipitation) {
+            precipInches = day.precipitation / 25.4;
+        }
+        frame.setReadout(viewId, {
+            main: "Wind " + units.wind(day.windSpeed || 0),
+            stats: [
+                { text: "Chance of rain " + rainChance + "%" },
+                { text: "Precipitation " + units.precip(precipInches) },
+            ],
+        });
+    }
+
     // data: { weather, forecast, loadedAt }
     function render(data) {
+        byId("framePanel").classList.add("has-data");
         renderCurrent(data.weather);
+        renderDay("today", "today", data.forecast[0]);
+        renderDay("tomorrow", "tomorrow", data.forecast[1]);
         frame.setAsOf(units.asOf(data.loadedAt, data.weather.timezoneOffset));
     }
 

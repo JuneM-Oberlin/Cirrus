@@ -205,16 +205,44 @@
         <div class="panel-track" id="panelTrack">
 
           <section class="view view--current" data-view="current" id="viewCurrent" aria-label="Current conditions">
-            <div class="view-empty" id="currentEmpty">
+            <div class="view-empty">
               <p class="view-empty-text">Choose a city to tune in.</p>
               <button type="button" class="chip-btn view-empty-btn" id="emptyChoose">Choose a city</button>
             </div>
-            <div class="hero hidden" id="currentHero">
+            <div class="view-body hero">
               <div class="hero-temps">
                 <span class="hero-temp hero-temp--current" id="currentTemp">--</span>
               </div>
               <p class="hero-cond" id="currentCond">--</p>
               <img class="hero-icon" id="currentIcon" src="icons/default.png" alt="">
+            </div>
+          </section>
+
+          <section class="view view--today" data-view="today" id="viewToday" aria-label="Today's forecast">
+            <div class="view-empty">
+              <p class="view-empty-text">Choose a city to see today's forecast.</p>
+            </div>
+            <div class="view-body hero hero--day">
+              <div class="hero-temps">
+                <span class="hero-temp" id="todayHigh">--</span>
+                <span class="hero-low" id="todayLow">--</span>
+              </div>
+              <p class="hero-cond" id="todayCond">--</p>
+              <img class="hero-icon" id="todayIcon" src="icons/default.png" alt="">
+            </div>
+          </section>
+
+          <section class="view view--tomorrow" data-view="tomorrow" id="viewTomorrow" aria-label="Tomorrow's forecast">
+            <div class="view-empty">
+              <p class="view-empty-text">Choose a city to see tomorrow's forecast.</p>
+            </div>
+            <div class="view-body hero hero--day">
+              <div class="hero-temps">
+                <span class="hero-temp" id="tomorrowHigh">--</span>
+                <span class="hero-low" id="tomorrowLow">--</span>
+              </div>
+              <p class="hero-cond" id="tomorrowCond">--</p>
+              <img class="hero-icon" id="tomorrowIcon" src="icons/default.png" alt="">
             </div>
           </section>
 

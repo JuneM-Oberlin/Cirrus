@@ -199,6 +199,7 @@
   --temp-shadow: 0 4px 0 rgba(0, 20, 80, 0.35), 0 8px 18px rgba(0, 10, 50, 0.45);
   --temp-high-shadow: 0 4px 0 #8a6400, 0 8px 18px rgba(0, 10, 50, 0.45);
   --hero-temp-size: clamp(96px, 17vh, 168px);
+  --hero-day-temp-size: clamp(96px, 17vh, 168px);
   --hero-cond-size: clamp(22px, 3.8vh, 36px);
   --hero-icon-size: clamp(130px, 26vh, 240px);
   --hero-icon-shadow: drop-shadow(0 10px 18px rgba(0, 10, 50, 0.5));
@@ -253,6 +254,7 @@
     --panel-pad-top: 20px;
     --panel-footer-space: 132px;
     --hero-temp-size: clamp(72px, 13vh, 112px);
+    --hero-day-temp-size: clamp(60px, 10vh, 84px);
     --hero-cond-size: clamp(18px, 2.8vh, 24px);
     --hero-icon-size: clamp(96px, 16vh, 140px);
     --wind-font: clamp(22px, 3.6vh, 30px);
