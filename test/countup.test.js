@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { element, documentStub, runClassicScript, lexical } = require("./helpers");
 
-const CirrusConfig = lexical(runClassicScript("public/config.js"), "CirrusConfig");
+const CirrusConfig = lexical(runClassicScript("public/feel-config.js"), "CirrusConfig");
 
 // Runs countup.js with a hand-cranked clock: tick(ms) advances time and
 // runs the frames that were waiting.

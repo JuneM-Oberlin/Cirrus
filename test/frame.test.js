@@ -41,7 +41,7 @@ function frameDocument(viewIds) {
 }
 
 // The real feel settings, as the page loads them before frame.js.
-const CirrusConfig = lexical(runClassicScript("public/config.js"), "CirrusConfig");
+const CirrusConfig = lexical(runClassicScript("public/feel-config.js"), "CirrusConfig");
 
 function loadFrame(viewIds, { desktop = false } = {}) {
     const { document, views } = frameDocument(viewIds);
