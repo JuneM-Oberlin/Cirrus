@@ -294,6 +294,24 @@
         <p class="screen-note">Type a city in the green bar above and press Go. Cirrus remembers the cities you pick.</p>
       </section>
 
+      <section class="screen hidden" id="screenSettings" aria-label="Settings">
+        <div class="settings-group">
+          <h3 class="screen-heading" id="settingsTempLabel">Temperature</h3>
+          <div class="settings-choices" role="radiogroup" aria-labelledby="settingsTempLabel">
+            <button type="button" class="chip-btn settings-choice" role="radio" data-setting="temp" data-value="F">Fahrenheit (°F)</button>
+            <button type="button" class="chip-btn settings-choice" role="radio" data-setting="temp" data-value="C">Celsius (°C)</button>
+          </div>
+        </div>
+        <div class="settings-group">
+          <h3 class="screen-heading" id="settingsWindLabel">Wind and distance</h3>
+          <div class="settings-choices" role="radiogroup" aria-labelledby="settingsWindLabel">
+            <button type="button" class="chip-btn settings-choice" role="radio" data-setting="wind" data-value="mph">mph and miles</button>
+            <button type="button" class="chip-btn settings-choice" role="radio" data-setting="wind" data-value="kmh">km/h and kilometers</button>
+          </div>
+        </div>
+        <p class="screen-note">Cirrus remembers these choices on this device.</p>
+      </section>
+
       <section class="screen screen--clear hidden" id="screenDay" aria-label="Forecast day">
         <div class="hero hero--day">
           <div class="hero-temps">
@@ -383,6 +401,7 @@
   <script src="frame.js?v=20261022a"></script>
   <script src="views.js?v=20261022a"></script>
   <script src="search.js?v=20261022a"></script>
+  <script src="settings.js?v=20261022a"></script>
   <script src="channels.js?v=20261022a"></script>
   <script src="script.js?v=20261022a"></script>
 </body>

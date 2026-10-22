@@ -478,6 +478,19 @@ CirrusAlerts.init({
     },
     allowAutoPop: () => !CirrusSearch.isOpen(),
 });
+CirrusSettings.init({ frame: CirrusFrame, units: CirrusUnits });
+
+// New units re-render everything already on screen.
+CirrusUnits.onChange(() => {
+    if (!appState.weather) {
+        return;
+    }
+    CirrusViews.render(appState);
+    if (Array.isArray(appState.forecast) && appState.forecast.length >= 5) {
+        CirrusDesktopChannels.render(appState.weather, appState.forecast);
+    }
+});
+
 CirrusDesktopChannels.init({
     formatTemp: (fahrenheit) => CirrusUnits.temp(fahrenheit),
     formatAsOf: (weather) => CirrusUnits.asOf(appState.loadedAt, weather.timezoneOffset),

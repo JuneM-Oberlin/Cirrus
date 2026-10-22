@@ -288,7 +288,8 @@ test("app glue uses fixed backend paths, loads a city into every module, and rep
             set src(value) { this._src = value; }
             get src() { return this._src; }
         },
-        CirrusUnits: { temp: (f) => f + "°", asOf: () => "As of", cityClockTime: () => "--" },
+        CirrusUnits: { temp: (f) => f + "°", asOf: () => "As of", cityClockTime: () => "--", onChange: noop },
+        CirrusSettings: { init: noop },
         CirrusFrame: { init: noop, showView: noop, hasView: () => false },
         CirrusViews: {
             init: noop,
@@ -490,4 +491,50 @@ test("the 6-hour view shows tomorrow's four local blocks under tomorrow's weekda
         forecast: [], sixHour: null });
     assert.equal(document.getElementById("sixhourList").children.length, 0);
     assert.equal(document.getElementById("sixhourNote").classList.contains("hidden"), false);
+});
+
+test("settings switch units with buttons or arrow keys and remember the choice", () => {
+    const document = documentStub();
+    const localStorage = storageStub();
+    const choice = (setting, value) => {
+        const button = element(document, `${setting}-${value}`);
+        button.dataset.setting = setting;
+        button.dataset.value = value;
+        return button;
+    };
+    const buttons = [choice("temp", "F"), choice("temp", "C"), choice("wind", "mph"), choice("wind", "kmh")];
+    document.querySelectorAll = (selector) => {
+        if (selector === ".settings-choice") {
+            return buttons;
+        }
+        return [];
+    };
+    const unitsContext = runClassicScript("public/units.js", { console: quietConsole, localStorage });
+    const units = lexical(unitsContext, "CirrusUnits");
+    const screens = [];
+    let handlers = {};
+    const frame = {
+        openScreen: (name, options) => screens.push([name, options.title]),
+        setHandlers: (h) => { handlers = h; },
+    };
+    const context = runClassicScript("public/settings.js", { document });
+    lexical(context, "CirrusSettings").init({ frame, units });
+
+    assert.equal(buttons[0].getAttribute("aria-checked"), "true", "Fahrenheit is the default");
+    assert.equal(buttons[0].tabIndex, 0);
+    assert.equal(buttons[1].tabIndex, -1);
+
+    handlers.onSettings();
+    assert.deepEqual(screens, [["settings", "Settings"]]);
+    assert.equal(document.activeElement, buttons[0]);
+
+    buttons[1].dispatch("click");
+    assert.equal(units.getSettings().temp, "C");
+    assert.equal(buttons[1].getAttribute("aria-checked"), "true");
+    assert.equal(buttons[0].getAttribute("aria-checked"), "false");
+
+    buttons[2].dispatch("keydown", { key: "ArrowRight", preventDefault() {} });
+    assert.equal(units.getSettings().wind, "kmh");
+    assert.equal(document.activeElement, buttons[3]);
+    assert.equal(localStorage.getItem("cirrus_units"), JSON.stringify({ temp: "C", wind: "kmh" }));
 });

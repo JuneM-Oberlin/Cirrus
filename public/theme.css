@@ -270,6 +270,7 @@
   --chip-height: 52px;
   --chip-font: 18px;
   --chip-min-width: 220px;
+  --settings-width: 640px;
 
   /* ---- Layering ---- */
   --z-sat: 0;

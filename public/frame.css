@@ -813,6 +813,18 @@
   line-height: var(--lh-body);
 }
 
+/* Settings: each group is a row of two big silver choices */
+.settings-group + .settings-group {
+  margin-top: var(--space-7);
+}
+
+.settings-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  max-width: var(--settings-width);
+}
+
 /* Silver buttons used inside the panel (recent cities, choices) */
 .chip-list {
   display: grid;
