@@ -1,270 +1,259 @@
 # Cirrus — Design System
 
-A design reference for the **Cirrus** weather app. Cirrus is a retro console–inspired
-weather app: glossy plastic UI, a green "channel" header, big friendly numbers, and
-playful-but-restrained motion. The frontend is **vanilla HTML/CSS/JS** (no framework,
-no build step); the backend is Java (Spark).
+A design reference for the **Cirrus** weather app. Cirrus is styled after a retro
+console weather channel: silver button rows, a green title block with a lime location
+pill, a royal-blue panel over satellite imagery, and big friendly numbers. The frontend
+is **vanilla HTML/CSS/JS** (no framework, no build step); the backend is Java (Spark).
 
-Read this before changing any UI. The guiding rule: **authentic Console character** It should feel like a console developer made it — never like a toy.
+Read this before changing any UI. The guiding rule: **authentic console character.** It
+should feel like a console developer made it, never like a toy, and never like a copy.
+All artwork, icons, and the cursor are original.
+
 ---
 
 ## 1. North-star principles
 
-1. ** Console authentic, but calm.** Glossy pills, gradients, gloss caps, friendly rounded type. But the resting state of the page is quiet. Don't add ambient motion to controls.
-2. **Restraint over novelty.** Every effect earns its place. If deleting 30% of a flourish improves it, delete it. No sparkle sweeps, no rainbow gradients, no decorative blobs.
-3. **Motion is `transform` / `opacity` / `box-shadow` only.** Never animate layout properties (width, height, top, left). Always gate behind `prefers-reduced-motion`.
-4. **No infinite idle animation on interactive controls.** Buttons/inputs/chips rest static. Looping animation is allowed only on *decorative or status* elements (weather icon bob, sun sway, loading pulse, hint bounce).
-5. **The green header is its own motif.** The TODAY / 5-DAY FORECAST channel tabs and the green city pill are deliberately their own thing. Don't restyle them to match other components.
-6. **Keep the existing palette and tokens.** Add via the CSS variables; don't scatter new hardcoded hexes.
+1. **Console-authentic, but calm.** Glossy faces, gradients, friendly rounded type. The resting page is quiet; don't add ambient motion to controls.
+2. **Restraint over novelty.** Every effect earns its place. If deleting 30% of a flourish improves it, delete it.
+3. **Motion is `transform` / `opacity` / `box-shadow` only.** Never animate layout properties. Always gate motion behind `prefers-reduced-motion`.
+4. **No idle animation on controls.** Buttons, pills, and inputs rest static. Loops are allowed only on decorative or status elements (icon bob, temperature moods, Home hints).
+5. **The frame is the motif.** Button rows, title block, lime pill, blue panel, wind band, and red "As of" strip appear on every view in the same places. New features fit into the frame; they don't add new chrome.
+6. **Every design value is a token.** Colors, gradients, shadows, radii, spacing, font sizes, durations, and easings live in `theme.css`. A test fails if one appears anywhere else.
 
 ---
 
 ## 2. Files & load order
 
-Loaded in this order from `public/index.html` (later files win in the cascade):
+Loaded in this order from `public/index.html`:
 
 | File | Owns |
 |------|------|
-| `style.css` | Layout, color tokens, component **resting** visuals, glass panels |
-| `animations.css` | All **motion** + interactive states (hover/active/focus transforms) |
-| `weather-atmosphere.css` | Rain video / snow / lightning / fog / cloud overlays |
-| `responsive.css` | Mobile overrides (`@media (max-width: 768px)`) |
-| `script.js` | App logic, fetch, render, animation triggers |
+| `theme.css` | **All** design tokens as custom properties on `:root`, plus mobile overrides in `@media (max-width: 767px)` |
+| `base.css` | Reset, fonts, page sky, cursor, focus ring, `.hidden` / `.visually-hidden` |
+| `frame.css` | Button rows, header, panel, footer, view stack, the six views, screens (search, settings, day detail) |
+| `channels.css` | Desktop Home menu (tiles, letterbox search, tray) |
+| `alerts.css` | Alert bar, red/orange header variants, alert screen |
+| `globe.css` | Globe screen, canvas, markers, globe-mode button rows |
+| `weather-atmosphere.css` | Rain video / snow / fog / lightning overlays inside the panel |
+| `motion.css` | Every keyframe, hover/press motion, and the reduced-motion block |
 
-**Convention that matters:** a component's *static look* lives in `style.css`; its
-*hover/press/focus motion* lives in `animations.css`. Because `animations.css` loads
-later, it wins conflicts on interactive states — so don't duplicate hover/active
-`box-shadow` across both files.
+**Conventions:**
+
+- A component's *static look* lives in its component file. Its *motion* (keyframes, hover lifts, press squash) lives in `motion.css`.
+- A new value goes into `theme.css` first, then gets used through `var(--…)`.
+- Mobile differences are token overrides in `theme.css` wherever possible. Only layout changes (grid areas, stacking) belong in a component file's `@media` block.
+
+**Token lint** (`test/theme-tokens.test.js`) fails on any hex/rgb/hsl color, px/em/rem/vh/vw length, ms/s duration, or `cubic-bezier` outside `theme.css` (comments and `@media` lines excepted). A second test fails if a stylesheet uses a token that `theme.css` doesn't define. The only properties set at runtime are `--view-index`, `--heat-amp`, `--heat-speed`, and `--channel-globe-image`.
 
 ---
 
-## 3. Color
+## 3. The frame
 
-All theme colors are CSS variables in `:root` (`style.css`). The app has a **night**
-(default) and **day** theme, toggled by adding `body.theme-day` (set in JS from the
-weather's day/night code).
-
-### Sky / background tokens
 ```
---sky-night:  linear-gradient #2258cc → #1640a8 → #0e2578 → #050f48 → #010820
---sky-day:    linear-gradient rgba(31,111,208) → … → rgba(191,230,255)  (opacity 0.92)
---sky-base-night: #010820     --sky-base-day: #3a92e4
---panel-tint-night: rgba(10,20,80,0.43)   --panel-tint-day: rgba(20,50,120,0.28)
---focus-ring-night: rgba(140,200,255,0.9) --focus-ring-day: rgba(255,255,255,0.95)
-```
-The night sky is painted with `body::before`, the day sky with `body::after`, cross-faded
-over 1.2s when `theme-day` toggles. Never set a flat background color on `body`.
-
-### Accent colors (semantic)
-| Role | Color | Used for |
-|------|-------|----------|
-| Hero number | `#f0c000` (Wii yellow) | Current temp, forecast highs, sun times |
-| Secondary number | `#00e5ff` (cyan) | Forecast lows |
-| **Wii cyan rim** | `#36c3f2` border / `#4fd0fb` hover | Search input, Search button, history chips |
-| Cyan halo | `rgba(54,195,242,0.30–0.60)` | The hairline/bloom ring on pills |
-| Press glow | `#34beed` / `rgba(52,190,237,0.55–0.75)` | Search button `:active` halo — press only, never idle |
-| Control label text | `#3a3a3a` (dark gray) | Text inside white pills |
-| Channel green | `#1f7f15 → #155e0e` (bar), `#3ec832 → #1a7a12` (active tab) | Header only |
-| City pill green | `#63f04d → #29bf1f → #159b10` | Header city pill |
-| Error | `#ffaaaa` on `rgba(180,30,30,0.25)` | Error messages |
-| Footer accent | `#8a1a3a → #5a0a22` (maroon) | Forecast footer — intentional, keep it |
-| Muted label | `rgba(255,255,255,0.62)` | Detail/wind/sun labels (was 0.45; raised 2026-07-04 for contrast over the globe) |
-
-Rule of thumb: **yellow = the number you care about most, cyan = the supporting number,
-cyan rim = "this is a control you can touch," green = navigation chrome.**
-
----
-
-## 4. Typography
-
-- **Family:** `'M PLUS Rounded 1c'` (Google Fonts), fallback `Helvetica, Arial, sans-serif`.
-  Weights loaded: 400, 700, 800. This rounded face *is* the brand — don't substitute a
-  system stack.
-- **Scale (desktop → mobile):**
-  | Element | Size | Weight | Notes |
-  |---------|------|--------|-------|
-  | Current temp | 140px → 64px | 700 | `#f0c000`, `letter-spacing:-4px`, `tabular-nums`, stacked text-shadow |
-  | Condition | 28px → 16px | 400 | white |
-  | Forecast high | 60px | 700 | yellow, `tabular-nums` |
-  | Forecast low | 44px | 700 | cyan |
-  | Header tab | 18px → 12px | 700 | `letter-spacing:1.5px` |
-  | Detail / wind / sun value | 16–20px | 600–700 | |
-  | Detail / wind / sun label | **12px** (11px mobile) | normal | uppercase, `letter-spacing:1px`, muted |
-- **Minimums (accessibility):** body text ≥ 16px, labels ≥ 12px. Don't go below.
-- **Numbers:** always `font-variant-numeric: tabular-nums` on temps/times so digits don't jitter.
-- The page `<h1>` is `visually-hidden` ("Cirrus Weather") — the green header acts as the
-  visual title.
-
----
-
-## 5. Spacing, layout & shape
-
-- **Header height:** `--header-height` 52px desktop / 40px mobile. Header is `position:relative; z-index:10`, fixed at top.
-- **Horizontal gutters:** content rows use `padding: … 80px` on desktop, `… 24px` on mobile.
-- **Today card** (`.weather-card`): CSS grid, areas `summary / icon / details` then `aux`,
-  `width: min(1220px, calc(100% - 48px))`, centered, `border-radius: 28px`.
-- **Forecast strip:** 5 equal day cards desktop (`flex: 1 1 0`, `border-radius: 24px`,
-  `min-height: 260px`); on mobile they collapse to stacked horizontal rows.
-- **Background globe:** `.globe-bg` is a fixed NASA earth image at `opacity: 0.17`
-  (0.32 mobile) behind everything — atmospheric, never competing with content.
-- **Border-radius language:** pills `999px`; large cards `28px`; forecast cards `24px`;
-  inner panels `18–20px`. Gloss caps use an *asymmetric* radius
-  (`999px 999px 60% 60% / 999px 999px 22px 22px`) for the convex Wii dome.
-
-### Glass panels
-`.glass-panel` (+ `--card`, `--pill` variants) is the reusable translucent surface:
-panel tint + a top gloss gradient driven by `--gloss` / `--gloss-stop`, a faint white
-inset highlight, and a 1px translucent border. Use it for floating data surfaces (weather
-card, forecast tiles, wind/sun bars), **not** for the cyan control pills.
-
----
-
-## 6. The signature component: Wii cyan pill
-
-The Search input, Search button, and history chips form **one pill family**.
-
-**Recipe (resting, in `style.css`):**
-```css
-position: relative; isolation: isolate; overflow: hidden;  /* contains the gloss cap */
-border-radius: 999px;
-border: 1.5px solid #36c3f2;                                /* cyan rim */
-background: linear-gradient(180deg, #fdffff 0%, #eef4f7 50%, #d6e2e9 100%); /* white→silver */
-color: #3a3a3a;                                             /* dark etched label */
-text-shadow: 0 1px 0 rgba(255,255,255,0.85);
-box-shadow:
-  inset 0 1px 0 rgba(255,255,255,0.95),     /* top sheen */
-  inset 0 -2px 3px rgba(54,195,242,0.25),   /* cyan underbelly */
-  0 0 0 1px rgba(54,195,242,0.35),          /* hairline cyan halo */
-  0 3px 9px rgba(0,0,0,0.32);               /* soft drop shadow */
+┌ clock ───────┬──── ▲ Previous view ────┬──── Settings ┐   top row     --frame-row-height
+├ TITLE BLOCK ─┴─( lime location pill  )─────────────────┤   header      --frame-header-height
+│ [alert bar, when NWS alerts are active]                │
+│                                                        │
+│   royal-blue panel over NASA satellite imagery         │   panel
+│   one view at a time, sliding vertically               │
+│                                                        │
+│ credit                         wind band  ▸ big wind   │
+│                                "As of" red-pink strip  │
+├ Back / Home ─┬──── ▼ Next view ────────┬──── Globe ────┤   bottom row
+└──────────────┴─────────────────────────┴───────────────┘
 ```
 
-**The gloss cap** is a static `::before` covering the top ~42%, white→transparent,
-with `z-index: -1` so it sits above the silver fill but below the label. The parent's
-`isolation: isolate` contains the negative-z child. (Do **not** use `z-index: 0` — at
-equal z-index a positioned pseudo paints over the text and hides the label.)
+- **Button rows** are three silver faces (`--frame-btn-face`). The middle buttons step through the view stack and are labeled with the neighbor's name. A slot with nothing to do is disabled and drawn blank (`.is-empty`). The middle buttons light up cyan (`--frame-btn-face-active`) on hover. Corner buttons brighten on hover and turn cyan while pressed. Keyboard focus draws `--focus-ring-on-light` inside the button.
+- **Corners:** clock top-left (DSEG7 digits, `--font-digital`), Settings top-right, Back/Home bottom-left, Globe bottom-right. On the globe the rows become Zoom − / Next / Zoom + and End / ↶ ↷ / Restore.
+- **Header:** the green title block (`--title-block`) names the view; long names drop to `--title-font-long`. The lime pill (`--pill-face`) names the city and opens the Location screen.
+- **Panel:** `--panel-face` plus `--panel-streaks` over a GIBS satellite image of the city at `--panel-sat-opacity`. The footer always carries the credit (bottom-left), the wind band, and the "As of" strip (bottom-right).
+- **View stack:** UV Index → Current → Today → Tomorrow → 5-Day → 6-Hour. The track moves by `--view-index` with `--dur-slow` / `--nintendo-soft`.
+- **Screens** (Location, Settings, Weather Alert, Globe, day detail) open over the panel with `CirrusFrame.openScreen()`. Back closes them.
 
-**Touch target:** chips keep `min-height: 44px`. Never shrink below 44px.
+---
+
+## 4. Color
+
+All colors are tokens in `theme.css`. Roles:
+
+| Role | Token(s) | Used for |
+|------|----------|----------|
+| Silver button | `--frame-btn-face`, `--frame-btn-text` | Top and bottom rows |
+| Cyan selection | `--frame-btn-face-active`, `--frame-btn-text-active` | Hovered middle buttons, pressed buttons, the selected option in Settings |
+| Channel green | `--title-block` | Title block only |
+| Lime pill | `--pill-face`, `--pill-border` | Location pill only |
+| Royal blue | `--panel-face`, `--fiveday-col-face`, `--sixhour-tile-face` | Panel and the tiles on it |
+| Current temp | `--temp-current` (white) | The one number on Current |
+| High | `--temp-high` (yellow) | Highs on every view |
+| Low | `--temp-low` (cyan) | Lows on every view, and freezing temperatures |
+| Weekend | `--weekend-text` (yellow) | Saturday/Sunday on 5-Day |
+| Wind band | `--wind-band` (navy fade) | Behind the wind readout |
+| As-of strip | `--asof-strip` (red-pink fade) | "As of …" timestamp |
+| Warning | `--alert-warning-*` (red) | Header, bar, and badge for NWS warnings |
+| Watch | `--alert-watch-*` (orange) | Header, bar, and badge for watches |
+| UV bands | `--uv-low` … `--uv-extreme` | WHO UV colors on the UV scale |
+
+Rule of thumb: **yellow = high, cyan = low, white = now; silver = a button, cyan
+face = the button you're pressing or pointing at; green = where you are; red/orange = an alert.**
+
+Every text/background pair in the frame passes WCAG AA. The pill's lime face darkens
+toward the middle so its white large text clears 3:1. Muted button text
+(`--frame-btn-text-muted`) clears 4.5:1 on silver.
+
+---
+
+## 5. Typography
+
+- **Family:** `--font-ui` = `'M PLUS Rounded 1c'` (Google Fonts, weights 400/700/800), with Helvetica/Arial fallback. This rounded face is the brand; don't substitute a system stack.
+- **Clock:** `--font-digital` = DSEG7 Classic (bundled in `public/fonts`, OFL).
+- **Sizes are tokens.** The UI scale is `--fs-xs` … `--fs-xl`. Big numbers use `clamp()` tokens so they scale with the window height:
+  - `--hero-temp-size` and `--hero-day-temp-size`
+  - `--fiveday-high-font` and `--fiveday-low-font`
+  - `--uv-value-font` and `--sixhour-temp-font`
+- **Minimums:** body text ≥ 16px; labels and the credit ≥ 11–12px.
+- **Numbers** use `tabular-nums` so digits don't jitter.
+- The page `<h1>` is visually hidden; the title block is the visual title.
+
+---
+
+## 6. Spacing, shape & layering
+
+- **Spacing:** `--space-1` (4px) … `--space-9` (56px). The panel padding is `--panel-pad-x` and `--panel-pad-top`. `--panel-footer-space` keeps views clear of the footer.
+- **Radii:**
+  - `--radius-sm`, `--radius-md`, and `--radius-lg` for tiles and screens
+  - `--radius-pill` for pills
+  - `--pill-gloss-cap-radius` for the convex gloss cap on silver pills
+- **Layers** (`--z-*`), from the bottom up:
+  1. Satellite
+  2. Atmosphere
+  3. View
+  4. Footer
+  5. Screen
+  6. Status
+  7. Frame
+- **Touch targets:** `--touch-min` (44px). Frame buttons, recent-city chips, settings radios, globe markers, and alert tiles all meet it.
 
 ---
 
 ## 7. Motion
 
-Easing tokens (`animations.css`):
+Easings (`theme.css`):
+
 ```
---nintendo-spring: cubic-bezier(0.34, 1.56, 0.64, 1)   /* overshoot — entrances, presses */
---nintendo-soft:   cubic-bezier(0.32, 0.72, 0, 1)      /* smooth — hovers, fades */
---nintendo-press:  cubic-bezier(0.25, 0.46, 0.45, 0.94)/* quick — gloss-cap catch */
+--nintendo-spring: cubic-bezier(0.34, 1.56, 0.64, 1)   /* overshoot: entrances, presses */
+--nintendo-soft:   cubic-bezier(0.32, 0.72, 0, 1)      /* smooth: view slides, hovers, fades */
 ```
 
-Reusable keyframes already defined: `nintendoPop`, `nintendoBounce`, `nintendoWiggle`,
-`iconBob`, `sunRock`, `loadingBounce`, `hintBounce`, `tempPop`, `citySlideIn`,
-`detailStagger`, `wiiSquashPress`, `tempFreezeIn`, `tempShiver`, `tempHeatShake`.
-**Reuse these before inventing new ones.** (`wiiSelectPulse` was removed 2026-07-04 —
-the Search button no longer pulses on focus; see the press glow below.)
+Durations:
 
-### Today ⇄ Forecast window swipe (script.js, Web Animations API)
-Both tab panels live side-by-side in a 200%-wide `.view-track` inside an
-`overflow: clip` viewport. Switching tabs slides the track 500ms with
-`--nintendo-soft`. Day cards pop in left→right (540ms, 150ms stagger, spring)
-once the swipe lands, and pop out rightmost-first (380ms, ease-in accelerate)
-*before* the swipe back, where the big temp squash-lands (`tempPop`). All
-sequenced from `switchTab()` in script.js via `element.animate()`.
+- `--dur-fast`, `--dur-medium`, `--dur-slow`, and `--dur-fade` cover most motion.
+- Effect-specific durations: `--dur-pop`, `--dur-squash`, `--dur-bob`, and others.
+- `--dur-none` is used by reduced motion.
 
-### Temperature moods (`#tempMain`)
-- **Below 32°F:** `.temp--freezing` — number starts yellow, `tempFreezeIn`
-  fades it to the low-temp cyan over 1.6s, then `tempShiver` trembles ±1px.
-- **95°F and up:** `.temp--hot` — `tempHeatShake` jitters with amplitude
-  0.3→1px and period 0.5→0.35s scaling until 120°F (JS sets `--heat-amp` /
-  `--heat-speed`).
-These are *status displays*, not controls — they're the sanctioned exception
-to the no-idle-loop rule, alongside the icon bob / sun sway / hint bounce.
+Distances and transforms are tokens too (`--motion-*`).
 
-### Interaction patterns
+Keyframes (`motion.css`): `nintendoPop`, `iconBob`, `hintBounce`, `tempFreezeIn`,
+`tempShiver`, `tempHeatShake`, `wiiSquashPress`, `searchPressGlow`, `dockScanDrift`,
+`dockScanStatic`, `alertBarDown`, `alertBarUp`, `channelColonBlink`. **Reuse these
+before adding new ones.**
+
 | Trigger | Effect |
 |---------|--------|
-| Hover (pill) | lift `translateY(-2px) scale(1.03)` + cyan rim bloom (brighter ring, `border-color → #4fd0fb`). One ring only — no sparkle/shine sweep. |
-| Press (pill) | `wiiSquashPress` squash-and-stretch (non-uniform `scale(x,y)`), one-shot. Gloss cap does a `scaleY(0.72)` light-catch. |
-| Press (Search button) | adds a static two-layer **blue glow** (`#34beed`) to the `:active` box-shadow — appears only while pressed, fades with the box-shadow transition. Never idle, never pulsing. |
-| Keyboard focus | standard 3px `--focus-ring` outline only — no pulse. (The old `wiiSelectPulse` breathing halo was removed 2026-07-04.) |
-| List render | staggered pop-in via `nintendoPop` + an `nth-child` delay ladder (chips, forecast days, detail stats). Class added by JS, removed on `animationend`. |
-| Channel tab | hover lift + active press, spring easing. |
-
-### Idle/looping motion — allowed ONLY here
-`weather-img` (iconBob), `sun-icon` (sunRock), `#loading` (loadingBounce),
-`forecast-hint` (hintBounce), `#tempMain` temperature moods (tempShiver /
-tempHeatShake — status display, see above). **Never** add a loop to a button,
-input, chip, or the card.
+| Up/Down, arrow keys, Page Up/Down, vertical swipe | View track slides one view (`--dur-slow`, soft) |
+| Hover on a middle button | Face turns cyan (`--dur-fast` background transition) |
+| Press on a frame button or chip | `wiiSquashPress`, one shot |
+| Alerts arrive | Alert bar slides down out of the header (`alertBarDown`) |
+| Status pill appears | `nintendoPop` |
+| Weather icon | `iconBob` loop (decorative) |
+| Below 32°F | `.temp--freezing`: fades white → cyan, then shivers |
+| 95°F and up | `.temp--hot`: heat shake; JS scales `--heat-amp` / `--heat-speed` up to 120°F |
+| Globe moves | Eased camera animation, rendered at half resolution while moving |
 
 ### Reduced motion
-`animations.css` ends with a `prefers-reduced-motion: reduce` block that neutralizes
-durations, kills the focus pulse / squash / stagger, and pins gloss caps to their static
-state. Any new animation **must** be added to that block. The static pill look must render
-identically with motion off.
+
+`motion.css` ends with a `prefers-reduced-motion: reduce` block:
+
+- It cuts every animation and transition to `--dur-none`.
+- It stops the loops and the press squash.
+- The view track swaps instantly.
+- The globe jumps straight to its target.
+
+Any new animation **must** be added to that block.
 
 ---
 
-## 8. Theming (day / night)
+## 8. Day / night & atmosphere
 
-JS adds/removes `body.theme-day` based on whether the weather code ends in `n` (night).
-This swaps `--sky-base`, `--panel-tint`, and `--focus-ring` to their day/night values and
-cross-fades the two sky layers. There's also a weather-atmosphere layer
-(`weather-atmosphere.css` + `atmo-*.js`) that overlays rain video, snow, lightning, fog,
-and clouds based on conditions. Keep these effects subtle and behind the UI
-(`pointer-events: none`).
+- The Current icon shows a moon when the weather code ends in `n`.
+- On the desktop Home menu, `body.theme-day` cross-fades the page sky.
+- The atmosphere layer sits inside the panel, behind the views, with `pointer-events: none`. It covers:
+  - Rain video, streamed from `/stream/` with byte ranges
+  - Snow
+  - Fog
+  - Lightning, also triggered by thunderstorm and tornado alerts
+
+  Keep these effects subtle.
 
 ---
 
 ## 9. Responsive
 
-Single width breakpoint: **768px**. On mobile:
-- Header shrinks to 40px; gutters drop from 80px to 24px.
-- Search row stacks vertically; input and button go full-width.
-- Forecast cards collapse from 5 columns into stacked horizontal rows.
-- Detail stats sit in a 2-column grid (three rows of two).
-- Type scales down (temp 140→64px, etc.) but never below the 16px body / 12px label floors.
-- Globe opacity rises slightly (0.17 → 0.32) since there's less content.
+The one width breakpoint is **768px**. Below it, `theme.css` overrides tokens:
 
-One height query: **`(min-width: 769px) and (max-height: 800px)`** compacts the
-forecast day cards and details panel so strip + details + footer fit a ~720p
-window without scrolling.
+- Rows: 54px.
+- Header: 58px.
+- Title block: 38% of the width.
+- Hero, 5-Day, and 6-Hour sizes are smaller.
 
-Test every UI change at 375px (mobile), 768px (tablet), and ≥1280px (desktop).
+Layout changes on mobile:
+
+- The middle nav buttons use short names ("5-Day", "6-Hour"). The header still shows the full name.
+- 6-Hour becomes a 2×2 grid.
+- The Current stats wrap under the wind.
+- There is no Home menu. A first visit opens the Location screen.
+
+**Desktop** (≥768px) starts on the Home menu. A gutter rule for 768–1100px keeps Home's tiles off the edges.
+
+Test every UI change at **360, 390, 768, and 1440px**.
 
 ---
 
 ## 10. Accessibility (non-negotiable)
 
-- **ARIA:** tabs use `role="tablist"/"tab"/"tabpanel"`, `aria-selected`, `aria-controls`;
-  search input has an `aria-label`; loading/error use `aria-live` / `role="alert"`.
-- **Focus:** every interactive element gets a 3px `focus-visible` ring (`--focus-ring`).
-  Never `outline: none` without a visible replacement.
-- **Touch targets** ≥ 44px. **Body text** ≥ 16px. **Labels** ≥ 12px. **Contrast** ≥ 4.5:1
-  on body text.
+- **Keyboard:**
+  - Every control is a real `<button>` or input.
+  - Arrow Up/Down and Page Up/Down step views; Escape goes back.
+  - Settings radios use a roving tabindex.
+  - The globe takes arrow keys and +/−.
+- **Focus:** a visible `--focus-ring` outline on everything (`--focus-ring-on-light` on silver). Never `outline: none` without a replacement.
+- **Screen readers:**
+  - Views are labeled regions; temperatures carry full `aria-label`s ("High 71 degrees Fahrenheit").
+  - Loading and errors are `aria-live`.
+  - Settings groups are `role="radiogroup"`.
+- **Touch targets** ≥ 44px. **Contrast** AA on every pair (audited).
 - **Motion** always respects `prefers-reduced-motion`.
-- Keep the `visually-hidden` h1 and any visually-hidden labels.
 
 ---
 
 ## 11. Don'ts (design guardrails)
 
-- No purple/violet/indigo gradients or blue-to-purple schemes.
-- No 3-column "icon-in-a-colored-circle" feature grids.
-- No `text-align: center` on everything.
-- No decorative blobs, floating circles, or wavy dividers.
-- No emoji as UI decoration.
-- No generic system-ui/`-apple-system` as the display font — the rounded face is the brand.
-- No infinite glow/pulse/sparkle on buttons or inputs.
-- Don't restyle the green channel header to match other components.
+- Don't copy Nintendo assets, logos, the Wii cursor, or the "supported by weathernews" credit. The cursor (`public/cursors/hand.svg`), icons, and credit line are original.
+- Don't hard-code a design value outside `theme.css`; the lint will fail.
+- Don't use ternaries in the frontend scripts; this codebase prefers `if` / `else`.
+- No purple/violet gradients, decorative blobs, or emoji as UI.
+- No generic `system-ui` display font.
+- No infinite glow/pulse on buttons or inputs.
+- Don't add new chrome; fit features into the button rows, header, panel, or a screen.
+- Don't show made-up data. If an API can't supply something, show it as unavailable (UV) or pending (globe).
 
 ---
 
 ## 12. Quick checklist before shipping a UI change
 
-- [ ] Resting state static; motion only on hover/press/focus (or an allowed decorative loop)
+- [ ] New values added to `theme.css` as tokens; `node --test test/*.test.js` passes
+- [ ] Resting state static; motion only on hover/press/focus or an allowed loop
 - [ ] Animations use `transform`/`opacity`/`box-shadow` and a `--nintendo-*` easing
-- [ ] New animation added to the `prefers-reduced-motion` block
-- [ ] Colors come from tokens / the documented palette (yellow hero, cyan secondary, cyan rim controls)
-- [ ] Font is M PLUS Rounded 1c; labels ≥12px, body ≥16px, numbers tabular
-- [ ] Touch targets ≥44px; focus ring present
-- [ ] Checked at 375 / 768 / 1280px
-- [ ] Green header untouched; maroon footer kept
+- [ ] New animation added to the reduced-motion block
+- [ ] Touch targets ≥ 44px; focus ring visible; contrast AA
+- [ ] Middle nav labels still name the neighboring view
+- [ ] Checked at 360 / 390 / 768 / 1440px
