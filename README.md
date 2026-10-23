@@ -25,7 +25,8 @@ The interface is styled after a retro console weather channel: silver button row
 - Live current weather, a 5-day forecast, and 6-hour blocks from OpenWeatherMap
 - Today's UV index with WHO risk bands
 - US weather alerts from the National Weather Service
-- A spinning globe of cities with their current weather; zoom in (scroll, pinch, or double tap) and more cities appear
+- A sharp, lit globe of cities with their current weather; zoom in (scroll, pinch, or double tap) and more cities appear, down to the local towns around you
+- Search that asks "Which Canton?" when a name has several matches
 - °F/°C and mph/km/h settings, remembered between visits
 - Recent cities remembered between visits
 - Original UI sounds and optional calm music, with a mute switch that is remembered
@@ -48,9 +49,11 @@ The frame has a silver button row at the top and bottom. The middle buttons step
 
 Other screens:
 
-- **Location**: tap the lime pill to search; recent cities are listed as buttons.
+- **Location**: tap the lime pill to search; recent cities are listed as buttons. As you type a town's name, the places it could mean are listed ("Which Canton?" Canton, Ohio · Canton, Texas · Guangzhou, China…), and picking one loads exactly that place. Typing a US state ("Canton OH", "Augusta, Georgia") goes straight there. The desktop Home search box opens the same list when it needs a pick.
 - **Settings** (top right): a Units card (°F or °C, mph or km/h) and a Sound card (sound effects on or off, music on or off).
-- **Globe** (bottom right): zoom out/in, Next region, rotate left/right, Restore, End. Drag to spin it. Scroll, pinch (trackpad or two fingers), or double tap to zoom toward that spot. Zooming in brings out more cities: 42 major cities always, 53 more from about halfway in, and 73 more closer still. Picking a city opens its weather; Back returns to the globe.
+- **Globe** (bottom right): zoom out/in, Next region, rotate left/right, Restore, End. Drag to spin it. Scroll, pinch (trackpad or two fingers), or double tap to zoom toward that spot. Zooming in brings out more cities: 42 major cities always, 53 more from about halfway in, and 105 more closer still. Once the view is under about 400 km across, the local towns around you appear too, with their weather (zoom in on Cleveland and Oberlin, Elyria, Medina, and Akron show up). Picking a city opens its weather; Back returns to the globe.
+
+  The globe is drawn on the GPU (WebGL 2) at the screen's full resolution with smooth filtering, a soft sun, a glint on the oceans, and a blue haze at the rim, even while it moves. Zoomed in, a sharper picture of just the area on screen loads after each move: NASA's Blue Marble map, or the 30 m Landsat map close up. Browsers without WebGL 2, or that would draw it in software, use a simpler canvas renderer.
 - **Weather Alert**: when the NWS has an active alert, the header turns red (warnings) or orange (watches), a bar shows under the header, and the alert screen lists the details.
 - **Home** (desktop only): the channel menu shown at launch. Each tile zooms open into its view.
 
@@ -113,14 +116,38 @@ The rate limit is **30 upstream calls per minute per client IP**. Only requests 
 | Endpoint | Returns | Cache |
 |----------|---------|-------|
 | `GET /health` | `{"status":"ok"}` | — |
-| `GET /weather?city=` | Current conditions for a city | 10 min |
-| `GET /forecast?city=` | Five forecast days | 10 min |
+| `GET /weather?city=` or `?lat=&lon=` | Current conditions for a city, or for a position | 10 min |
+| `GET /forecast?city=` or `?lat=&lon=` | Five forecast days | 10 min |
 | `GET /alerts?lat=&lon=` | `{"alerts":[…]}` from the NWS (US only; empty elsewhere) | 5 min |
 | `GET /stream/:file` | Media from `public/media` with byte-range support (`206 Partial Content`) for iOS Safari | — |
 
-These routes and their response shapes did not change in the redesign. A city that isn't found is remembered for 60 seconds, so repeated misspellings don't spend the rate limit.
+The response shapes did not change in the redesign. `/weather`, `/forecast`, and `/sixhour` also take `lat` and `lon` instead of `city`, which is how a place picked from the search list or the globe loads exactly, even when its name is shared with other towns. A city that isn't found is remembered for 60 seconds, so repeated misspellings don't spend the rate limit.
 
-### `GET /sixhour?city=`
+### `GET /places?q=`
+
+The places matching a search, for the "Which Canton?" list, from OpenWeather's geocoding (up to 5, a place listed twice kept once, English names where they exist). Cached for a day per search.
+
+```json
+{"places": [
+  {"name": "Canton", "state": "Ohio", "country": "US", "lat": 40.799, "lon": -81.378},
+  {"name": "Guangzhou City", "state": "Guangdong Province", "country": "CN", "lat": 23.13, "lon": 113.26}
+]}
+```
+
+`state` is missing for countries without states. Errors: `400` (missing `q`, or longer than 100 characters), `429`, `503`.
+
+### `GET /nearby?lat=&lon=`
+
+Up to 50 towns nearest a point, each with its current weather, from a single upstream call, for the globe's close-up view. The point is snapped to a grid about 5 km across and each cell is cached for 10 minutes. Trailer and RV parks are left out, and a name listed twice keeps its nearest entry. Towns use the same shape as globe markers:
+
+```json
+{"towns": [{"name": "Oberlin", "lat": 41.294, "lon": -82.217, "pending": false,
+            "temperature": 42.7, "conditionId": 701, "weatherCode": "50n", "condition": "mist"}]}
+```
+
+Errors: `400` (missing or invalid coordinates), `429`, `503`.
+
+### `GET /sixhour?city=` (or `?lat=&lon=`)
 
 Six-hour blocks built from the same OpenWeatherMap 5-day/3-hour forecast that `/forecast` uses. The raw forecast is cached once and shared, so calling both routes costs one upstream call.
 
@@ -202,7 +229,7 @@ The free plan has no multi-city endpoint, so each city is its own upstream call.
 - If the rate limit trips partway through, or one city fails, the rest come back `"pending": true` instead of failing the whole region. The globe draws pending cities as plain dots and asks again 20 seconds later.
 - The globe only requests the regions facing the camera.
 
-The extra cities that appear as you zoom in (`public/globe-cities.js`) don't use this endpoint: each one is a plain `GET /weather?city=` call, made only while that city is on screen at a zoom where it shows. The globe makes at most 12 of these a minute so your own searches keep room under the rate limit, waits a whole minute if the server answers `429`, and refreshes a city's weather after 10 minutes.
+The local towns close up come from `/nearby` instead: the middle of the view and four spots up to 40 km from it, each asked about once per 10 minutes, at most 10 a minute. The extra cities that appear as you zoom in (`public/globe-cities.js`) don't use this endpoint either: each one is a plain `GET /weather?city=` call, made only while that city is on screen at a zoom where it shows. The globe makes at most 12 of these a minute so your own searches keep room under the rate limit, waits a whole minute if the server answers `429`, and refreshes a city's weather after 10 minutes.
 
 Errors: `400` (missing or unknown region), `503`.
 
@@ -212,14 +239,15 @@ Errors: `400` (missing or unknown region), `503`.
 
 Each upstream source follows the same layering: client → parser → service → route.
 
-- `service/OpenWeatherClient` — HTTP calls to OpenWeatherMap (weather, forecast, UV, weather by coordinates)
+- `service/OpenWeatherClient` — HTTP calls to OpenWeatherMap (weather and forecast by name or position, UV, place search, nearby towns)
 - `service/NwsAlertClient` — HTTP calls to the National Weather Service
 - `service/WeatherResponseParser`, `ForecastParser`, `SixHourParser`, `UvParser`, `AlertParser` — JSON → model
-- `service/WeatherService`, `UvService`, `GlobeService`, `AlertService` — caching (`WeatherCache`, `NotFoundCache`) and rate-limit checks
+- `service/WeatherService`, `UvService`, `GlobeService`, `AlertService`, `PlaceService`, `NearbyService` — caching (`WeatherCache`, `NotFoundCache`) and rate-limit checks
+- `service/PlaceParser` — geocoding JSON → `Place`
 - `service/GlobeCities` — the fixed city list for the globe
 - `server/WeatherServer` — Spark routes. The route handlers are static methods so tests can call them directly
 - `server/RateLimiter`, `ClientIpResolver`, `CorsConfig`, `MediaStreamRoute` — shared plumbing
-- `model/` — `WeatherData`, `ForecastDay`, `SixHourBlock`, `SixHourForecast`, `UvIndex`, `GlobeCity`, `GlobeMarker`, `GlobeRegion`, `WeatherAlert`
+- `model/` — `WeatherData`, `ForecastDay`, `SixHourBlock`, `SixHourForecast`, `UvIndex`, `GlobeCity`, `GlobeMarker`, `GlobeRegion`, `Place`, `WeatherAlert`
 
 ### Frontend (`public/`)
 
@@ -233,7 +261,7 @@ Each upstream source follows the same layering: client → parser → service �
 | `globe.css` | Globe screen and markers |
 | `weather-atmosphere.css` | Rain, snow, fog, and lightning overlays |
 | `motion.css` | Keyframes, button feel (grow, shine, squash), icon idle motion, loader, easter eggs, and the reduced-motion overrides |
-| `feel-config.js` | The timings and amounts only JavaScript uses: sounds, count-up, view-slide overshoot, scrolling between views, globe glide and zoom, cursor lean, idle delay, easter eggs |
+| `feel-config.js` | The timings and amounts only JavaScript uses: sounds, count-up, view-slide overshoot, scrolling between views, search suggestions, globe glide, zoom, and lighting, cursor lean, idle delay, easter eggs |
 | `units.js` | °F/°C and mph/km/h formatting, city-local dates and times, saved settings |
 | `feel.js` | Button press squash, shine layers, hover tick and press pop, phone buzz |
 | `sound.js` | The sound engine: synthesized effects, the music loop, and the remembered switches |
@@ -244,9 +272,11 @@ Each upstream source follows the same layering: client → parser → service �
 | `idle.js` | Attract mode after a quiet minute |
 | `eggs.js` | The winking sun and snow caps |
 | `views.js` | Renders Current, Today, Tomorrow, 5-Day, 6-Hour, UV, and day detail |
-| `search.js` | Location screen and recent cities |
+| `search.js` | Location screen, "Which one?" matches, and recent cities |
+| `places.js` | Typed US states, match labels, and the query strings for picked places |
 | `settings.js` | Settings screen (Units and Sound cards) |
-| `globe.js` | Canvas globe (orthographic projection of NASA GIBS imagery), city markers, drag and glide, scroll/pinch/double-tap zoom, idle spin |
+| `globe.js` | The globe (orthographic projection of NASA GIBS imagery): city and local-town markers, close-up pictures, drag and glide, scroll/pinch/double-tap zoom, idle spin, and the canvas 2D fallback renderer |
+| `globe-gl.js` | The WebGL 2 renderer: full-resolution drawing, smooth filtering, lighting |
 | `globe-cities.js` | The extra cities that appear as you zoom in, with their tier and search query |
 | `alerts.js` | Alert bar, badge, and alert screen |
 | `channels.js` | Desktop Home menu |
@@ -259,7 +289,7 @@ See [DESIGN.md](DESIGN.md) for the design system.
 
 - Weather data: [OpenWeather](https://openweathermap.org/)
 - Alerts: US National Weather Service
-- Satellite imagery: NASA GIBS (Blue Marble)
+- Satellite imagery: NASA GIBS (Blue Marble, Landsat WELD)
 - Clock digits: DSEG7 font (SIL Open Font License, see `public/fonts/DSEG-LICENSE.txt`)
 
 ## Author
