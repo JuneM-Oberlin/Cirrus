@@ -724,7 +724,7 @@
     --fiveday-high-font: clamp(28px, 5vh, 40px);
     --fiveday-low-font: clamp(24px, 4.2vh, 34px);
     --panel-footer-slim: 44px;
-    --fiveday-max-height: 440px;
+    --fiveday-max-height: 300px;
     --sixhour-strip-font: 18px;
     --uv-value-font: clamp(96px, 16vh, 140px);
     --uv-category-font: 26px;
