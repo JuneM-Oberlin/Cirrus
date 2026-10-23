@@ -3,13 +3,17 @@ package com.weatherapp.server;
 import com.google.gson.Gson;
 import com.weatherapp.error.CityNotFoundException;
 import com.weatherapp.error.RateLimitExceededException;
+import com.weatherapp.model.GlobeMarker;
 import com.weatherapp.model.GlobeRegion;
+import com.weatherapp.model.Place;
 import com.weatherapp.model.UvIndex;
 import com.weatherapp.model.WeatherAlert;
 import com.weatherapp.service.AlertService;
 import com.weatherapp.service.GlobeService;
+import com.weatherapp.service.NearbyService;
 import com.weatherapp.service.NwsAlertClient;
 import com.weatherapp.service.OpenWeatherClient;
+import com.weatherapp.service.PlaceService;
 import com.weatherapp.service.UvService;
 import com.weatherapp.service.WeatherService;
 import java.nio.file.Path;
@@ -44,6 +48,14 @@ public class WeatherServer {
         Object fetch(String city, String clientIp) throws Exception;
     }
 
+    @FunctionalInterface
+    interface PointFetcher {
+
+        Object fetch(double lat, double lon, String clientIp) throws Exception;
+    }
+
+    static final int MAX_PLACE_QUERY_LENGTH = 100;
+
     public static void main(String[] args) {
         port(resolvePort(System.getenv("PORT")));
         staticFiles.externalLocation("public");
@@ -55,6 +67,8 @@ public class WeatherServer {
         WeatherService service = new WeatherService(openWeatherClient);
         UvService uvService = new UvService(openWeatherClient);
         GlobeService globeService = new GlobeService(openWeatherClient);
+        PlaceService placeService = new PlaceService(openWeatherClient);
+        NearbyService nearbyService = new NearbyService(openWeatherClient);
         AlertService alertService = new AlertService(new NwsAlertClient());
         Gson gson = new Gson();
 
@@ -63,34 +77,25 @@ public class WeatherServer {
             return "{\"status\":\"ok\"}";
         });
 
-        get("/weather", (req, res) -> {
-            String city = req.queryParams("city");
-            if (city == null || city.isBlank()) {
-                return badRequest(res, gson, "city parameter is required.");
-            }
-            return handleCityRoute(req, res, gson, city, "City not found.", (c, ip) ->
-                    service.getWeather(c, rateLimitCheck(rateLimiter, ip)));
-        });
+        // These three take either ?city= or ?lat=&lon= (a place picked from
+        // the search list or the globe, where a name could mean another town).
+        get("/weather", (req, res) -> handleLookupRoute(req, res, gson, "City not found.",
+                (c, ip) -> service.getWeather(c, rateLimitCheck(rateLimiter, ip)),
+                (lat, lon, ip) -> service.getWeatherAt(lat, lon, rateLimitCheck(rateLimiter, ip))));
 
-        get("/forecast", (req, res) -> {
-            String city = req.queryParams("city");
-            if (city == null || city.isBlank()) {
-                return badRequest(res, gson, "city parameter is required.");
-            }
-            return handleCityRoute(req, res, gson, city, "Forecast not found.", (c, ip) ->
-                    service.getForecast(c, rateLimitCheck(rateLimiter, ip)));
-        });
+        get("/forecast", (req, res) -> handleLookupRoute(req, res, gson, "Forecast not found.",
+                (c, ip) -> service.getForecast(c, rateLimitCheck(rateLimiter, ip)),
+                (lat, lon, ip) -> service.getForecastAt(lat, lon, rateLimitCheck(rateLimiter, ip))));
 
         // Six-hour blocks come from the same cached forecast response, so this
         // route never makes an extra upstream call on top of /forecast.
-        get("/sixhour", (req, res) -> {
-            String city = req.queryParams("city");
-            if (city == null || city.isBlank()) {
-                return badRequest(res, gson, "city parameter is required.");
-            }
-            return handleCityRoute(req, res, gson, city, "Forecast not found.", (c, ip) ->
-                    service.getSixHour(c, rateLimitCheck(rateLimiter, ip)));
-        });
+        get("/sixhour", (req, res) -> handleLookupRoute(req, res, gson, "Forecast not found.",
+                (c, ip) -> service.getSixHour(c, rateLimitCheck(rateLimiter, ip)),
+                (lat, lon, ip) -> service.getSixHourAt(lat, lon, rateLimitCheck(rateLimiter, ip))));
+
+        get("/places", (req, res) -> handlePlacesRoute(req, res, gson, rateLimiter, placeService));
+
+        get("/nearby", (req, res) -> handleNearbyRoute(req, res, gson, rateLimiter, nearbyService));
 
         get("/alerts", (req, res) -> handleAlertsRoute(req, res, gson, rateLimiter, alertService));
 
@@ -156,6 +161,114 @@ public class WeatherServer {
             System.err.println("Route error: " + e.getMessage());
             res.status(500);
             return gson.toJson(new ErrorResponse("Something went wrong."));
+        }
+    }
+
+    // /weather, /forecast, and /sixhour: a city name, or a position.
+    static Object handleLookupRoute(
+            Request req,
+            Response res,
+            Gson gson,
+            String notFoundMessage,
+            CityFetcher byCity,
+            PointFetcher byPoint) {
+
+        String city = req.queryParams("city");
+        if (city != null && !city.isBlank()) {
+            return handleCityRoute(req, res, gson, city, notFoundMessage, byCity);
+        }
+        String latStr = req.queryParams("lat");
+        String lonStr = req.queryParams("lon");
+        if ((latStr == null || latStr.isBlank()) && (lonStr == null || lonStr.isBlank())) {
+            return badRequest(res, gson, "city parameter is required.");
+        }
+        String problem = coordinateProblem(latStr, lonStr);
+        if (problem != null) {
+            return badRequest(res, gson, problem);
+        }
+        double lat = Double.parseDouble(latStr.trim());
+        double lon = Double.parseDouble(lonStr.trim());
+        return handleCityRoute(req, res, gson, latStr + "," + lonStr, notFoundMessage,
+                (label, ip) -> byPoint.fetch(lat, lon, ip));
+    }
+
+    // What is wrong with a lat/lon pair, or null when it is fine.
+    static String coordinateProblem(String latStr, String lonStr) {
+        if (latStr == null || latStr.isBlank() || lonStr == null || lonStr.isBlank()) {
+            return "lat and lon parameters are required.";
+        }
+        double lat;
+        double lon;
+        try {
+            lat = Double.parseDouble(latStr.trim());
+            lon = Double.parseDouble(lonStr.trim());
+        } catch (NumberFormatException e) {
+            return "lat and lon must be numbers.";
+        }
+        if (Double.isNaN(lat) || Double.isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+            return "lat and lon must be valid coordinates.";
+        }
+        return null;
+    }
+
+    static Object handlePlacesRoute(
+            Request req,
+            Response res,
+            Gson gson,
+            RateLimiter rateLimiter,
+            PlaceService placeService) {
+
+        res.type("application/json");
+        String query = req.queryParams("q");
+        if (query == null || query.isBlank()) {
+            return badRequest(res, gson, "q parameter is required.");
+        }
+        if (query.length() > MAX_PLACE_QUERY_LENGTH) {
+            return badRequest(res, gson, "q is too long.");
+        }
+
+        try {
+            List<Place> places = placeService.getPlaces(query,
+                    rateLimitCheck(rateLimiter, ClientIpResolver.resolve(req)));
+            return gson.toJson(Map.of("places", places));
+        } catch (RateLimitExceededException e) {
+            res.status(429);
+            return gson.toJson(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Places route error: " + e.getMessage());
+            res.status(503);
+            return gson.toJson(new ErrorResponse("Could not search places."));
+        }
+    }
+
+    static Object handleNearbyRoute(
+            Request req,
+            Response res,
+            Gson gson,
+            RateLimiter rateLimiter,
+            NearbyService nearbyService) {
+
+        res.type("application/json");
+        String latStr = req.queryParams("lat");
+        String lonStr = req.queryParams("lon");
+        String problem = coordinateProblem(latStr, lonStr);
+        if (problem != null) {
+            return badRequest(res, gson, problem);
+        }
+        double lat = Double.parseDouble(latStr.trim());
+        double lon = Double.parseDouble(lonStr.trim());
+
+        try {
+            List<GlobeMarker> towns = nearbyService.getNearby(lat, lon,
+                    rateLimitCheck(rateLimiter, ClientIpResolver.resolve(req)));
+            return gson.toJson(Map.of("towns", towns));
+        } catch (RateLimitExceededException e) {
+            res.status(429);
+            return gson.toJson(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Nearby route error: " + e.getMessage());
+            res.status(503);
+            return gson.toJson(new ErrorResponse("Could not load nearby towns."));
         }
     }
 

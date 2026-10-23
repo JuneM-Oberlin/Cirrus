@@ -7,8 +7,9 @@ final class OpenWeatherJson {
     private OpenWeatherJson() {
     }
 
+    // Missing and null ("rain": null, as the nearby-towns list sends) both mean none.
     static double precipVolume(JsonObject entry, String key, String... fields) {
-        if (!entry.has(key)) {
+        if (!entry.has(key) || !entry.get(key).isJsonObject()) {
             return 0.0;
         }
         JsonObject obj = entry.getAsJsonObject(key);

@@ -75,6 +75,56 @@ public class OpenWeatherClient {
         return fetchJson(url, lat + "," + lon, "Weather API");
     }
 
+    /** The 3-hour forecast at a point, for places picked from a list or a map. */
+    public String getForecastByCoordsJSON(double lat, double lon) {
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("https")
+                .host("api.openweathermap.org")
+                .addPathSegments("data/2.5/forecast")
+                .addQueryParameter("lat", String.format("%.4f", lat))
+                .addQueryParameter("lon", String.format("%.4f", lon))
+                .addQueryParameter("appid", apiKey)
+                .addQueryParameter("units", "imperial")
+                .addQueryParameter("cnt", "40")
+                .build();
+
+        return fetchJson(url, lat + "," + lon, "Forecast API");
+    }
+
+    /**
+     * Places whose name matches the search, with their state and country, so
+     * the page can ask "which Canton?". OpenWeather's geocoding answers with
+     * an empty list, not a 404, when nothing matches.
+     */
+    public String getPlacesJSON(String query) {
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("https")
+                .host("api.openweathermap.org")
+                .addPathSegments("geo/1.0/direct")
+                .addQueryParameter("q", query)
+                .addQueryParameter("limit", "5")
+                .addQueryParameter("appid", apiKey)
+                .build();
+
+        return fetchJson(url, query, "Geocoding API");
+    }
+
+    /** The towns nearest a point, each with its current weather, in one call. */
+    public String getNearbyJSON(double lat, double lon, int count) {
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("https")
+                .host("api.openweathermap.org")
+                .addPathSegments("data/2.5/find")
+                .addQueryParameter("lat", String.format("%.4f", lat))
+                .addQueryParameter("lon", String.format("%.4f", lon))
+                .addQueryParameter("cnt", String.valueOf(count))
+                .addQueryParameter("appid", apiKey)
+                .addQueryParameter("units", "imperial")
+                .build();
+
+        return fetchJson(url, lat + "," + lon, "Nearby API");
+    }
+
     public String getForecastJSON(String city) {
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("https")

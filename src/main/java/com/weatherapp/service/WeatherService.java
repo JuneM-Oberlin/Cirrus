@@ -7,6 +7,7 @@ import com.weatherapp.model.WeatherData;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class WeatherService {
 
@@ -36,11 +37,12 @@ public class WeatherService {
 
     public WeatherData getWeather(String city, Runnable enforceRateLimit) {
         return fetchCached(
+                normalizeCityKey(city),
                 city,
                 weatherCache,
                 "weather:",
                 enforceRateLimit,
-                client::getWeatherJSON,
+                () -> client.getWeatherJSON(city),
                 weatherParser::parseWeather);
     }
 
@@ -52,13 +54,47 @@ public class WeatherService {
         return sixHourParser.parse(getForecastJson(city, enforceRateLimit));
     }
 
+    // The same three lookups by position, for places picked from a list or
+    // the globe, where a name alone could mean the wrong town.
+
+    public WeatherData getWeatherAt(double lat, double lon, Runnable enforceRateLimit) {
+        return fetchCached(
+                pointKey(lat, lon),
+                lat + "," + lon,
+                weatherCache,
+                "weather:",
+                enforceRateLimit,
+                () -> client.getWeatherByCoordsJSON(lat, lon),
+                weatherParser::parseWeather);
+    }
+
+    public List<ForecastDay> getForecastAt(double lat, double lon, Runnable enforceRateLimit) {
+        return forecastParser.parseForecast(getForecastJsonAt(lat, lon, enforceRateLimit));
+    }
+
+    public SixHourForecast getSixHourAt(double lat, double lon, Runnable enforceRateLimit) {
+        return sixHourParser.parse(getForecastJsonAt(lat, lon, enforceRateLimit));
+    }
+
     private String getForecastJson(String city, Runnable enforceRateLimit) {
         return fetchCached(
+                normalizeCityKey(city),
                 city,
                 forecastJsonCache,
                 "forecast:",
                 enforceRateLimit,
-                client::getForecastJSON,
+                () -> client.getForecastJSON(city),
+                this::validateForecastJson);
+    }
+
+    private String getForecastJsonAt(double lat, double lon, Runnable enforceRateLimit) {
+        return fetchCached(
+                pointKey(lat, lon),
+                lat + "," + lon,
+                forecastJsonCache,
+                "forecast:",
+                enforceRateLimit,
+                () -> client.getForecastByCoordsJSON(lat, lon),
                 this::validateForecastJson);
     }
 
@@ -69,15 +105,15 @@ public class WeatherService {
         return json;
     }
 
+    // key names the cache entry; label is what a "not found" error reports.
     private <T> T fetchCached(
-            String city,
+            String key,
+            String label,
             WeatherCache<T> cache,
             String lockPrefix,
             Runnable enforceRateLimit,
-            Function<String, String> fetchJson,
+            Supplier<String> fetchJson,
             Function<String, T> parse) {
-
-        String key = normalizeCityKey(city);
 
         T cached = cache.get(key);
         if (cached != null) {
@@ -95,12 +131,12 @@ public class WeatherService {
                 }
 
                 if (notFoundCache.isBlocked(key)) {
-                    throw new CityNotFoundException(city);
+                    throw new CityNotFoundException(label);
                 }
 
                 enforceRateLimit.run();
 
-                String json = fetchJson.apply(city);
+                String json = fetchJson.get();
                 T data = parse.apply(json);
                 cache.put(key, data);
                 return data;
@@ -115,5 +151,10 @@ public class WeatherService {
 
     private static String normalizeCityKey(String city) {
         return city.toLowerCase().trim();
+    }
+
+    // Three decimals is about 100 m. The "@" keeps these keys apart from city names.
+    private static String pointKey(double lat, double lon) {
+        return String.format("@%.3f,%.3f", lat, lon);
     }
 }

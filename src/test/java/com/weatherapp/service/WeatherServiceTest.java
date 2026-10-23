@@ -59,6 +59,28 @@ class WeatherServiceTest {
             """;
 
     @Test
+    void lookupsByPositionUseCoordinatesAndTheirOwnCache() {
+        OpenWeatherClient client = mock(OpenWeatherClient.class);
+        when(client.getWeatherByCoordsJSON(40.799, -81.378)).thenReturn(VALID_WEATHER_JSON);
+        when(client.getForecastByCoordsJSON(40.799, -81.378)).thenReturn(VALID_FORECAST_JSON);
+        AtomicInteger rateLimitCalls = new AtomicInteger();
+        WeatherService service = new WeatherService(client);
+
+        service.getWeatherAt(40.799, -81.378, rateLimitCalls::incrementAndGet);
+        service.getWeatherAt(40.7991, -81.3779, rateLimitCalls::incrementAndGet);
+        List<ForecastDay> days = service.getForecastAt(40.799, -81.378, rateLimitCalls::incrementAndGet);
+        SixHourForecast sixHour = service.getSixHourAt(40.799, -81.378, rateLimitCalls::incrementAndGet);
+
+        assertEquals(1, days.size());
+        assertEquals(sixHour.getClass(), SixHourForecast.class);
+        // one weather call (the second point is within ~100 m) and one shared forecast call
+        assertEquals(2, rateLimitCalls.get());
+        verify(client, times(1)).getWeatherByCoordsJSON(40.799, -81.378);
+        verify(client, times(1)).getForecastByCoordsJSON(40.799, -81.378);
+        verify(client, never()).getWeatherJSON(anyString());
+    }
+
+    @Test
     void cacheHitSkipsRateLimit() {
         OpenWeatherClient client = mock(OpenWeatherClient.class);
         when(client.getWeatherJSON("London")).thenReturn(VALID_WEATHER_JSON);
