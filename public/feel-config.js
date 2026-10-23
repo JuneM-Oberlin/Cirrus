@@ -78,6 +78,26 @@ const CirrusConfig = Object.freeze({
         doubleTapSlopPx: 36,
     },
 
+    // How the GPU globe is lit and how sharp it is drawn (colours are in
+    // theme.css). light points toward the sun: x right, y up, z toward you.
+    // ambient + diffuse is the brightest the land gets; specular and
+    // shininess shape the glint on the oceans; rim and rimPower the blue
+    // haze at the edge; glowWidth is the glow outside it, as a share of the
+    // radius. Close-up pictures are at most detailMaxPx on a side.
+    globeLook: {
+        maxPixelRatio: 2,
+        detailMaxPx: 2048,
+        light: [-0.42, 0.5, 0.76],
+        ambient: 0.66,
+        diffuse: 0.46,
+        specular: 0.32,
+        shininess: 42,
+        rim: 0.7,
+        rimPower: 2.4,
+        saturation: 1.15,
+        glowWidth: 0.07,
+    },
+
     // The drawn hand: how far it leans while moving and how it hops.
     pointer: {
         leanPerSpeed: 10,

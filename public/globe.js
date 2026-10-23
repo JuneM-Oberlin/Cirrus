@@ -53,15 +53,13 @@ const CirrusGlobe = (function () {
     const EXTRAS_PER_MINUTE = 12;
     const EXTRA_REFRESH_MS = 10 * 60 * 1000;
     const MINUTE_MS = 60 * 1000;
+    // The whole world comes first as a quick 2048-wide picture, then (with
+    // the GPU renderer) a sharper 4096-wide one. From DETAIL_FROM_LEVEL in, a
+    // close-up picture of just the area in view loads after each move,
+    // sized to be about as sharp as the screen.
     const BASE_SIZE = { width: 2048, height: 1024 };
-    // Sharper pictures of the area in view as you zoom in: a regional one
-    // from level 2, and a close one (a third of the size, three times as
-    // sharp) from level 3.5. Each is refetched once you move near its edge.
-    const DETAIL_LAYERS = [
-        { fromLevel: 2, span: { lon: 90, lat: 60 } },
-        { fromLevel: 3.5, span: { lon: 30, lat: 20 } },
-    ];
-    const DETAIL_SIZE = { width: 2048, height: 1366 };
+    const SHARP_BASE_SIZE = { width: 4096, height: 2048 };
+    const DETAIL_FROM_LEVEL = 1.5;
 
     let deps = {
         frame: null,
@@ -78,8 +76,10 @@ const CirrusGlobe = (function () {
     let home = { lat: 38, lon: -100 };
     let regionIndex = 0;
     let base = null;
-    // one loaded picture (or null) per entry of DETAIL_LAYERS
-    const details = DETAIL_LAYERS.map(() => null);
+    // the two latest close-up pictures, older first; the newer is drawn on top
+    let details = [null, null];
+    // the WebGL renderer, null when the browser can't (undefined until tried)
+    let gpu;
     let detailTimer = null;
     let animation = null;
     // while the wheel or a double tap is zooming: the level it is heading
@@ -228,26 +228,28 @@ const CirrusGlobe = (function () {
         ].join("");
     }
 
-    // Loads an equirectangular image into raw pixels we can sample.
-    function loadTexture(url, bounds) {
+    // Reads an image's pixels, for the canvas 2D renderer to sample.
+    function pixelsOf(image) {
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0);
+        return ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    }
+
+    // Loads a picture covering bounds { minLon, minLat, maxLon, maxLat }.
+    // The GPU renderer takes the image itself; the canvas 2D one needs its pixels.
+    function loadPicture(url, bounds) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.crossOrigin = "anonymous";
             img.onload = () => {
-                const canvas = document.createElement("canvas");
-                canvas.width = img.naturalWidth;
-                canvas.height = img.naturalHeight;
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(img, 0, 0);
-                resolve({
-                    width: canvas.width,
-                    height: canvas.height,
-                    data: ctx.getImageData(0, 0, canvas.width, canvas.height).data,
-                    minLon: bounds.minLon,
-                    minLat: bounds.minLat,
-                    maxLon: bounds.maxLon,
-                    maxLat: bounds.maxLat,
-                });
+                const picture = Object.assign({ image: img, width: img.naturalWidth, height: img.naturalHeight }, bounds);
+                if (!gpu) {
+                    picture.data = pixelsOf(img);
+                }
+                resolve(picture);
             };
             img.onerror = reject;
             img.src = url;
@@ -260,54 +262,199 @@ const CirrusGlobe = (function () {
         }
         setStatus("Fetching the satellite view…", { busy: true });
         const bounds = { minLon: -180, minLat: -90, maxLon: 180, maxLat: 90 };
-        loadTexture(gibsUrl(-180, -90, 180, 90, BASE_SIZE), bounds)
-            .then((texture) => {
-                base = texture;
+        loadPicture(gibsUrl(-180, -90, 180, 90, BASE_SIZE), bounds)
+            .then((picture) => {
+                base = picture;
+                if (gpu) {
+                    gpu.setPicture("base", picture);
+                }
                 setStatus("");
                 render(1);
                 placeMarkers();
+                loadSharpBase(bounds);
             })
             .catch(() => setStatus("The satellite view isn't available right now."));
     }
 
-    // Fetches a sharper picture for each detail layer the zoom has reached,
-    // unless the one it has still covers the view with room to spare.
+    // The GPU renderer can hold a picture twice as sharp, which loads in the
+    // background (it takes a few seconds) and swaps in when it arrives.
+    function loadSharpBase(bounds) {
+        if (!gpu || gpu.maxTextureSize < SHARP_BASE_SIZE.width) {
+            return;
+        }
+        loadPicture(gibsUrl(-180, -90, 180, 90, SHARP_BASE_SIZE), bounds)
+            .then((picture) => {
+                base = picture;
+                gpu.setPicture("base", picture);
+                if (isOpen) {
+                    render(1);
+                }
+            })
+            .catch(() => {});
+    }
+
+    // The area on screen: the lowest and highest latitude and longitude
+    // under a grid of points across the canvas. Longitudes are measured
+    // from the middle of the view so an area across the date line still
+    // works, then cut off at the date line.
+    function visibleArea() {
+        const size = canvasSize();
+        const steps = 8;
+        const area = { minLon: Infinity, maxLon: -Infinity, minLat: Infinity, maxLat: -Infinity };
+        for (let row = 0; row <= steps; row++) {
+            for (let col = 0; col <= steps; col++) {
+                const place = placeAt(size.width * col / steps, size.height * row / steps);
+                if (!place) {
+                    continue;
+                }
+                const lonFromMiddle = wrapLon(place.lon - view.lon);
+                area.minLon = Math.min(area.minLon, lonFromMiddle);
+                area.maxLon = Math.max(area.maxLon, lonFromMiddle);
+                area.minLat = Math.min(area.minLat, place.lat);
+                area.maxLat = Math.max(area.maxLat, place.lat);
+            }
+        }
+        if (area.minLon === Infinity) {
+            return null;
+        }
+        area.minLon = Math.max(-180, view.lon + area.minLon);
+        area.maxLon = Math.min(180, view.lon + area.maxLon);
+        return area;
+    }
+
+    // How many degrees one screen pixel covers in the middle of the view.
+    function degreesPerPixel() {
+        return 1 / DEG / (view.radius * pixelRatio());
+    }
+
+    // Is this picture sharp enough for the view, and does it cover the area?
+    function pictureFits(picture, area, wanted) {
+        if (!picture) {
+            return false;
+        }
+        const covers = picture.minLon <= area.minLon && picture.maxLon >= area.maxLon
+            && picture.minLat <= area.minLat && picture.maxLat >= area.maxLat;
+        const sharpEnough = (picture.maxLon - picture.minLon) / picture.width <= wanted * 1.5;
+        return covers && sharpEnough;
+    }
+
+    // After a move, fetch a close-up picture of the area in view (with a
+    // margin around it), unless the latest one already covers it sharply.
     function scheduleDetail() {
         clearTimeout(detailTimer);
+        if (view.level < DETAIL_FROM_LEVEL) {
+            return;
+        }
         detailTimer = setTimeout(() => {
-            DETAIL_LAYERS.forEach((layer, index) => {
-                if (view.level < layer.fromLevel) {
-                    return;
-                }
-                const span = layer.span;
-                const have = details[index];
-                if (have && view.lon > have.minLon + span.lon / 6 && view.lon < have.maxLon - span.lon / 6
-                    && view.lat > have.minLat + span.lat / 6 && view.lat < have.maxLat - span.lat / 6) {
-                    return;
-                }
-                const minLon = Math.max(-180, view.lon - span.lon / 2);
-                const maxLon = Math.min(180, view.lon + span.lon / 2);
-                const minLat = Math.max(-90, view.lat - span.lat / 2);
-                const maxLat = Math.min(90, view.lat + span.lat / 2);
-                const bounds = { minLon, minLat, maxLon, maxLat };
-                loadTexture(gibsUrl(minLon, minLat, maxLon, maxLat, DETAIL_SIZE), bounds)
-                    .then((texture) => {
-                        details[index] = texture;
-                        if (isOpen && !animation && zoomTarget === null) {
-                            render(1);
+            const area = visibleArea();
+            if (!area) {
+                return;
+            }
+            const wanted = degreesPerPixel();
+            if (pictureFits(details[1], area, wanted)) {
+                return;
+            }
+            const margin = 0.15;
+            const spanLon = area.maxLon - area.minLon;
+            const spanLat = area.maxLat - area.minLat;
+            const bounds = {
+                minLon: Math.max(-180, area.minLon - spanLon * margin),
+                maxLon: Math.min(180, area.maxLon + spanLon * margin),
+                minLat: Math.max(-90, area.minLat - spanLat * margin),
+                maxLat: Math.min(90, area.maxLat + spanLat * margin),
+            };
+            const most = CirrusConfig.globeLook.detailMaxPx;
+            const size = {
+                width: Math.round(Math.min(most, Math.max(256, (bounds.maxLon - bounds.minLon) / wanted))),
+                height: Math.round(Math.min(most, Math.max(256, (bounds.maxLat - bounds.minLat) / wanted))),
+            };
+            loadPicture(gibsUrl(bounds.minLon, bounds.minLat, bounds.maxLon, bounds.maxLat, size), bounds)
+                .then((picture) => {
+                    details = [details[1], picture];
+                    if (gpu) {
+                        if (details[0]) {
+                            gpu.setPicture("a", details[0]);
                         }
-                    })
-                    .catch(() => {});
-            });
+                        gpu.setPicture("b", picture);
+                    }
+                    if (isOpen && !animation && zoomTarget === null) {
+                        render(1);
+                    }
+                })
+                .catch(() => {});
         }, 400);
     }
 
     /* ---------- Drawing ---------- */
 
+    // The screen's pixel density, capped so very dense phones don't do
+    // more work than anyone could see.
+    function pixelRatio() {
+        return Math.min(window.devicePixelRatio || 1, CirrusConfig.globeLook.maxPixelRatio);
+    }
+
+    // "#1d4ea8" or "rgba(120, 190, 255, 0.55)" -> [r, g, b, a] from 0 to 1.
+    function colorParts(css) {
+        const value = css.trim();
+        if (value.startsWith("#")) {
+            const rgb = parseColor(value);
+            return [rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, 1];
+        }
+        const numbers = value.replace(/[^\d.,]/g, "").split(",").map(Number);
+        let alpha = 1;
+        if (numbers.length > 3) {
+            alpha = numbers[3];
+        }
+        return [numbers[0] / 255, numbers[1] / 255, numbers[2] / 255, alpha];
+    }
+
+    // The globe's colours (from theme.css) and lighting (from feel-config.js).
+    function lookSettings() {
+        const look = CirrusConfig.globeLook;
+        const glow = colorParts(token("--globe-glow"));
+        const light = look.light;
+        const length = Math.hypot(light[0], light[1], light[2]);
+        return {
+            ocean: colorParts(token("--globe-ocean")).slice(0, 3),
+            atmosphere: colorParts(token("--globe-atmosphere")).slice(0, 3),
+            glow,
+            light: light.map((part) => part / length),
+            ambient: look.ambient,
+            diffuse: look.diffuse,
+            specular: look.specular,
+            shininess: look.shininess,
+            rim: look.rim,
+            rimPower: look.rimPower,
+            saturation: look.saturation,
+            glowWidth: look.glowWidth,
+        };
+    }
+
+    // The GPU draws every frame at the screen's full resolution.
+    function drawWithGpu() {
+        const canvas = byId("globeCanvas");
+        const size = canvasSize();
+        const ratio = pixelRatio();
+        const width = Math.round(size.width * ratio);
+        const height = Math.round(size.height * ratio);
+        if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+        }
+        gpu.draw({ width, height, cam: camera(width, height, ratio), look: lookSettings() });
+    }
+
+    // scale only matters to the canvas 2D renderer, which draws at half
+    // resolution while the globe moves to keep up.
     function render(scale) {
         const canvas = byId("globeCanvas");
         const size = canvasSize();
         if (!size.width || !size.height) {
+            return;
+        }
+        if (gpu) {
+            drawWithGpu();
+            describe();
             return;
         }
         const width = Math.round(size.width * scale);
@@ -1313,6 +1460,15 @@ const CirrusGlobe = (function () {
         regionIndex = REGIONS.indexOf(startRegion);
 
         isOpen = true;
+        if (gpu === undefined) {
+            gpu = null;
+            if (typeof CirrusGlobeGL !== "undefined") {
+                gpu = CirrusGlobeGL.create(byId("globeCanvas"));
+            }
+            if (gpu) {
+                gpu.whenRestored(() => render(1));
+            }
+        }
         deps.frame.openScreen("globe", { title: "Globe", onClose: onScreenClose });
         byId("frame").dataset.mode = "globe";
         document.addEventListener("keydown", onKeydown);

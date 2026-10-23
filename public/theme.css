@@ -389,6 +389,7 @@
   --globe-space: radial-gradient(ellipse at 50% 120%, #1d4fc4 0%, #0b2a86 45%, #04124a 100%);
   --globe-ocean: #1d4ea8;
   --globe-glow: rgba(120, 190, 255, 0.55);
+  --globe-atmosphere: #9fd4ff;
   --globe-glow-edge: rgba(120, 190, 255, 0);
   --globe-badge-font: clamp(16px, 2.6vh, 24px);
   --globe-label-font: 15px;
