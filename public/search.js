@@ -1,12 +1,18 @@
 /* City search lives in the lime location pill: tap it and the pill turns
-   into a text field while the panel lists recent cities. */
+   into a text field while the panel lists recent cities. As you type a
+   town's name, the places that match appear above them ("Which one?"), so
+   "Canton" can mean Canton, Ohio rather than the first Canton the weather
+   service thinks of. Typing a US state ("Canton OH") goes straight there. */
 
 const CirrusSearch = (function () {
     let deps = {
         frame: null,
         onSearch: () => {},
         getRecents: () => [],
+        // resolves to the matching places, or null when place search isn't available
+        findPlaces: async () => null,
     };
+    let suggestTimer = null;
 
     function byId(id) {
         return document.getElementById(id);
@@ -36,7 +42,7 @@ const CirrusSearch = (function () {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "chip-btn";
-            button.textContent = city;
+            button.textContent = CirrusPlaces.labelOf(city);
             button.addEventListener("click", () => deps.onSearch(city));
             item.appendChild(button);
             list.appendChild(item);
@@ -44,14 +50,109 @@ const CirrusSearch = (function () {
         byId("recentHeading").classList.toggle("hidden", recents.length === 0);
     }
 
-    function open() {
+    /* ---------- Matching places ---------- */
+
+    function clearPlaces() {
+        clearTimeout(suggestTimer);
+        byId("placeList").replaceChildren();
+        byId("placeList").classList.add("hidden");
+        byId("placeHeading").classList.add("hidden");
+        byId("placeStatus").textContent = "";
+    }
+
+    // Lists the places matching text as buttons; picking one loads exactly that place.
+    function showPlaces(text, places) {
+        const list = byId("placeList");
+        list.replaceChildren();
+        places.forEach((place) => {
+            const item = document.createElement("li");
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "chip-btn";
+            button.textContent = CirrusPlaces.describe(place, places);
+            button.addEventListener("click", () => deps.onSearch(CirrusPlaces.fromPlace(place, places)));
+            item.appendChild(button);
+            list.appendChild(item);
+        });
+        byId("placeHeading").textContent = "Which " + text + "?";
+        byId("placeHeading").classList.remove("hidden");
+        list.classList.remove("hidden");
+        let count = places.length + " matches";
+        if (places.length === 1) {
+            count = "1 match";
+        }
+        byId("placeStatus").textContent = count + " for " + text + ".";
+    }
+
+    // Typed text that already says where (a comma, or a US state) needs no list.
+    function saysWhere(text) {
+        return text.includes(",") || CirrusPlaces.tidy(text) !== text.trim().replace(/\s+/g, " ");
+    }
+
+    // While typing: once the typing pauses, show what matches.
+    function suggest() {
+        clearTimeout(suggestTimer);
+        const text = byId("cityInput").value.trim();
+        if (text.length < CirrusConfig.search.suggestMinChars || saysWhere(text)) {
+            clearPlaces();
+            return;
+        }
+        suggestTimer = setTimeout(async () => {
+            const places = await deps.findPlaces(text);
+            // the field may have changed while the matches were on their way
+            if (byId("cityInput").value.trim() !== text) {
+                return;
+            }
+            if (places && places.length > 0) {
+                showPlaces(text, places);
+            } else {
+                clearPlaces();
+            }
+        }, CirrusConfig.search.suggestDelayMs);
+    }
+
+    // What to load for typed text: { query } when it is clear which place is
+    // meant, or { places } when there are several to choose from. Without
+    // place search (an older server, or no matches) the text is searched as typed.
+    async function resolve(text) {
+        const typed = text.trim();
+        if (saysWhere(typed)) {
+            return { query: CirrusPlaces.tidy(typed) };
+        }
+        const places = await deps.findPlaces(typed);
+        if (!places || places.length === 0) {
+            return { query: typed };
+        }
+        if (places.length === 1) {
+            return { query: CirrusPlaces.fromPlace(places[0], places) };
+        }
+        return { places };
+    }
+
+    async function submit(text) {
+        const result = await resolve(text);
+        if (result.query) {
+            deps.onSearch(result.query);
+            return;
+        }
+        showPlaces(text.trim(), result.places);
+        // the first match is one Tab away from the field
+        const first = byId("placeList").querySelector("button");
+        if (first) {
+            first.focus();
+        }
+    }
+
+    // text fills the field (a search started from the desktop Home box)
+    function open(text = "") {
         if (!isOpen()) {
             deps.frame.openScreen("search", { title: "Location", onClose: hideField });
         }
         showField();
+        clearPlaces();
         renderRecents();
         const input = byId("cityInput");
-        input.value = "";
+        input.value = text;
         input.focus();
     }
 
@@ -95,17 +196,19 @@ const CirrusSearch = (function () {
 
     function init(dependencies) {
         deps = Object.assign(deps, dependencies);
-        byId("locationPill").addEventListener("click", open);
+        byId("locationPill").addEventListener("click", () => open());
         byId("searchForm").addEventListener("submit", (event) => {
             event.preventDefault();
+            clearTimeout(suggestTimer);
             const city = byId("cityInput").value.trim();
             if (city) {
-                deps.onSearch(city);
+                submit(city);
             }
         });
+        byId("cityInput").addEventListener("input", suggest);
         const emptyChoose = byId("emptyChoose");
         if (emptyChoose) {
-            emptyChoose.addEventListener("click", open);
+            emptyChoose.addEventListener("click", () => open());
         }
     }
 
@@ -117,5 +220,7 @@ const CirrusSearch = (function () {
         isOpen,
         setLocation,
         renderRecents,
+        resolve,
+        showPlaces,
     };
 })();

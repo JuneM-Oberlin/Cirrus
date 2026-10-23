@@ -43,13 +43,19 @@ function saveHistory(cities) {
     }
 }
 
+// One entry per town: "Canton, OH" typed and "Canton, Ohio" picked from the
+// list are the same place, so the newer one replaces the older.
+function historyKey(entry) {
+    return normalizeCityKey(CirrusPlaces.tidy(CirrusPlaces.labelOf(entry)));
+}
+
 function addToHistory(city) {
     const trimmed = city.trim();
     if (!trimmed) {
         return;
     }
-    const key = normalizeCityKey(trimmed);
-    let cities = loadHistory().filter((entry) => normalizeCityKey(entry) !== key);
+    const key = historyKey(trimmed);
+    let cities = loadHistory().filter((entry) => historyKey(entry) !== key);
     cities.unshift(trimmed);
     if (cities.length > MAX_HISTORY) {
         cities = cities.slice(0, MAX_HISTORY);
@@ -72,6 +78,7 @@ if (location.hostname.endsWith(".github.io")) {
 fetch(`${BACKEND_URL}/health`).catch(() => {});
 
 const clientCache = {
+    places: new Map(),
     weather: new Map(),
     forecast: new Map(),
     sixHour: new Map(),
@@ -171,8 +178,9 @@ async function fetchCached(path, city, cache, normalize = (d) => d) {
 
     let response;
     try {
-        // fallow-ignore-next-line security-sink -- callers pass only fixed endpoint names, and the city query value is percent-encoded.
-        response = await fetch(`${BACKEND_URL}/${path}?city=${encodeURIComponent(city)}`);
+        // A picked place asks by position (lat=&lon=); anything else by name (city=).
+        // fallow-ignore-next-line security-sink -- callers pass only fixed endpoint names, and the query values are percent-encoded.
+        response = await fetch(`${BACKEND_URL}/${path}?${CirrusPlaces.requestParams(city)}`);
     } catch (fetchError) {
         throw new Error(networkErrorMessage());
     }
@@ -223,6 +231,33 @@ async function fetchUvData(lat, lon) {
         return data;
     } catch (err) {
         console.log("UV unavailable:", err);
+        return null;
+    }
+}
+
+// The places matching a search, for "Which Canton?". Resolves to null when
+// place search isn't available (for example an older server without
+// /places), so search falls back to looking the name up as typed.
+async function fetchPlaces(text) {
+    const key = normalizeCityKey(text);
+    const cached = getCachedEntry(clientCache.places, key);
+    if (cached) {
+        return cached;
+    }
+    try {
+        // fallow-ignore-next-line security-sink -- fixed /places path with a percent-encoded query.
+        const response = await fetch(`${BACKEND_URL}/places?q=${encodeURIComponent(text)}`);
+        if (!response.ok) {
+            return null;
+        }
+        const data = await response.json();
+        if (!Array.isArray(data.places)) {
+            return null;
+        }
+        setCachedEntry(clientCache.places, key, data.places);
+        return data.places;
+    } catch (err) {
+        console.log("Place search unavailable:", err);
         return null;
     }
 }
@@ -414,7 +449,13 @@ function applyCity(city, weather, forecast, sixHour, { visit = false } = {}) {
     appState.loadedAt = Date.now();
 
     document.body.classList.toggle("theme-day", !weather.weatherCode.endsWith("n"));
-    CirrusSearch.setLocation(weather.city);
+    // a picked place keeps the name it was picked by; the weather service
+    // may call the spot by its nearest station
+    let name = weather.city;
+    if (CirrusPlaces.isPicked(city)) {
+        name = CirrusPlaces.shortName(city);
+    }
+    CirrusSearch.setLocation(name);
     CirrusViews.render(appState);
     CirrusCountUp.playIn(document.querySelector('.view[data-view="' + CirrusFrame.currentViewId() + '"]'));
     CirrusAtmosphere.refresh(weather.conditionId);
@@ -457,7 +498,20 @@ async function loadCity(city, options = {}) {
             fetchSixHourData(trimmed),
         ]);
         applyCity(trimmed, weather, forecast, sixHour, options);
-    }, { retry, loadingMessage: "Tuning in to " + trimmed + "…" });
+    }, { retry, loadingMessage: "Tuning in to " + CirrusPlaces.labelOf(trimmed) + "…" });
+}
+
+// Search from the desktop Home box. A name with several matches opens the
+// frame's search screen with them listed, so you can pick the right one.
+async function searchFromHome(text) {
+    const result = await CirrusSearch.resolve(text);
+    if (result.query) {
+        loadCity(result.query);
+        return;
+    }
+    closeHome();
+    CirrusSearch.open(text.trim());
+    CirrusSearch.showPlaces(text.trim(), result.places);
 }
 
 // Search from the location pill or a recent-city button.
@@ -558,6 +612,7 @@ CirrusSearch.init({
     frame: CirrusFrame,
     onSearch: searchCity,
     getRecents: loadHistory,
+    findPlaces: fetchPlaces,
 });
 CirrusAlerts.init({
     backendUrl: BACKEND_URL,
@@ -629,7 +684,7 @@ CirrusUnits.onChange(() => {
 CirrusDesktopChannels.init({
     formatTemp: (fahrenheit) => CirrusUnits.temp(fahrenheit),
     formatAsOf: (weather) => CirrusUnits.asOf(appState.loadedAt, weather.timezoneOffset),
-    onSearch: (city) => loadCity(city),
+    onSearch: searchFromHome,
     onOpenChannel: openChannel,
 });
 

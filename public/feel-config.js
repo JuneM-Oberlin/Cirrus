@@ -8,6 +8,13 @@ const CirrusConfig = Object.freeze({
         durationMs: 600,
     },
 
+    // Search suggests matching places once you pause typing for
+    // suggestDelayMs, from suggestMinChars letters on.
+    search: {
+        suggestDelayMs: 350,
+        suggestMinChars: 3,
+    },
+
     // A view slides in, runs a few pixels past its spot, and settles back.
     // The overshoot is a fixed size, so a long jump from the dots doesn't fling.
     viewSlide: {
