@@ -902,7 +902,9 @@ const CirrusGlobe = (function () {
             if (nudged) {
                 gain = (nudged.lat - now.lat) / nudge;
             }
-            if (gain < 0.25) {
+            // near the disc's side edges the measurement is unreliable, so
+            // only trust it when it says the place moves at least 0.6 as fast
+            if (gain < 0.6) {
                 gain = 1;
             }
             view.lat = clampLat(view.lat + (pinned.lat - now.lat) / gain);
