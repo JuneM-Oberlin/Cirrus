@@ -127,8 +127,13 @@ const CirrusPlaces = (function () {
         return place.name + ", " + countryName(place.country);
     }
 
+    // The query that loads a place by its exact position, shown as label.
+    function at(label, lat, lon) {
+        return label + "@" + lat.toFixed(4) + "," + lon.toFixed(4);
+    }
+
     function fromPlace(place, allMatches = []) {
-        return describe(place, allMatches) + "@" + place.lat.toFixed(4) + "," + place.lon.toFixed(4);
+        return at(describe(place, allMatches), place.lat, place.lon);
     }
 
     return {
@@ -139,6 +144,7 @@ const CirrusPlaces = (function () {
         shortName,
         requestParams,
         describe,
+        at,
         fromPlace,
     };
 })();

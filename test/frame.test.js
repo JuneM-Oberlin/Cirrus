@@ -744,17 +744,18 @@ test("globe zoom levels blend evenly between steps and convert back", () => {
     assert.ok(close(globe.shareFor(0), 0.42));
     assert.ok(close(globe.shareFor(2), 1.35));
     assert.ok(close(globe.shareFor(5), 5.6));
+    assert.ok(close(globe.shareFor(9), 40));
     // halfway between two levels grows by the same factor on each side
     const half = globe.shareFor(2.5);
     assert.ok(close(half / 1.35, 2.2 / half));
 
     // a pinch's size turns back into the same level, clamped at the ends
-    [0, 0.3, 1.75, 2.5, 4.9].forEach((level) => {
+    [0, 0.3, 1.75, 2.5, 4.9, 6.5, 8.75].forEach((level) => {
         assert.ok(close(globe.levelForShare(globe.shareFor(level)), level), "level " + level);
     });
     assert.equal(globe.levelForShare(0.1), 0);
-    assert.equal(globe.levelForShare(40), 5);
+    assert.equal(globe.levelForShare(400), 11);
     // a level a hair outside the range still gives a real size
     assert.ok(close(globe.shareFor(-0.06), 0.42));
-    assert.ok(close(globe.shareFor(5.2), 5.6));
+    assert.ok(close(globe.shareFor(11.2), 100));
 });

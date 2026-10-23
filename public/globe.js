@@ -34,7 +34,8 @@ const CirrusGlobe = (function () {
     ];
 
     // Globe radius as a share of the panel's shorter side, per zoom level.
-    const ZOOM_LEVELS = [0.42, 0.8, 1.35, 2.2, 3.4, 5.6];
+    // The last few are close enough to tell neighbouring towns apart.
+    const ZOOM_LEVELS = [0.42, 0.8, 1.35, 2.2, 3.4, 5.6, 9, 15, 25, 40, 64, 100];
     const DEFAULT_LEVEL = 2;
     const MAX_LEVEL = ZOOM_LEVELS.length - 1;
     const ROTATE_STEP = 20;
@@ -53,10 +54,33 @@ const CirrusGlobe = (function () {
     const EXTRAS_PER_MINUTE = 12;
     const EXTRA_REFRESH_MS = 10 * 60 * 1000;
     const MINUTE_MS = 60 * 1000;
+    // Once the view is at most LOCAL_VIEW_KM across, the towns around its
+    // middle appear too, with their weather, from one /nearby call per
+    // spot. Four more spots up to SPREAD_KM from the middle are asked about
+    // as well, so towns across the screen show up, not just the suburbs
+    // nearest its centre. A spot is asked about again after NEARBY_FRESH_MS,
+    // and at most NEARBY_PER_MINUTE spots load a minute.
+    const EARTH_RADIUS_KM = 6371;
+    const LOCAL_VIEW_KM = 400;
+    const SPREAD_KM = 40;
+    const NEARBY_PER_MINUTE = 10;
+    const NEARBY_FRESH_MS = 10 * 60 * 1000;
+    // Names that usually belong to a suburb or subdivision rather than a town
+    // in its own right ("Middleburg Heights", "North Olmsted", "Avon Lake");
+    // they get label room after plain town names like Elyria or Oberlin.
+    // At most MAX_LOCAL_TOWNS local towns are labelled at once.
+    const SUBURB_NAME = /\b(heights|estates|park|village|center|centre|township|hills|gardens|acres|manor|terrace|commons|station|lake|lanes)\b|^(north|south|east|west|upper|lower) |-on-the-/i;
+    const MAX_LOCAL_TOWNS = 24;
     // The whole world comes first as a quick 2048-wide picture, then (with
     // the GPU renderer) a sharper 4096-wide one. From DETAIL_FROM_LEVEL in, a
     // close-up picture of just the area in view loads after each move,
     // sized to be about as sharp as the screen.
+    // Close-ups come from NASA's Blue Marble map, or from Landsat (30 m,
+    // sharp enough for single towns) once a screen pixel covers less than
+    // LANDSAT_BELOW_DEGREES.
+    const BLUE_MARBLE = "BlueMarble_ShadedRelief_Bathymetry";
+    const LANDSAT = "Landsat_WELD_CorrectedReflectance_TrueColor_Global_Annual";
+    const LANDSAT_BELOW_DEGREES = 0.004;
     const BASE_SIZE = { width: 2048, height: 1024 };
     const SHARP_BASE_SIZE = { width: 4096, height: 2048 };
     const DETAIL_FROM_LEVEL = 1.5;
@@ -65,6 +89,10 @@ const CirrusGlobe = (function () {
         frame: null,
         fetchRegion: async () => null,
         fetchCity: async () => null,
+        // resolves to the towns around a point, or null when not available
+        fetchNearby: async () => null,
+        // the search query that loads a place by its exact position
+        placeQuery: (name) => name,
         onVisit: () => {},
         onEnd: () => {},
         formatTemp: (f) => Math.round(f) + "°",
@@ -98,6 +126,10 @@ const CirrusGlobe = (function () {
     let extrasTimer = null;
     let extrasDueAt = 0;
     let markersTimer = null;
+    // local towns by name and rounded position, and the areas already asked about
+    const localTowns = {};
+    let nearbyLooks = [];
+    let nearbyTimer = null;
 
     function byId(id) {
         return document.getElementById(id);
@@ -217,11 +249,11 @@ const CirrusGlobe = (function () {
 
     /* ---------- Imagery ---------- */
 
-    function gibsUrl(minLon, minLat, maxLon, maxLat, size) {
+    function gibsUrl(minLon, minLat, maxLon, maxLat, size, layer = BLUE_MARBLE) {
         return [
             "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi",
             "?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap",
-            "&LAYERS=BlueMarble_ShadedRelief_Bathymetry",
+            "&LAYERS=" + layer,
             "&FORMAT=image/jpeg&TRANSPARENT=false&SRS=EPSG:4326",
             `&WIDTH=${size.width}&HEIGHT=${size.height}`,
             `&BBOX=${minLon},${minLat},${maxLon},${maxLat}`,
@@ -327,9 +359,10 @@ const CirrusGlobe = (function () {
         return 1 / DEG / (view.radius * pixelRatio());
     }
 
-    // Is this picture sharp enough for the view, and does it cover the area?
-    function pictureFits(picture, area, wanted) {
-        if (!picture) {
+    // Is this picture from the right map, sharp enough for the view, and
+    // does it cover the area?
+    function pictureFits(picture, area, wanted, layer) {
+        if (!picture || picture.layer !== layer) {
             return false;
         }
         const covers = picture.minLon <= area.minLon && picture.maxLon >= area.maxLon
@@ -351,7 +384,11 @@ const CirrusGlobe = (function () {
                 return;
             }
             const wanted = degreesPerPixel();
-            if (pictureFits(details[1], area, wanted)) {
+            let layer = BLUE_MARBLE;
+            if (wanted < LANDSAT_BELOW_DEGREES) {
+                layer = LANDSAT;
+            }
+            if (pictureFits(details[1], area, wanted, layer)) {
                 return;
             }
             const margin = 0.15;
@@ -368,8 +405,9 @@ const CirrusGlobe = (function () {
                 width: Math.round(Math.min(most, Math.max(256, (bounds.maxLon - bounds.minLon) / wanted))),
                 height: Math.round(Math.min(most, Math.max(256, (bounds.maxLat - bounds.minLat) / wanted))),
             };
-            loadPicture(gibsUrl(bounds.minLon, bounds.minLat, bounds.maxLon, bounds.maxLat, size), bounds)
+            loadPicture(gibsUrl(bounds.minLon, bounds.minLat, bounds.maxLon, bounds.maxLat, size, layer), bounds)
                 .then((picture) => {
+                    picture.layer = layer;
                     details = [details[1], picture];
                     if (gpu) {
                         if (details[0]) {
@@ -581,13 +619,26 @@ const CirrusGlobe = (function () {
                 && item.point.y > 0 && item.point.y < size.height);
     }
 
+    // 0 for a town's own name, 1 for a suburb-like one ("Middleburg Heights").
+    function suburbRank(city) {
+        if (city.local && SUBURB_NAME.test(city.name)) {
+            return 1;
+        }
+        return 0;
+    }
+
     // Major cities get first pick of space for their labels, then tier 2,
-    // then tier 3; within a tier, the ones facing you most go first.
+    // then tier 3, then local towns (plain names before suburbs); within
+    // each, the ones facing you most go first.
     function byImportance(a, b) {
         const tierA = a.city.tier || 1;
         const tierB = b.city.tier || 1;
         if (tierA !== tierB) {
             return tierA - tierB;
+        }
+        const suburbs = suburbRank(a.city) - suburbRank(b.city);
+        if (suburbs !== 0) {
+            return suburbs;
         }
         return b.point.depth - a.point.depth;
     }
@@ -597,6 +648,9 @@ const CirrusGlobe = (function () {
         const cities = [];
         Object.values(regions).forEach((region) => region.cities.forEach((city) => cities.push(city)));
         extraCities().forEach((city) => cities.push(city));
+        if (viewWidthKm() <= LOCAL_VIEW_KM) {
+            Object.values(localTowns).forEach((town) => cities.push(town));
+        }
         return cities;
     }
 
@@ -682,19 +736,19 @@ const CirrusGlobe = (function () {
         }
 
         layer.replaceChildren();
+        let localShown = 0;
         citiesOnScreen(cities)
             .sort(byImportance)
             .forEach(({ city, point }) => {
+                if (city.local && localShown >= MAX_LOCAL_TOWNS) {
+                    return;
+                }
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "globe-marker";
                 button.dataset.city = city.name;
                 button.style.left = point.x + "px";
                 button.style.top = point.y + "px";
-                // near the right edge the label goes on the left of its dot
-                if (point.x > size.width * 0.62) {
-                    button.classList.add("is-flipped");
-                }
 
                 const dot = document.createElement("span");
                 dot.className = "globe-dot";
@@ -703,20 +757,46 @@ const CirrusGlobe = (function () {
                 button.append(dot, label);
                 describeMarker(button, city);
 
-                // Skip a label that would sit on top of one already placed.
-                // The box covers the dot plus the label on whichever side it sits.
+                // Find room for the label: first on the side away from the
+                // screen's nearer edge, then on the other side. A city with
+                // no room keeps just its dot; a local town with no room is
+                // left off, so close-ups never turn into a cloud of dots.
+                // A box covers the dot plus the label on the side it sits.
                 const labelWidth = label.textContent.length * 9 + 40;
-                const box = { left: point.x, right: point.x + labelWidth, top: point.y - 14, bottom: point.y + 14 };
-                if (button.classList.contains("is-flipped")) {
-                    box.left = point.x - labelWidth;
-                    box.right = point.x;
+                let sides = ["right", "left"];
+                if (point.x > size.width * 0.62) {
+                    sides = ["left", "right"];
                 }
-                const overlaps = placed.some((other) => box.left < other.right && box.right > other.left
-                    && box.top < other.bottom && box.bottom > other.top);
-                if (overlaps) {
-                    button.classList.add("is-compact");
+                let room = null;
+                for (const side of sides) {
+                    const box = { left: point.x, right: point.x + labelWidth, top: point.y - 14, bottom: point.y + 14 };
+                    if (side === "left") {
+                        box.left = point.x - labelWidth;
+                        box.right = point.x;
+                    }
+                    const overlaps = placed.some((other) => box.left < other.right && box.right > other.left
+                        && box.top < other.bottom && box.bottom > other.top);
+                    if (!overlaps) {
+                        room = { box, side };
+                        break;
+                    }
+                }
+                if (room) {
+                    placed.push(room.box);
+                    if (room.side === "left") {
+                        button.classList.add("is-flipped");
+                    }
+                    if (city.local) {
+                        localShown += 1;
+                    }
+                } else if (city.local) {
+                    return;
                 } else {
-                    placed.push(box);
+                    // the label still shows on hover and focus, on the roomier side
+                    button.classList.add("is-compact");
+                    if (sides[0] === "left") {
+                        button.classList.add("is-flipped");
+                    }
                 }
 
                 // extra cities search by their query, so the right town answers
@@ -896,6 +976,113 @@ const CirrusGlobe = (function () {
         }
     }
 
+    /* ---------- Local towns, close up ---------- */
+
+    // Every city on the fixed lists, at any zoom.
+    function listedCities() {
+        const cities = [];
+        Object.values(regions).forEach((region) => region.cities.forEach((city) => cities.push(city)));
+        CirrusGlobeCities.forEach((city) => cities.push(city));
+        return cities;
+    }
+
+    // A town from /nearby, unless it is already one of the listed cities.
+    function addLocalTown(town) {
+        const listed = listedCities().some((city) => city.name === town.name
+            && Math.abs(city.lat - town.lat) < 0.25 && Math.abs(wrapLon(city.lon - town.lon)) < 0.25);
+        if (listed) {
+            return;
+        }
+        const key = town.name + "@" + town.lat.toFixed(2) + "," + town.lon.toFixed(2);
+        localTowns[key] = Object.assign({}, town, {
+            pending: false,
+            tier: 4,
+            local: true,
+            query: deps.placeQuery(town.name, town.lat, town.lon),
+        });
+    }
+
+    // How far (in degrees) the towns of one /nearby answer reach from where
+    // it was asked; dense areas reach less far than open country.
+    function reachOf(towns, look) {
+        let reach = 0.1;
+        towns.forEach((town) => {
+            const away = Math.hypot(town.lat - look.lat, wrapLon(town.lon - look.lon) * Math.cos(look.lat * DEG));
+            reach = Math.max(reach, away);
+        });
+        return reach;
+    }
+
+    // How wide the view is on the ground, across its middle.
+    function viewWidthKm() {
+        if (!view.radius) {
+            return Infinity;
+        }
+        return canvasSize().width / view.radius * EARTH_RADIUS_KM;
+    }
+
+    // The spots to ask about: the middle of the view, and points east,
+    // west, north, and south of it, a quarter of the view away but never
+    // more than SPREAD_KM.
+    function nearbySpots() {
+        const size = canvasSize();
+        const middle = placeAt(size.width / 2, size.height / 2);
+        if (!middle) {
+            return [];
+        }
+        const awayKm = Math.min(viewWidthKm() / 4, SPREAD_KM);
+        const awayLat = awayKm / EARTH_RADIUS_KM / DEG;
+        const awayLon = awayLat / Math.max(0.2, Math.cos(middle.lat * DEG));
+        return [
+            middle,
+            { lat: middle.lat, lon: wrapLon(middle.lon - awayLon) },
+            { lat: middle.lat, lon: wrapLon(middle.lon + awayLon) },
+            { lat: clampLat(middle.lat + awayLat), lon: middle.lon },
+            { lat: clampLat(middle.lat - awayLat), lon: middle.lon },
+        ];
+    }
+
+    function isCovered(spot) {
+        return nearbyLooks.some((look) => Math.hypot(look.lat - spot.lat,
+            wrapLon(look.lon - spot.lon) * Math.cos(spot.lat * DEG)) < look.reach * 0.6);
+    }
+
+    // After a move close in: ask for the towns around the spots in view that
+    // no earlier answer covers, within the per-minute budget.
+    function loadNearby() {
+        clearTimeout(nearbyTimer);
+        if (viewWidthKm() > LOCAL_VIEW_KM) {
+            return;
+        }
+        const now = Date.now();
+        nearbyLooks = nearbyLooks.filter((look) => now - look.at < NEARBY_FRESH_MS);
+        const spots = nearbySpots().filter((spot) => !isCovered(spot));
+        spots.forEach((spot) => {
+            const recent = nearbyLooks.filter((look) => now - look.at < MINUTE_MS);
+            if (recent.length >= NEARBY_PER_MINUTE) {
+                // over budget: look again when the oldest leaves the minute
+                clearTimeout(nearbyTimer);
+                nearbyTimer = setTimeout(() => {
+                    if (isOpen && !animation && zoomTarget === null) {
+                        loadNearby();
+                    }
+                }, MINUTE_MS - (now - recent[0].at) + 100);
+                return;
+            }
+            // until the answer arrives, this spot counts as covered
+            const look = { lat: spot.lat, lon: spot.lon, at: now, reach: 0.1 };
+            nearbyLooks.push(look);
+            deps.fetchNearby(spot.lat, spot.lon).then((towns) => {
+                if (!towns) {
+                    return;
+                }
+                look.reach = reachOf(towns, look);
+                towns.forEach(addLocalTown);
+                placeMarkersSoon();
+            });
+        });
+    }
+
     /* ---------- Moving the camera ---------- */
 
     function easeInOut(t) {
@@ -951,6 +1138,7 @@ const CirrusGlobe = (function () {
         placeMarkers();
         loadVisibleRegions();
         loadVisibleExtras();
+        loadNearby();
         scheduleDetail();
     }
 
@@ -1505,6 +1693,7 @@ const CirrusGlobe = (function () {
         clearTimeout(extrasTimer);
         extrasTimer = null;
         clearTimeout(markersTimer);
+        clearTimeout(nearbyTimer);
         deps.onEnd();
     }
 

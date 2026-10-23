@@ -262,6 +262,26 @@ async function fetchPlaces(text) {
     }
 }
 
+// The towns around a point, with their weather, for the globe close up.
+// Resolves to null when not available (for example an older server).
+async function fetchNearby(lat, lon) {
+    try {
+        // fallow-ignore-next-line security-sink -- fixed /nearby path with numeric, percent-encoded coordinates.
+        const response = await fetch(`${BACKEND_URL}/nearby?lat=${encodeURIComponent(lat.toFixed(3))}&lon=${encodeURIComponent(lon.toFixed(3))}`);
+        if (!response.ok) {
+            return null;
+        }
+        const data = await response.json();
+        if (!Array.isArray(data.towns)) {
+            return null;
+        }
+        return data.towns;
+    } catch (err) {
+        console.log("Nearby towns unavailable:", err);
+        return null;
+    }
+}
+
 // One region of globe markers; the server caps and caches upstream calls.
 async function fetchGlobeRegion(regionId) {
     // fallow-ignore-next-line security-sink -- fixed /globe path; the region id comes from a fixed list and is percent-encoded.
@@ -650,6 +670,8 @@ CirrusGlobe.init({
     frame: CirrusFrame,
     fetchRegion: fetchGlobeRegion,
     fetchCity: fetchWeatherData,
+    fetchNearby,
+    placeQuery: CirrusPlaces.at,
     onOpen: () => openGlobe(),
     onVisit: visitCity,
     onEnd: endGlobe,

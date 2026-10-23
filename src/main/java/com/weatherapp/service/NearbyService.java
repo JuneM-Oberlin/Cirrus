@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class NearbyService {
 
-    static final int TOWN_COUNT = 30;
+    static final int TOWN_COUNT = 50;
     static final double GRID_DEGREES = 0.05;
     private static final int CACHE_TTL_SECONDS = 600;
 
